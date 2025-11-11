@@ -1355,18 +1355,24 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+<<<<<<< HEAD
     - target: {fileID: 658030602791616278, guid: 54c31ba1df474a14fbf79c723697a90b, type: 3}
       propertyPath: attackRange
       value: 1.5
       objectReference: {fileID: 0}
+=======
+>>>>>>> origin/main
     - target: {fileID: 907537382605526288, guid: 54c31ba1df474a14fbf79c723697a90b, type: 3}
       propertyPath: m_Name
       value: HeavyBandit
       objectReference: {fileID: 0}
+<<<<<<< HEAD
     - target: {fileID: 6379562400603028775, guid: 54c31ba1df474a14fbf79c723697a90b, type: 3}
       propertyPath: attackRange
       value: 1.5
       objectReference: {fileID: 0}
+=======
+>>>>>>> origin/main
     - target: {fileID: 8364748343300533464, guid: 54c31ba1df474a14fbf79c723697a90b, type: 3}
       propertyPath: m_LocalPosition.x
       value: -3.4447

@@ -23,7 +23,7 @@ public class EnemyCombat : MonoBehaviour
     {
         if (collision.gameObject.tag == "Player")
         {
-            Attack();
+            collision.gameObject.GetComponent<PlayerHealth>().TakeDamage(damageAmount);
         }
     }
     public void Attack()

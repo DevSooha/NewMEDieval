@@ -122,7 +122,11 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 1
+<<<<<<< HEAD
   m_CollisionDetection: 1
+=======
+  m_CollisionDetection: 0
+>>>>>>> origin/main
   m_Constraints: 4
 --- !u!70 &8971302282649159063
 CapsuleCollider2D:
@@ -173,10 +177,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3386138b8cfd343be8c3a1f6e1ef36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyCombat
+<<<<<<< HEAD
   attackRange: 1.5
   knockbackForce: 20
   stunTime: 0.2
   damageAmount: 1
+=======
+  attackRange: 0.8
+  knockbackForce: 20
+  stunTime: 0.2
+  damageAmount: 1
+  attackCooldown: 2
+  attackDuration: 0.5
+  attackPoint: {fileID: 2203717798374179241}
+>>>>>>> origin/main
 --- !u!114 &658030602791616278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -191,13 +205,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   detectionPoint: {fileID: 595803396666342871}
   movespeed: 2
+<<<<<<< HEAD
   attackRange: 1.5
+=======
+  attackRange: 1
+>>>>>>> origin/main
   detectRange: 5
   playerLayer:
     serializedVersion: 2
     m_Bits: 8
+<<<<<<< HEAD
   attackCooldown: 1.5
   attackCooldownTimer: 0
+=======
+>>>>>>> origin/main
 --- !u!95 &6106077526462702109
 Animator:
   serializedVersion: 7
