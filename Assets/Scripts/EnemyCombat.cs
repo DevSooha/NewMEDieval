@@ -24,6 +24,9 @@ public class EnemyCombat : MonoBehaviour
         if (collision.gameObject.tag == "Player")
         {
             collision.gameObject.GetComponent<PlayerHealth>().TakeDamage(damageAmount);
+            Attack();
+<<<<<<< HEAD
+            collision.gameObject.GetComponent<PlayerHealth>().TakeDamage(damageAmount);
         }
     }
     public void Attack()
