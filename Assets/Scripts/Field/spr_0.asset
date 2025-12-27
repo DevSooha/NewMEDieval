@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7510a16807c40b440af27b1d0c25ec34, type: 3}
   m_Name: spr_0
   m_EditorClassIdentifier: Assembly-CSharp::RoomData
-  roomID: spr0
+  roomID: spr_0
   roomPrefab: {fileID: 5330900218064330988, guid: 45d39137b42f70846ba61c5ebbbea7fe, type: 3}
   north: {fileID: 11400000, guid: 0648fc3e6498e5c4abec5001fa0aad69, type: 2}
   south: {fileID: 0}

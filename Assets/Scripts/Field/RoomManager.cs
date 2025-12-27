@@ -10,14 +10,12 @@ public class RoomManager : MonoBehaviour
     public float transitionTime = 0.4f;
     public float playerSpawnOffset = 1.5f;
 
-    [Header("1. Grid Spacing (방 배치 간격/카메라 이동 거리)")]
-    [Tooltip("방과 방 사이의 거리입니다. 화면 크기보다 크게 잡으면 빈 공간(Gap)이 생깁니다.")]
-    public float gridWidth = 32.0f;  // 32(화면) + 4(여백)
-    public float gridHeight = 18.0f; // 18(화면) + 4(여백)
+    [Header("1. Grid Spacing")]
+    public float gridWidth = 32.0f;
+    public float gridHeight = 18.0f;
 
-    [Header("2. Playable Size (실제 플레이 공간 크기)")]
-    [Tooltip("플레이어가 밟을 수 있는 방의 실제 크기입니다. 플레이어 위치 잡을 때 씁니다.")]
-    public float playableWidth = 28.0f; // UI(2+2)를 뺀 크기
+    [Header("2. Playable Size")]
+    public float playableWidth = 28.0f;
     public float playableHeight = 18.0f;
 
     [Header("References")]
@@ -58,10 +56,11 @@ public class RoomManager : MonoBehaviour
     {
         if (BossManager.Instance != null && BossManager.Instance.IsBossActive) return;
         if (isCoolingDown) return;
+
+        // 로딩이 안 되어 있으면 방어 코드
         if (!loadedRooms.ContainsKey(nextRoom.roomID))
         {
-            Debug.LogWarning($"로딩 안 됨: {nextRoom.roomID}");
-            return;
+            SpawnRoom(nextRoom, CalculateRoomPosition(nextRoom));
         }
 
         StartCoroutine(TransitionRoutine(direction, nextRoom, distanceOverride));
@@ -71,6 +70,10 @@ public class RoomManager : MonoBehaviour
     {
         isCoolingDown = true;
         SetPlayerInput(false);
+
+        // ★ [핵심 추가] 목표 방을 "새것"으로 교체합니다. (풀, 몬스터, 보스 리셋)
+        RefreshTargetRoom(nextRoom);
+        // -----------------------------------------------------------------
 
         Vector3 startCameraPos = mainCamera.transform.position;
         Vector3 startPlayerPos = player.position;
@@ -85,87 +88,64 @@ public class RoomManager : MonoBehaviour
         Vector3 moveAmount = new Vector3(direction.x * moveDistance, direction.y * moveDistance, 0);
         Vector3 targetCameraPos = startCameraPos + moveAmount;
 
-        // 2. [핵심 변경] 플레이어 목표를 '정확한 착지 지점'으로 미리 계산!
+        // 2. 플레이어 목표 계산
         Vector3 targetPlayerPos = GetTargetPosition(direction, targetCameraPos);
 
-        // 3. 이동 (이제 목표점이 똑같으므로 마지막에 튀지 않음)
+        // 3. 이동 연출
         float elapsed = 0;
         while (elapsed < transitionTime)
         {
             float t = elapsed / transitionTime;
-            // t = t * t * (3f - 2f * t); // (원하시면 부드러운 곡선 적용)
-
             mainCamera.transform.position = Vector3.Lerp(startCameraPos, targetCameraPos, t);
-            player.position = Vector3.Lerp(startPlayerPos, targetPlayerPos, t); // 정확한 위치로 이동
-
+            player.position = Vector3.Lerp(startPlayerPos, targetPlayerPos, t);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
         // 4. 도착 확정
         mainCamera.transform.position = targetCameraPos;
-        player.position = targetPlayerPos; // 이미 거기에 도착해있어서 튀지 않음!
+        player.position = targetPlayerPos;
 
-        // 물리 속도 제거 (미끄러짐 방지)
         if (player.TryGetComponent<Rigidbody2D>(out var rb)) rb.linearVelocity = Vector2.zero;
 
-        // 5. 데이터 갱신 및 엔딩 체크 (기존과 동일)
+        // 5. 데이터 갱신
         currentRoomData = nextRoom;
         UpdateNeighborPreload(nextRoom);
 
         SetPlayerInput(true);
 
-        // --- 엔딩 체크 ---
+        // 엔딩 체크
         if (loadedRooms.ContainsKey(nextRoom.roomID))
         {
             GameObject roomObj = loadedRooms[nextRoom.roomID];
-            // [중요] includeInactive를 true로 해야 꺼져있는 오브젝트도 찾음
             EndingEvent ending = roomObj.GetComponentInChildren<EndingEvent>(true);
-
-            if (ending != null)
-            {
-                Debug.Log("엔딩 발견! 실행합니다.");
-                ending.PlayEnding();
-            }
-            else
-            {
-                Debug.Log($"엔딩 스크립트 없음. 방 이름: {roomObj.name}");
-            }
+            if (ending != null) ending.PlayEnding();
         }
 
         yield return new WaitForSeconds(0.1f);
         isCoolingDown = false;
     }
 
-    private void RepositionPlayer(Vector2 direction, Vector3 nextRoomCenterPos)
+    // ★ [추가된 함수] 목표 방을 파괴하고 그 자리에 다시 생성함
+    private void RefreshTargetRoom(RoomData targetRoom)
     {
-        // Grid가 아무리 넓어도, 플레이어는 "실제 방 크기(Playable)" 끝에 서야 합니다.
-        float currentHalfWidth = playableWidth / 2f;
-        float currentHalfHeight = playableHeight / 2f;
-
-        Vector3 newPos = player.position;
-
-        if (direction == Vector2.up)
-            newPos = new Vector3(player.position.x, nextRoomCenterPos.y - currentHalfHeight + playerSpawnOffset, 0);
-
-        else if (direction == Vector2.down)
-            newPos = new Vector3(player.position.x, nextRoomCenterPos.y + currentHalfHeight - playerSpawnOffset, 0);
-
-        else if (direction == Vector2.right)
-            newPos = new Vector3(nextRoomCenterPos.x - currentHalfWidth + playerSpawnOffset, player.position.y, 0);
-
-        else if (direction == Vector2.left)
-            newPos = new Vector3(nextRoomCenterPos.x + currentHalfWidth - playerSpawnOffset, player.position.y, 0);
-
-        player.position = newPos;
-
-        if (player.TryGetComponent<Rigidbody2D>(out var rb))
+        if (loadedRooms.ContainsKey(targetRoom.roomID))
         {
-            rb.linearVelocity = Vector2.zero;
+            // 1. 기존에 미리 로딩되어 있던 방(헌것)을 찾는다.
+            GameObject oldRoom = loadedRooms[targetRoom.roomID];
+            Vector3 roomPos = oldRoom.transform.position; // 위치 기억
+
+            // 2. 헌 방을 파괴한다. (잘린 풀, 죽은 몬스터 삭제됨)
+            Destroy(oldRoom);
+            loadedRooms.Remove(targetRoom.roomID);
+
+            // 3. 프리팹에서 새 방을 생성한다. (모든 게 초기화된 상태)
+            SpawnRoom(targetRoom, roomPos);
+
+            // 참고: SpawnRoom 내부에서 loadedRooms에 다시 추가하고, 
+            // Instantiate 되면서 Spawner의 Start()가 실행되어 몬스터도 다시 나옵니다.
         }
     }
-
-    // 플레이어가 도착해야 할 '정확한 위치'를 계산해서 반환만 하는 함수
     private Vector3 GetTargetPosition(Vector2 direction, Vector3 nextRoomCenterPos)
     {
         float currentHalfWidth = playableWidth / 2f;
@@ -202,7 +182,6 @@ public class RoomManager : MonoBehaviour
                 neighborsToKeep.Add(neighbor.roomID);
                 if (!loadedRooms.ContainsKey(neighbor.roomID))
                 {
-                    // [핵심 3] 방 생성 위치는 Grid Spacing을 따릅니다. (멀찍이 떨어뜨림)
                     SpawnRoom(neighbor, CalculateRoomPosition(neighbor));
                 }
             }
@@ -223,15 +202,23 @@ public class RoomManager : MonoBehaviour
 
     private void SpawnRoom(RoomData data, Vector3 position)
     {
+        // Instantiate가 일어날 때, 방 프리팹에 붙은 Spawner의 Start()가 자동 실행됨 -> 몬스터 리스폰
         GameObject roomObj = Instantiate(data.roomPrefab, position, Quaternion.identity);
+        roomObj.name = data.roomID; // 디버깅 편하게 이름 설정
         loadedRooms.Add(data.roomID, roomObj);
     }
 
     private Vector3 CalculateRoomPosition(RoomData data)
     {
-        // 좌표 * 간격 (여백 포함된 넓은 간격)
         return new Vector3(data.roomCoord.x * gridWidth, data.roomCoord.y * gridHeight, 0);
     }
 
-    private void SetPlayerInput(bool active) { }
+    private void SetPlayerInput(bool active)
+    {
+        // 플레이어 움직임 멈추는 코드 (필요하면 구현)
+        if (player.TryGetComponent<Player>(out var p))
+        {
+            p.SetCanMove(active);
+        }
+    }
 }

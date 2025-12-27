@@ -130,7 +130,6 @@ GameObject:
   - component: {fileID: 172851482}
   - component: {fileID: 172851481}
   - component: {fileID: 172851480}
-  - component: {fileID: 172851479}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -138,50 +137,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &172851479
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 172851478}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
-  m_RenderShadows: 1
-  m_RequiresDepthTextureOption: 2
-  m_RequiresOpaqueTextureOption: 2
-  m_CameraType: 0
-  m_Cameras: []
-  m_RendererIndex: -1
-  m_VolumeLayerMask:
-    serializedVersion: 2
-    m_Bits: 1
-  m_VolumeTrigger: {fileID: 0}
-  m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
-  m_Antialiasing: 0
-  m_AntialiasingQuality: 2
-  m_StopNaN: 0
-  m_Dithering: 0
-  m_ClearDepth: 1
-  m_AllowXRRendering: 1
-  m_AllowHDROutput: 1
-  m_UseScreenCoordOverride: 0
-  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
-  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
-  m_RequiresDepthTexture: 0
-  m_RequiresColorTexture: 0
-  m_TaaSettings:
-    m_Quality: 3
-    m_FrameInfluence: 0.1
-    m_JitterScale: 1
-    m_MipBias: 0
-    m_VarianceClampScale: 0.9
-    m_ContrastAdaptiveSharpening: 0
-  m_Version: 2
 --- !u!81 &172851480
 AudioListener:
   m_ObjectHideFlags: 0
@@ -199,7 +154,7 @@ Camera:
   m_GameObject: {fileID: 172851478}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 4
+  m_ClearFlags: 1
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
@@ -390,7 +345,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &643175185
 RectTransform:
   m_ObjectHideFlags: 0
@@ -596,6 +551,7 @@ GameObject:
   - component: {fileID: 1076321498}
   - component: {fileID: 1076321499}
   - component: {fileID: 1076321501}
+  - component: {fileID: 1076321502}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -652,6 +608,19 @@ MonoBehaviour:
   playableHeight: 18
   mainCamera: {fileID: 172851481}
   player: {fileID: 1300802493113010987}
+--- !u!114 &1076321502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1076321497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7669eb0039e36414faecaba31eb571c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossManager
+  bossAI: {fileID: 0}
 --- !u!1001 &1735296614
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -720,9 +689,13 @@ PrefabInstance:
       propertyPath: m_SortingLayerID
       value: 713526839
       objectReference: {fileID: 0}
+    - target: {fileID: 8083108648300844669, guid: 342464d1defe1634b9192b60436ba918, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     m_RemovedComponents:
-    - {fileID: 1744597679583860157, guid: 342464d1defe1634b9192b60436ba918, type: 3}
-    - {fileID: -8371697722481783614, guid: 342464d1defe1634b9192b60436ba918, type: 3}
+    - {fileID: 0}
+    - {fileID: 0}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -747,7 +720,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   floorTilemap: {fileID: 0}
-  bombPrefab: {fileID: 2931351287853390478, guid: 79943309dfa9d8f4ba9c81c2b69e4dbd, type: 3}
+  bombPrefab1: {fileID: 2931351287853390478, guid: 79943309dfa9d8f4ba9c81c2b69e4dbd, type: 3}
+  bombPrefab2: {fileID: 7679949863559972474, guid: e5b02f3b68a9d25429d187d31e10a704, type: 3}
   stackMarkerPrefab: {fileID: 6652526710824270206, guid: 4442b947abc6a644a82dacfb70dbb613, type: 3}
   slots: []
 --- !u!1 &1987426711

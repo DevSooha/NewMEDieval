@@ -8,6 +8,8 @@ TagManager:
   - Obstacle
   - Stairs
   - Ground
+  - Grass
+  - Boss
   layers:
   - Default
   - TransparentFX
@@ -17,7 +19,7 @@ TagManager:
   - UI
   - NPC
   - Enemy
-  - 
+  - EnemyBullet
   - 
   - 
   - 

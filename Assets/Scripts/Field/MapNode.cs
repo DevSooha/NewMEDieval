@@ -8,9 +8,6 @@ public class MapNode : MonoBehaviour
     [Header("방 이동 설정")]
     public Direction moveDirection;
     public RoomData nextRoom;
-
-    [Header("이동 거리 개별 설정 (0이면 기본값 사용)")]
-    // 이 문을 통과할 때 얼마만큼 카메라를 이동시킬지 설정
     public float overrideDistance = 0f;
 
     [Header("차단 메시지 설정")]
@@ -22,32 +19,51 @@ public class MapNode : MonoBehaviour
     private void Awake()
     {
         myCollider = GetComponent<BoxCollider2D>();
+    }
 
-        // 연결된 방이 없으면 벽(False), 있으면 문(True)
-        if (myCollider != null)
+    // ★ [핵심] 매 프레임 문 상태를 결정합니다.
+    private void Update()
+    {
+        if (myCollider == null) return;
+
+        // 1. 연결된 방이 아예 없으면 -> 무조건 벽
+        if (nextRoom == null)
         {
-            if (nextRoom == null) myCollider.isTrigger = false;
-            else myCollider.isTrigger = true;
+            myCollider.isTrigger = false;
+        }
+        // 2. 보스전 중이면 -> 무조건 벽 (딱딱하게 막힘)
+        else if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+        {
+            myCollider.isTrigger = false;
+        }
+        // 3. 그 외(평소) -> 문 (지나갈 수 있음 -> Trigger 발동)
+        else
+        {
+            myCollider.isTrigger = true;
         }
     }
 
+    // ★ 벽(isTrigger=false)일 때 부딪히면 실행됨
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Player") && nextRoom == null)
+        if (collision.gameObject.CompareTag("Player"))
         {
-            ShowMessage(defaultBlockMessage);
+            // 방이 없어서 막힌 경우
+            if (nextRoom == null)
+            {
+                ShowMessage(defaultBlockMessage);
+            }
+            // 보스전이라서 막힌 경우
+            else if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+            {
+                ShowMessage(lockedMessage);
+            }
         }
     }
 
-    private void OnTriggerStay2D(Collider2D other)
-    {
-        TryEnterRoom(other);
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        TryEnterRoom(other);
-    }
+    // ★ 문(isTrigger=true)일 때 겹치면 실행됨 (이동 로직)
+    private void OnTriggerEnter2D(Collider2D other) { TryEnterRoom(other); }
+    private void OnTriggerStay2D(Collider2D other) { TryEnterRoom(other); }
 
     private void TryEnterRoom(Collider2D other)
     {
@@ -56,22 +72,10 @@ public class MapNode : MonoBehaviour
             float inputX = Input.GetAxisRaw("Horizontal");
             float inputY = Input.GetAxisRaw("Vertical");
 
+            // 문 방향으로 밀고 있을 때만 이동
             if (!IsPushingTowardsDoor(inputX, inputY)) return;
 
-            if (nextRoom == null)
-            {
-                ShowMessage(defaultBlockMessage);
-                return;
-            }
-
-            if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
-            {
-                ShowMessage(lockedMessage);
-                PushBack(other.gameObject);
-                return;
-            }
-
-            // [핵심 변경] 이동 요청 시, 이 문에 설정된 '거리(overrideDistance)'도 같이 보냄
+            // 이동 실행
             Vector2 dirVector = GetDirectionVector();
             RoomManager.Instance.RequestMove(dirVector, nextRoom, overrideDistance);
         }
@@ -89,22 +93,6 @@ public class MapNode : MonoBehaviour
         }
     }
 
-    private void ShowMessage(string message)
-    {
-        if (UIManager.Instance != null) UIManager.Instance.ShowWarning(message);
-    }
-
-    private void PushBack(GameObject player)
-    {
-        Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
-        if (playerRb != null)
-        {
-            Vector2 pushDirection = (player.transform.position - transform.position).normalized;
-            playerRb.linearVelocity = Vector2.zero;
-            playerRb.AddForce(pushDirection * 10f, ForceMode2D.Impulse);
-        }
-    }
-
     private Vector2 GetDirectionVector()
     {
         switch (moveDirection)
@@ -115,5 +103,10 @@ public class MapNode : MonoBehaviour
             case Direction.West: return Vector2.left;
             default: return Vector2.zero;
         }
+    }
+
+    private void ShowMessage(string message)
+    {
+        if (UIManager.Instance != null) UIManager.Instance.ShowWarning(message);
     }
 }

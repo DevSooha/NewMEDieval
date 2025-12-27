@@ -66,11 +66,7 @@ public class Spawner : MonoBehaviour
     void TrySpawnClone(GameObject original, float rate, string id)
     {
         float dice = Random.value;
-        if (dice > rate)
-        {
-            Debug.Log($"{id} 스폰 실패 (주사위: {dice} > 확률: {rate})");
-            return;
-        }
+        if (dice > rate) return;
 
         BoundsInt bounds = floorTilemap.cellBounds;
         for (int attempts = 0; attempts < 100; attempts++)
@@ -84,28 +80,34 @@ public class Spawner : MonoBehaviour
             if (floorTilemap.HasTile(randomCell))
             {
                 Vector3 spawnPos = floorTilemap.GetCellCenterWorld(randomCell);
-                // Z축을 0으로 확실히 고정 (카메라에 가려지지 않게)
                 spawnPos.z = 0;
 
                 Collider2D hit = Physics2D.OverlapCircle(spawnPos, 0.3f);
 
                 if (hit == null || !hit.CompareTag("Obstacle"))
                 {
-                    GameObject clone = Instantiate(original, spawnPos, Quaternion.identity);
-
-                    // ★ 가장 중요: 복사본을 강제로 켭니다!
+                    GameObject clone = Instantiate(original, spawnPos, Quaternion.identity, transform);
+                    
                     clone.SetActive(true);
                     clone.tag = "Respawn";
                     return;
                 }
             }
         }
-        Debug.LogWarning($"{id} 스폰 실패: 적절한 빈 타일을 찾지 못함");
+        Debug.LogWarning($"{id} 스폰 실패: 위치 못 찾음");
     }
 
     void ClearPreviousSpawns()
     {
-        GameObject[] oldObjects = GameObject.FindGameObjectsWithTag("Respawn");
-        foreach (var obj in oldObjects) Destroy(obj);
+        // 내 하위(자식) 오브젝트들 중에서만 찾아서 파괴
+        // 리스트를 역순으로 도는 게 삭제할 때 안전함
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = transform.GetChild(i);
+            if (child.CompareTag("Respawn"))
+            {
+                Destroy(child.gameObject);
+            }
+        }
     }
 }

@@ -441,7 +441,7 @@ TilemapRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4817,6 +4817,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7582301446584222656}
     m_Modifications:
+    - target: {fileID: -2991751209672062302, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 4899119718868863876, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: 6.5
@@ -4863,7 +4867,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7975722123060200583, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_TagString
-      value: Obstacle
+      value: Grass
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4883,6 +4887,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7582301446584222656}
     m_Modifications:
+    - target: {fileID: -2991751209672062302, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 4899119718868863876, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: -9.5
@@ -4929,7 +4937,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7975722123060200583, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_TagString
-      value: Obstacle
+      value: Grass
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4957,6 +4965,10 @@ PrefabInstance:
       propertyPath: m_SortingLayerID
       value: -1562799643
       objectReference: {fileID: 0}
+    - target: {fileID: -4528855082969764708, guid: 16a88d3b2cabb4c4b873224d667d574e, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 2173382326257723820, guid: 16a88d3b2cabb4c4b873224d667d574e, type: 3}
       propertyPath: m_Name
       value: MAT_PLANT_01
@@ -5048,6 +5060,10 @@ PrefabInstance:
       propertyPath: m_SortingLayerID
       value: -1562799643
       objectReference: {fileID: 0}
+    - target: {fileID: -8770992214419065657, guid: 07cd13de87475a249a5c778cb920d6fd, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 5681149279572575106, guid: 07cd13de87475a249a5c778cb920d6fd, type: 3}
       propertyPath: m_LocalPosition.x
       value: 9.47
@@ -5114,6 +5130,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7582301446584222656}
     m_Modifications:
+    - target: {fileID: -2991751209672062302, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 4899119718868863876, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: 6.5
@@ -5160,7 +5180,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7975722123060200583, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_TagString
-      value: Obstacle
+      value: Grass
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5180,6 +5200,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7582301446584222656}
     m_Modifications:
+    - target: {fileID: -2991751209672062302, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 4899119718868863876, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: -6.5
@@ -5226,7 +5250,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7975722123060200583, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_TagString
-      value: Obstacle
+      value: Grass
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5254,6 +5278,10 @@ PrefabInstance:
       propertyPath: m_SortingLayerID
       value: -1562799643
       objectReference: {fileID: 0}
+    - target: {fileID: -8770992214419065657, guid: 07cd13de87475a249a5c778cb920d6fd, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 5681149279572575106, guid: 07cd13de87475a249a5c778cb920d6fd, type: 3}
       propertyPath: m_LocalPosition.x
       value: 11.5
@@ -5320,6 +5348,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7582301446584222656}
     m_Modifications:
+    - target: {fileID: -2991751209672062302, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 4899119718868863876, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: 6.5
@@ -5366,7 +5398,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7975722123060200583, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_TagString
-      value: Obstacle
+      value: Grass
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5394,6 +5426,10 @@ PrefabInstance:
       propertyPath: m_SortingLayerID
       value: -1562799643
       objectReference: {fileID: 0}
+    - target: {fileID: -2991751209672062302, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 4899119718868863876, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: -9.5
@@ -5440,7 +5476,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7975722123060200583, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_TagString
-      value: Obstacle
+      value: Grass
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5468,6 +5504,10 @@ PrefabInstance:
       propertyPath: m_SortingLayerID
       value: -1562799643
       objectReference: {fileID: 0}
+    - target: {fileID: -8770992214419065657, guid: 07cd13de87475a249a5c778cb920d6fd, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 5681149279572575106, guid: 07cd13de87475a249a5c778cb920d6fd, type: 3}
       propertyPath: m_LocalPosition.x
       value: -10.5
@@ -5534,6 +5574,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7582301446584222656}
     m_Modifications:
+    - target: {fileID: -2991751209672062302, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 4899119718868863876, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2.5
@@ -5580,7 +5624,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7975722123060200583, guid: e2488a3e40fdea241b37f21dec48b0b5, type: 3}
       propertyPath: m_TagString
-      value: Obstacle
+      value: Grass
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5608,6 +5652,10 @@ PrefabInstance:
       propertyPath: m_SortingLayerID
       value: -1562799643
       objectReference: {fileID: 0}
+    - target: {fileID: -6039417658397776649, guid: d77f8112869dd7a419218d85ebb80ec3, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 703457683117858272, guid: d77f8112869dd7a419218d85ebb80ec3, type: 3}
       propertyPath: m_LocalScale.x
       value: 1
@@ -5789,7 +5837,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

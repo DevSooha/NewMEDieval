@@ -2,26 +2,41 @@ using UnityEngine;
 
 public class BossBattleTrigger : MonoBehaviour
 {
-    private bool hasTriggered = false; // 한 번만 발동되게
+    [Header("프리팹 안에서 직접 연결하세요")]
+    public BossAI linkedBoss;      // 이 방의 보스
+
+    private bool hasTriggered = false;
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // 이미 발동됐으면 무시
         if (hasTriggered) return;
 
-        // 플레이어가 밟았을 때
         if (other.CompareTag("Player"))
         {
             hasTriggered = true;
 
-            // 보스 매니저에게 "전투 시작해!"라고 알림
-            if (BossManager.Instance != null)
+            // 1. 매니저가 있는지 확인
+            if (BossManager.Instance == null)
+            {
+                Debug.LogError("BossManager가 하이어라키에 없습니다! 만들어주세요!");
+                return;
+            }
+
+            // 2. 보스 연결 (직접 연결된 게 없으면 찾기)
+            if (linkedBoss != null)
+            {
+                BossManager.Instance.bossAI = linkedBoss;
+            }
+            else
+            {
+                // 혹시 깜빡하고 연결 안 했으면 코드로라도 찾음
+                BossManager.Instance.bossAI = transform.parent.GetComponentInChildren<BossAI>(true);
+            }
+            // 4. 전투 시작!
+            if (BossManager.Instance.bossAI != null)
             {
                 BossManager.Instance.StartBossBattle();
             }
-
-            // (선택사항) 트리거 오브젝트 삭제 (더 이상 필요 없으니)
-            // Destroy(gameObject); 
         }
     }
 }

@@ -1,15 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps; // ★ 타일맵 기능을 쓰기 위해 필수!
+using UnityEngine.Tilemaps;
 
-// 무기 타입 정의
 public enum WeaponType { None, Melee, PotionBomb }
 
 [System.Serializable]
 public class WeaponSlot
 {
     public WeaponType type;
+    public GameObject specificPrefab; // ★ 이 슬롯이 사용할 전용 폭탄 프리팹
 }
 
 public class PlayerAttackSystem : MonoBehaviour
@@ -18,11 +18,13 @@ public class PlayerAttackSystem : MonoBehaviour
     public float tileSize = 1.0f;
     public LayerMask enemyLayer;
 
-    [Header("Tilemaps (필수 연결!)")]
-    public Tilemap floorTilemap; // ★ 바닥 타일맵을 여기에 연결하세요!
+    [Header("Tilemaps")]
+    public Tilemap floorTilemap;
 
-    [Header("Prefabs")]
-    public GameObject bombPrefab;
+    [Header("Prefabs (인스펙터에서 넣어주세요)")]
+    // ★ 종류별 폭탄 프리팹을 여기에 등록해둡니다.
+    public GameObject bombPrefab1; // 빨간 폭탄?
+    public GameObject bombPrefab2; // 파란 폭탄?
     public GameObject stackMarkerPrefab;
 
     [Header("Weapon Slots")]
@@ -43,29 +45,32 @@ public class PlayerAttackSystem : MonoBehaviour
         playerMovement = GetComponent<Player>();
         anim = GetComponent<Animator>();
 
-        // [추가된 부분] 바닥 타일맵 자동 찾기!
+        // 타일맵 자동 찾기 (기존 코드 유지)
         if (floorTilemap == null)
         {
-            // 1. "Ground"라는 태그가 붙은 오브젝트를 찾아서 타일맵을 가져온다.
             GameObject groundObj = GameObject.FindGameObjectWithTag("Ground");
-
-            if (groundObj != null)
-            {
-                floorTilemap = groundObj.GetComponent<Tilemap>();
-            }
+            if (groundObj != null) floorTilemap = groundObj.GetComponent<Tilemap>();
             else
             {
-                // 태그로 못 찾았으면 이름으로라도 찾아본다 (예: Grid 자식의 "Floor")
                 GameObject floorObj = GameObject.Find("Floor");
                 if (floorObj != null) floorTilemap = floorObj.GetComponent<Tilemap>();
             }
         }
 
+        // ★ 슬롯 초기화 부분 수정
+        // 슬롯마다 서로 다른 폭탄 프리팹을 넣어줍니다.
         if (slots.Count == 0)
         {
+            // 0번 슬롯: 근접 무기
             slots.Add(new WeaponSlot { type = WeaponType.Melee });
-            slots.Add(new WeaponSlot { type = WeaponType.PotionBomb });
-            slots.Add(new WeaponSlot { type = WeaponType.None });
+
+            // 1번 슬롯: 폭탄 1번 (예: 일반 폭탄)
+            slots.Add(new WeaponSlot { type = WeaponType.PotionBomb, specificPrefab = bombPrefab1 });
+
+            // 2번 슬롯: 폭탄 2번 (예: 얼음 폭탄) - 테스트를 위해 추가해봄
+            slots.Add(new WeaponSlot { type = WeaponType.PotionBomb, specificPrefab = bombPrefab2 });
+
+            // 3번 슬롯: 비움
             slots.Add(new WeaponSlot { type = WeaponType.None });
         }
     }
@@ -76,6 +81,7 @@ public class PlayerAttackSystem : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.C)) RotateWeaponSlots();
 
+        // 현재(0번) 슬롯의 타입에 따라 행동 결정
         if (slots[0].type == WeaponType.Melee) HandleMeleeInput();
         else if (slots[0].type == WeaponType.PotionBomb) HandleBombInput();
     }
@@ -147,12 +153,11 @@ public class PlayerAttackSystem : MonoBehaviour
 
             if (targetStack > currentStack && targetStack <= 3)
             {
-                // 다음 위치 미리 계산해서 막혀있으면 스택 증가 안 함
                 Vector2 nextPos = (Vector2)transform.position + (aimDirection * tileSize * (currentStack + 1));
 
                 if (!IsValidTile(nextPos))
                 {
-                    Debug.Log("장애물/허공 때문에 차징 중단");
+                    Debug.Log("설치 불가 지역");
                 }
                 else
                 {
@@ -164,53 +169,61 @@ public class PlayerAttackSystem : MonoBehaviour
         }
     }
 
-    // ★ 수정된 핵심 함수 (타일맵 + 콜라이더 체크)
     bool IsValidTile(Vector2 pos)
     {
-        // 1. [기획서 49번] 바닥 타일이 없는 경우 (허공)
         if (floorTilemap != null)
         {
-            // 월드 좌표를 타일맵 좌표(Cell)로 변환
             Vector3Int cellPos = floorTilemap.WorldToCell(pos);
-            // 해당 위치에 타일이 없으면 설치 불가!
             if (!floorTilemap.HasTile(cellPos)) return false;
         }
 
-        // 2. 물리적 장애물 검사 (벽, 계단, 오브젝트)
-        // 타일맵 콜라이더도 여기서 걸립니다.
         Collider2D[] hitColliders = Physics2D.OverlapCircleAll(pos, tileSize * 0.3f);
-
         foreach (var col in hitColliders)
         {
-            // [기획서 51번] 장애물 (Obstacle 태그)
             if (col.CompareTag("Obstacle")) return false;
-
-            // [기획서 50번] 계단 (Stairs 태그)
             if (col.CompareTag("Stairs")) return false;
         }
 
         return true;
     }
 
+    // ★ 현재 장착된 슬롯(slots[0])의 프리팹을 가져오는 헬퍼 함수
+    GameObject GetCurrentBombPrefab()
+    {
+        if (slots.Count > 0 && slots[0].specificPrefab != null)
+        {
+            return slots[0].specificPrefab;
+        }
+        return null; // 프리팹이 없으면 null 반환
+    }
+
     void SpawnBombAt(int distance)
     {
         Vector2 pos = (Vector2)transform.position + (aimDirection * tileSize * distance);
-        if (IsValidTile(pos))
+
+        // ★ 현재 슬롯에 등록된 폭탄 프리팹 가져오기
+        GameObject bombToSpawn = GetCurrentBombPrefab();
+
+        if (IsValidTile(pos) && bombToSpawn != null)
         {
-            if (bombPrefab != null) Instantiate(bombPrefab, pos, Quaternion.identity);
+            Instantiate(bombToSpawn, pos, Quaternion.identity);
         }
     }
 
     void SpawnBombsByStack()
     {
+        // ★ 현재 슬롯에 등록된 폭탄 프리팹 가져오기
+        GameObject bombToSpawn = GetCurrentBombPrefab();
+
+        if (bombToSpawn == null) return;
+
         for (int i = 1; i <= currentStack; i++)
         {
             Vector2 pos = (Vector2)transform.position + (aimDirection * tileSize * i);
 
-            // 중간에 막히면 뒤쪽도 설치 안 함 (관통 방지)
             if (!IsValidTile(pos)) break;
 
-            if (bombPrefab != null) Instantiate(bombPrefab, pos, Quaternion.identity);
+            Instantiate(bombToSpawn, pos, Quaternion.identity);
         }
     }
 
@@ -234,17 +247,23 @@ public class PlayerAttackSystem : MonoBehaviour
 
     void RotateWeaponSlots()
     {
+        // 빈 슬롯은 제외하고 회전
         List<WeaponSlot> valid = new List<WeaponSlot>();
         foreach (var s in slots) if (s.type != WeaponType.None) valid.Add(s);
+
         if (valid.Count <= 1) return;
+
         WeaponSlot first = valid[0];
         valid.RemoveAt(0);
         valid.Add(first);
+
+        // 다시 슬롯 배열에 적용
         for (int i = 0; i < 4; i++)
         {
             if (i < valid.Count) slots[i] = valid[i];
             else slots[i] = new WeaponSlot { type = WeaponType.None };
         }
-        Debug.Log($"무기 교체됨: {slots[0].type}");
+
+        Debug.Log($"무기 교체됨: {slots[0].type} / 프리팹: {slots[0].specificPrefab?.name}");
     }
 }
