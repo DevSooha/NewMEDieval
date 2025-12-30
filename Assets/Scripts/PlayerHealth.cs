@@ -3,8 +3,8 @@ using TMPro;
 
 public class PlayerHealth : MonoBehaviour
 {
-    public int HP;
-    public int maxHP;
+    public int HP=10;
+    public int maxHP=10;
     public TMP_Text healthBar;
 
     void Start()
@@ -16,6 +16,7 @@ public class PlayerHealth : MonoBehaviour
     // 필요할 때만 호출
     public void TakeDamage(int amount)
     {
+        Debug.Log($"체력: {HP}");
         HP -= amount;
         if (HP > maxHP)
             HP = maxHP;
