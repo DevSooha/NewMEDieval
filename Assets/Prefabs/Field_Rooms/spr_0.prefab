@@ -226,6 +226,7 @@ MonoBehaviour:
   overrideDistance: 0
   defaultBlockMessage: The path is blocked.
   lockedMessage: You cannot flee!
+  unlockedMessage: Now you can proceed.
 --- !u!1 &2372628262770834297
 ========
   nextRoom: {fileID: 11400000, guid: 1c75e8bcab7ce5c4cbeac0955cf34f62, type: 2}
@@ -5210,12 +5211,12 @@ Transform:
   - {fileID: 7552089866794324102}
   - {fileID: 573056876688136034}
   - {fileID: 2686009357170995226}
-  - {fileID: 6931658694739590347}
   - {fileID: 4899331611892620447}
   - {fileID: 3477832164578630368}
   - {fileID: 2705936609989412094}
   - {fileID: 4517860277804024134}
   - {fileID: 4060378028396639724}
+  - {fileID: 3004978666295662391}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6781845024093677799
@@ -5542,6 +5543,7 @@ MonoBehaviour:
   overrideDistance: 0
   defaultBlockMessage: The path is blocked.
   lockedMessage: You cannot flee!
+  unlockedMessage: Now you can proceed.
 --- !u!1 &8823683940629105641
 ========
   moveDirection: 2
@@ -5602,7 +5604,7 @@ Grid:
   m_CellGap: {x: 0, y: 0, z: 0}
   m_CellLayout: 0
   m_CellSwizzle: 0
---- !u!1001 &4013736566953314683
+--- !u!1001 &9093417262020485767
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -5614,29 +5616,21 @@ PrefabInstance:
       propertyPath: m_Name
       value: Skeleton
       objectReference: {fileID: 0}
-    - target: {fileID: 4812511325995141568, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
-      propertyPath: m_SortingLayer
-      value: 4
+    - target: {fileID: 6305491374025012656, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.1
       objectReference: {fileID: 0}
-    - target: {fileID: 4812511325995141568, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
-      propertyPath: m_SortingLayerID
-      value: 825734181
-      objectReference: {fileID: 0}
-    - target: {fileID: 5569790205057511594, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5569790205057511594, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
+    - target: {fileID: 6305491374025012656, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 6305491374025012656, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2.16
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 6305491374025012656, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.6801875
+      value: -1.5
       objectReference: {fileID: 0}
     - target: {fileID: 6305491374025012656, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
       propertyPath: m_LocalPosition.z
@@ -5960,10 +5954,10 @@ PrefabInstance:
     m_AddedComponents: []
 <<<<<<<< HEAD:Assets/Prefabs/Field_Rooms/spr_0.prefab
   m_SourcePrefab: {fileID: 100100000, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
---- !u!4 &6931658694739590347 stripped
+--- !u!4 &3004978666295662391 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6305491374025012656, guid: 9b192c88dc3fa9343968f238e48968ab, type: 3}
-  m_PrefabInstance: {fileID: 4013736566953314683}
+  m_PrefabInstance: {fileID: 9093417262020485767}
   m_PrefabAsset: {fileID: 0}
 ========
   m_SourcePrefab: {fileID: 100100000, guid: 16a88d3b2cabb4c4b873224d667d574e, type: 3}

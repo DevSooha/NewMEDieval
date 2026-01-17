@@ -4,7 +4,6 @@ using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
-    // 플레이어 (싱글톤)
     public static Player Instance { get; private set; }
 
     [Header("Movement Settings")]
@@ -33,6 +32,7 @@ public class Player : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
     public Animator animator;
+    private PlayerInteraction playerInteraction;
 
     void Awake()
     {
@@ -58,6 +58,8 @@ public class Player : MonoBehaviour
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
         }
+
+        playerInteraction = GetComponent<PlayerInteraction>();
 
         moveSpeed = baseSpeed;
     }
@@ -112,6 +114,11 @@ public class Player : MonoBehaviour
         // 4. 공격 입력
         if (Input.GetKeyDown(KeyCode.Z))
         {
+            if (playerInteraction != null && playerInteraction.IsInteractable)
+            {
+                return;
+            }
+
             StartCoroutine(PerformAttack());
         }
 

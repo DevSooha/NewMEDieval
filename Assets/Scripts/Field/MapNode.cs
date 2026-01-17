@@ -11,19 +11,28 @@ public class MapNode : MonoBehaviour
     public float overrideDistance = 0f;
 
     [Header("차단 메시지 설정")]
-<<<<<<< HEAD
     public string defaultBlockMessage = "The path is blocked.";
     public string lockedMessage = "You cannot flee!";
-=======
-    public string defaultBlockMessage = "길이 막혀 있습니다.";
-    public string lockedMessage = "보스전 중에는 이동할 수 없습니다.";
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
+    public string unlockedMessage = "Now you can proceed.";
 
     private BoxCollider2D myCollider;
 
+    private bool wasLocked;
     private void Awake()
     {
         myCollider = GetComponent<BoxCollider2D>();
+    }
+
+    private void Start()
+    {
+        if(BossManager.Instance != null)
+        {
+            wasLocked = BossManager.Instance.IsBossActive;
+        }
+        else
+        {
+            wasLocked = false;
+        }
     }
 
     // ★ [핵심] 매 프레임 문 상태를 결정합니다.
@@ -31,13 +40,27 @@ public class MapNode : MonoBehaviour
     {
         if (myCollider == null) return;
 
+        bool isBossActive = BossManager.Instance != null && BossManager.Instance.IsBossActive;
+
+        if(wasLocked && !isBossActive)
+        {
+            //if(nextRoom != null)
+            //{
+            //    // 방어코드- 보스전이 끝나고 연결된 방이 있을 때만 메시지 출력
+                
+            //}
+            ShowMessage(unlockedMessage);
+        }
+
+        wasLocked = isBossActive;
+
         // 1. 연결된 방이 아예 없으면 -> 무조건 벽
         if (nextRoom == null)
         {
             myCollider.isTrigger = false;
         }
         // 2. 보스전 중이면 -> 무조건 벽 (딱딱하게 막힘)
-        else if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+        else if (isBossActive)
         {
             myCollider.isTrigger = false;
         }

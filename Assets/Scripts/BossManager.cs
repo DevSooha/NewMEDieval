@@ -3,8 +3,7 @@ using UnityEngine;
 public class BossManager : MonoBehaviour
 {
     public static BossManager Instance;
-    public BossAI bossAI;
-
+    public ThreeWitchCombat threeWitchCombat;
 
     public bool IsBossActive { get; private set; }
 
@@ -16,11 +15,11 @@ public class BossManager : MonoBehaviour
 
     public void StartBossBattle()
     {
-        if (bossAI != null)
+        if (threeWitchCombat != null)
         {
             IsBossActive = true; // "전투 중" 깃발 올림
-            bossAI.gameObject.SetActive(true);
-            bossAI.StartBattle();
+            threeWitchCombat.gameObject.SetActive(true);
+            threeWitchCombat.StartBattle();
         }
     }
 

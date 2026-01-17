@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 3140727511690307999}
   - component: {fileID: 6944616055050896067}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Sprite
-  m_TagString: Untagged
+  m_TagString: Grass
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -26,8 +26,8 @@ Transform:
   m_GameObject: {fileID: 734738924085516822}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.084640026, z: 0}
-  m_LocalScale: {x: 0.9, y: 0.9, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.1, y: 0.1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4899119718868863876}
@@ -100,9 +100,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4899119718868863876}
   - component: {fileID: -8467437193303244110}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: bush
-  m_TagString: Untagged
+  m_TagString: Grass
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54b7425429bcc79468decd0d4f1c5026, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
-  interactionRadius: 0.5
+  interactionRadius: 1
 --- !u!58 &6646073668113243694
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -80,7 +80,7 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: 0.5}
   m_Radius: 0.5
 --- !u!1 &8131824563140431785
 GameObject:
@@ -94,10 +94,10 @@ GameObject:
   - component: {fileID: 3356556161107891511}
   - component: {fileID: 8413767024519287874}
   - component: {fileID: 6220369492784268104}
-  - component: {fileID: 3214357239528181044}
   - component: {fileID: 5502386870270325364}
   - component: {fileID: 5967764604656354505}
   - component: {fileID: 4395408561452145397}
+  - component: {fileID: 477969116217681799}
   m_Layer: 3
   m_Name: NewPlayer
   m_TagString: Player
@@ -115,7 +115,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3, y: 3, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8807762444056715143}
@@ -166,7 +166,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1417951005
-  m_SortingLayer: 5
+  m_SortingLayer: 7
   m_SortingOrder: 5
   m_Sprite: {fileID: 1700641492287947781, guid: 2c7f23f146b6698489adf70cb2d33ed5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -178,7 +178,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
-  m_SpriteSortPoint: 0
+  m_SpriteSortPoint: 1
 --- !u!95 &8413767024519287874
 Animator:
   serializedVersion: 7
@@ -213,7 +213,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 1
-  m_Mass: 1.5001726
+  m_Mass: 1.6277914
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 0
@@ -228,7 +228,56 @@ Rigidbody2D:
   m_SleepingMode: 0
   m_CollisionDetection: 1
   m_Constraints: 4
---- !u!70 &3214357239528181044
+--- !u!114 &5502386870270325364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8131824563140431785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd3eb5d3593af1e4aab08ed8bf5fa161, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Player
+  moveSpeed: 5
+  baseSpeed: 5
+  animator: {fileID: 8413767024519287874}
+--- !u!114 &5967764604656354505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8131824563140431785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f4bf4d631f5dab45afdb0cab21cf9d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
+  HP: 10
+  maxHP: 10
+  healthBar: {fileID: 0}
+--- !u!114 &4395408561452145397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8131824563140431785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 750b3320435821140b8774886a139fd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAttackSystem
+  tileSize: 1
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  floorTilemap: {fileID: 0}
+  stackMarkerPrefab: {fileID: 6652526710824270206, guid: 4442b947abc6a644a82dacfb70dbb613, type: 3}
+  slots: []
+--- !u!70 &477969116217681799
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -262,57 +311,6 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Size: {x: 0.3, y: 0.62}
+  m_Offset: {x: 0, y: 0.96875}
+  m_Size: {x: 0.9375, y: 1.9375}
   m_Direction: 0
---- !u!114 &5502386870270325364
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8131824563140431785}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cd3eb5d3593af1e4aab08ed8bf5fa161, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Player
-  moveSpeed: 5
-  baseSpeed: 5
-  animator: {fileID: 0}
---- !u!114 &5967764604656354505
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8131824563140431785}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3f4bf4d631f5dab45afdb0cab21cf9d2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  HP: 10
-  maxHP: 10
-  healthBar: {fileID: 0}
---- !u!114 &4395408561452145397
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8131824563140431785}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 750b3320435821140b8774886a139fd0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerAttackSystem
-  tileSize: 1
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 128
-  floorTilemap: {fileID: 0}
-  bombPrefab1: {fileID: 2931351287853390478, guid: 79943309dfa9d8f4ba9c81c2b69e4dbd, type: 3}
-  bombPrefab2: {fileID: 7679949863559972474, guid: e5b02f3b68a9d25429d187d31e10a704, type: 3}
-  stackMarkerPrefab: {fileID: 6652526710824270206, guid: 4442b947abc6a644a82dacfb70dbb613, type: 3}
-  slots: []

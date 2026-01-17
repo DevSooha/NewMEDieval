@@ -1,17 +1,11 @@
-<<<<<<< HEAD
-using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI; // Required for Button
 
 public class PlayerInteraction : MonoBehaviour
 {
     [Header("Interaction Settings")]
-    [SerializeField] private float interactionRadius = 2f;
+    [SerializeField] private float interactionRadius;
 
     [Header("UI Reference")]
-    public GameObject TransportPanel;
-
     private CircleCollider2D interactionCollider;
     private NPC currentNPC;
     private WorldItem currentItem;
@@ -19,20 +13,7 @@ public class PlayerInteraction : MonoBehaviour
     private bool canInteract = false;
     private bool isCampfire = false;
 
-    private Animator anim;
-
     public bool IsInteractable => canInteract;
-
-    // Register Scene Loaded Event
-    void OnEnable()
-    {
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
 
     void Start()
     {
@@ -40,72 +21,12 @@ public class PlayerInteraction : MonoBehaviour
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
 
-        anim = GetComponent<Animator>();
-
-        FindUIAndLinkButtons(); // Initial find
-    }
-
-    // Called every time a scene is loaded
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        // 1. Reset Interaction States
         isCampfire = false;
-        canInteract = false;
+
         currentNPC = null;
+
+        canInteract = false;
         currentItem = null;
-
-        // 2. Find UI and Re-link Buttons
-        FindUIAndLinkButtons();
-    }
-
-    void FindUIAndLinkButtons()
-    {
-        // If already connected and active, just disable and return
-        if (this.TransportPanel != null)
-        {
-            this.TransportPanel.SetActive(false);
-            // We still need to check buttons just in case, but usually finding the window is enough if references held
-            // However, safe to re-find if null
-        }
-
-        // Try to find the UI Window even if it's inactive
-        if (TransportPanel == null)
-        {
-            GameObject foundObj = GameObject.Find("TransportPanel");
-            if (foundObj == null)
-            {
-                // Fallback: Search inside Canvas
-                Canvas canvas = FindFirstObjectByType<Canvas>();
-                if (canvas != null)
-                {
-                    Transform t = canvas.transform.Find("TransportPanel");
-                    if (t != null) foundObj = t.gameObject;
-                }
-            }
-            TransportPanel = foundObj;
-        }
-
-        // Link Buttons if window is found
-        if (this.TransportPanel != null)
-        {
-            // Important: Names "Btn_Craft" and "Btn_Potion" must match your Hierarchy exactly!
-            Button btnCraft = this.TransportPanel.transform.Find("Btn_Craft")?.GetComponent<Button>();
-            Button btnPotion = this.TransportPanel.transform.Find("Btn_Potion")?.GetComponent<Button>();
-
-            if (btnCraft != null)
-            {
-                btnCraft.onClick.RemoveAllListeners(); // Clear old links
-                btnCraft.onClick.AddListener(GoCrafting); // Link new method
-            }
-
-            if (btnPotion != null)
-            {
-                btnPotion.onClick.RemoveAllListeners();
-                btnPotion.onClick.AddListener(GoPotion);
-            }
-
-            this.TransportPanel.SetActive(false); // Ensure it starts hidden
-        }
     }
 
     // Update Method for Interaction
@@ -115,51 +36,22 @@ public class PlayerInteraction : MonoBehaviour
         {
             if (!canInteract) return;
 
-            if (Player.Instance != null) Player.Instance.CancelAttack();
-            if (Player.Instance != null) Player.Instance.StopMoving();
-
             if (currentItem != null)
             {
                 PickUpItem();
                 return;
             }
 
-            if (isCampfire)
-            {
-                if (TransportPanel != null)
-                {
-                    bool isActive = TransportPanel.activeSelf;
-                    TransportPanel.SetActive(!isActive);
-                }
-                else
-                {
-                    // Fail-safe re-find
-                    FindUIAndLinkButtons();
-                    if (TransportPanel != null) TransportPanel.SetActive(true);
-                }
-                return;
-            }
-
             if (currentNPC != null)
             {
                 // Dialogue logic...
-                if (DialogueManager.Instance == null) return;
-                if (!DialogueManager.Instance.IsDialogueActive())
+                if (UIManager.Instance == null) return;
+                if (!UIManager.Instance.IsDialogueActive())
                     StartDialogue();
                 else
-                    DialogueManager.Instance.AdvanceDialogue();
+                    UIManager.Instance.AdvanceDialogue();
             }
         }
-    }
-
-    public void GoPotion() { StartCoroutine(LoadSceneWithFade("Potions")); }
-    public void GoCrafting() { StartCoroutine(LoadSceneWithFade("Crafting")); }
-
-    IEnumerator LoadSceneWithFade(string sceneName)
-    {
-        if (Player.Instance != null) Player.Instance.SaveCurrentPosition();
-        if (UIManager.Instance != null) yield return StartCoroutine(UIManager.Instance.FadeOut(0.5f));
-        SceneManager.LoadScene(sceneName);
     }
 
     void PickUpItem()
@@ -176,9 +68,9 @@ public class PlayerInteraction : MonoBehaviour
 
         if (currentItem != null)
         {
-                Destroy(currentItem.gameObject);
-                currentItem = null;
-                canInteract = false;
+            Destroy(currentItem.gameObject);
+            currentItem = null;
+            canInteract = false;
         }
     }
 
@@ -186,121 +78,69 @@ public class PlayerInteraction : MonoBehaviour
     {
         Vector2 dir = (transform.position - currentNPC.transform.position).normalized;
         currentNPC.FaceDirection(dir);
-        DialogueManager.Instance.StartDialogue(currentNPC.dialogueData);
-    }
-
-    void StopMoveAnimation()
-    {
-        if (anim != null)
-        {
-            anim.SetBool("IsMoving", false);
-        }
+        UIManager.Instance.StartDialogue(currentNPC.dialogueData);
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.GetComponent<NPC>()) { currentNPC = other.GetComponent<NPC>(); canInteract = true; }
-        else if (other.CompareTag("Campfire")) { isCampfire = true; canInteract = true; }
-        else if (other.GetComponent<WorldItem>()) { currentItem = other.GetComponent<WorldItem>(); canInteract = true; }
+        if (other.GetComponent<NPC>()) 
+        { 
+            currentNPC = other.GetComponent<NPC>(); 
+            canInteract = true; 
+        }
+
+        else if (other.CompareTag("Campfire")) {
+            isCampfire = true; 
+            canInteract = true; 
+            UIManager.Instance.ShowSelectPanel(
+                "", 
+                "Crafting", UIManager.Instance.GoCrafting, 
+                "Potion", UIManager.Instance.GoPotion
+            );
+        }
+
+        else if (other.GetComponent<WorldItem>()) 
+        { 
+            currentItem = other.GetComponent<WorldItem>(); 
+            canInteract = true; 
+        }
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.GetComponent<NPC>() == currentNPC) { currentNPC = null; }
-        else if (other.CompareTag("Campfire"))
+        // 1. NPCÀÎÁö È®ÀÎ (º¯¼ö¿¡ ´ã¾Æ¼­ nullÀÌ ¾Æ´ÑÁö ¸ÕÀú Ã¼Å©)
+        NPC exitedNPC = other.GetComponent<NPC>();
+        if (exitedNPC != null && exitedNPC == currentNPC)
         {
-            isCampfire = false;
-            if (TransportPanel != null) TransportPanel.SetActive(false);
+            currentNPC = null;
         }
-        else if (other.GetComponent<WorldItem>() == currentItem) { currentItem = null; }
 
-        if (currentNPC == null && !isCampfire && currentItem == null) canInteract = false;
-    }
-=======
-using UnityEngine;
-
-public class PlayerInteraction : MonoBehaviour
-{
-    [Header("Interaction Settings")]
-    [SerializeField] private float interactionRadius = 16f;
-
-    // NpcLayerëŠ” Trigger ë°©ì‹ì—ì„œëŠ” ì•ˆ ì“¸ ìˆ˜ë„ ìˆì§€ë§Œ, OverlapCircle ì“¸ ê±°ë©´ í•„ìš”í•¨
-    // ì—¬ê¸°ì„œëŠ” ê¸°ì¡´ Trigger ë°©ì‹ì„ ìœ ì§€í•˜ë¯€ë¡œ ê·¸ëƒ¥ ë‘¡ë‹ˆë‹¤.
-    // [SerializeField] private LayerMask npcLayer; 
-
-    private CircleCollider2D interactionCollider;
-    private Player playerMovement; // ë¶€ëª¨ì— ìˆëŠ” ìŠ¤í¬ë¦½íŠ¸
-    private NPC currentNPC;
-    private bool canInteract = false;
-
-    void Start()
-    {
-        interactionCollider = GetComponent<CircleCollider2D>();
-        interactionCollider.radius = interactionRadius;
-        interactionCollider.isTrigger = true;
-
-        // â˜… [ìˆ˜ì •ë¨] ì´ ìŠ¤í¬ë¦½íŠ¸ëŠ” ì´ì œ ìì‹ ì˜¤ë¸Œì íŠ¸ì— ìˆìœ¼ë¯€ë¡œ, 
-        // ë¶€ëª¨ ì˜¤ë¸Œì íŠ¸ì—ì„œ Player ì»´í¬ë„ŒíŠ¸ë¥¼ ì°¾ì•„ì™€ì•¼ í•©ë‹ˆë‹¤.
-        playerMovement = GetComponentInParent<Player>();
-    }
-
-    void Update()
-    {
-        // Zí‚¤ ì…ë ¥ ê°ì§€
-        if (Input.GetKeyDown(KeyCode.Z))
+        // 2. [¼öÁ¤] else if¸¦ Áö¿ì°í µ¶¸³ÀûÀÎ if¹®À¸·Î º¯°æ
+        // ÀÌ·¸°Ô ÇØ¾ß À§¿¡¼­ ¹«½¼ ÀÏÀÌ ÀÖ¾îµµ Ä·ÇÁÆÄÀÌ¾î ÅÂ±×¸¦ ¹İµå½Ã È®ÀÎÇÕ´Ï´Ù.
+        if (other.CompareTag("Campfire"))
         {
-            if (canInteract && currentNPC != null)
+            Debug.Log("Ä·ÇÁÆÄÀÌ¾î ³ª°¨"); // µğ¹ö±ë¿ë ·Î±×
+
+            isCampfire = false;
+
+            // ¾ÈÀüÇÏ°Ô UI ´İ±â
+            if (UIManager.Instance != null)
             {
-                if (!DialogueManager.Instance.IsDialogueActive())
-                {
-                    InteractWithNPC();
-                }
-                else
-                {
-                    DialogueManager.Instance.AdvanceDialogue();
-                }
+                UIManager.Instance.HideSelectPanel();
             }
         }
 
-        // (ì„ íƒ ì‚¬í•­) ì„¼ì„œ ìœ„ì¹˜ë¥¼ í•­ìƒ ë¶€ëª¨(í”Œë ˆì´ì–´) ì¤‘ì‹¬ì— ê³ ì •
-        // ìì‹ ì˜¤ë¸Œì íŠ¸ë¼ì„œ ë³´í†µ ìë™ìœ¼ë¡œ ë”°ë¼ë‹¤ë‹ˆì§€ë§Œ, í™•ì‹¤í•˜ê²Œ í•˜ê¸° ìœ„í•´ transform.localPositionì„ 0ìœ¼ë¡œ ë‘¬ë„ ë©ë‹ˆë‹¤.
-        transform.localPosition = Vector3.zero;
-    }
-
-    void InteractWithNPC()
-    {
-        if (currentNPC != null)
+        // 3. ¾ÆÀÌÅÛÀÎÁö È®ÀÎ (¿ª½Ã µ¶¸³ÀûÀÎ if¹® »ç¿ë)
+        WorldItem exitedItem = other.GetComponent<WorldItem>();
+        if (exitedItem != null && exitedItem == currentItem)
         {
-            // ë°©í–¥ ê³„ì‚°: ë‚´ ìœ„ì¹˜(ì„¼ì„œ)ë‚˜ ë¶€ëª¨ ìœ„ì¹˜ë‚˜ ê±°ì˜ ê°™ìŒ
-            Vector2 direction = (transform.position - currentNPC.transform.position).normalized;
-            currentNPC.FaceDirection(direction);
-
-            DialogueManager.Instance.StartDialogue(currentNPC.dialogueData);
+            currentItem = null;
         }
-    }
 
-    // â˜… Trigger í•¨ìˆ˜ëŠ” ì´ì œ 'ìì‹ ì˜¤ë¸Œì íŠ¸'ì˜ ì½œë¼ì´ë”ì— ë‹¿ì•˜ì„ ë•Œ ì‹¤í–‰ë©ë‹ˆë‹¤.
-    // ìì‹ì˜ íƒœê·¸ëŠ” Untaggedì´ë¯€ë¡œ ì´ì•Œì€ ì´ í•¨ìˆ˜ì™€ ìƒê´€ì—†ì´ ê·¸ëƒ¥ í†µê³¼í•©ë‹ˆë‹¤(ì´ì•Œ ë¡œì§ì—ì„œ Player íƒœê·¸ë§Œ ì£½ì´ë‹ˆê¹Œ).
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        NPC npc = other.GetComponent<NPC>();
-        if (npc != null)
+        // »óÈ£ÀÛ¿ë °¡´É »óÅÂ ²ô±â
+        if (currentNPC == null && !isCampfire && currentItem == null)
         {
-            currentNPC = npc;
-            canInteract = true;
-            // ë””ë²„ê·¸ìš©: ë²”ìœ„ ë“¤ì–´ì™”ëŠ”ì§€ í™•ì¸
-            // Debug.Log("NPC ê°ì§€ë¨: " + npc.name);
-        }
-    }
-
-    void OnTriggerExit2D(Collider2D other)
-    {
-        NPC npc = other.GetComponent<NPC>();
-        if (npc != null && npc == currentNPC)
-        {
-            currentNPC = null;
             canInteract = false;
         }
     }
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
 }
