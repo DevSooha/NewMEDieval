@@ -15,17 +15,33 @@ MonoBehaviour:
   itemName: MHHelioFlare
   description: "\uD5EC\uB9AC\uC624\uC2A4\uD30C\uD06C+\uB354\uC2A4\uD2B8\uD50C\uB808\uC5B4"
   icon: {fileID: -7491153084219628053, guid: a2211ae6dc1af674a892810a442495f2, type: 3}
+  specificPrefab: {fileID: 2931351287853390478, guid: 79943309dfa9d8f4ba9c81c2b69e4dbd, type: 3}
   maxStack: 20
   isStackable: 1
   category: 1
-  damage1: 100
-  damage2: 100
-  effectTime: 15
-  bulletType1: 0
-  bulletType2: 0
-  potionEffect1: 0
-  potionEffect2: 3
-  damageTarget1: 2
-  damageTarget2: 2
-  element1: 2
-  element2: 1
+  patterns:
+  - damage: 100
+    effectTime: 15
+    bulletCount: 3
+    bulletSpacing: 3.2
+    bulletSpeed: 8
+    fireInterval: 2
+    totalDuration: 8
+    bulletType: 0
+    element: 2
+    damageTarget: 2
+    bulletEffect: 2
+    potionEffect: 3
+  - damage: 100
+    effectTime: 8
+    bulletCount: 3
+    bulletSpacing: 3.2
+    bulletSpeed: 8
+    fireInterval: 2
+    totalDuration: 8
+    bulletType: 1
+    element: 1
+    damageTarget: 2
+    bulletEffect: 2
+    potionEffect: 0
+  potionEffect: 0

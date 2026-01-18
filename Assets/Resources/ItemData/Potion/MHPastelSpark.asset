@@ -15,17 +15,33 @@ MonoBehaviour:
   itemName: MHPastelSpark
   description: "\uD30C\uC2A4\uD154\uBE14\uB8F8+\uD5EC\uB9AC\uC624\uC2A4\uD30C\uD06C(\uC911\uC628)"
   icon: {fileID: 3762796340308550164, guid: 4de3a5f4dc8e8aa45b1e64268f0aa080, type: 3}
+  specificPrefab: {fileID: 7679949863559972474, guid: e5b02f3b68a9d25429d187d31e10a704, type: 3}
   maxStack: 20
   isStackable: 1
   category: 1
-  damage1: 1
-  damage2: 100
-  effectTime: 0
-  bulletType1: 0
-  bulletType2: 0
-  potionEffect1: 1
-  potionEffect2: 0
-  damageTarget1: 2
-  damageTarget2: 2
-  element1: 0
-  element2: 1
+  patterns:
+  - damage: 0
+    effectTime: 8
+    bulletCount: 3
+    bulletSpacing: 3.2
+    bulletSpeed: 16
+    fireInterval: 2
+    totalDuration: 8
+    bulletType: 0
+    element: 0
+    damageTarget: 2
+    bulletEffect: 1
+    potionEffect: 0
+  - damage: 100
+    effectTime: 8
+    bulletCount: 3
+    bulletSpacing: 3.2
+    bulletSpeed: 16
+    fireInterval: 2
+    totalDuration: 8
+    bulletType: 1
+    element: 2
+    damageTarget: 2
+    bulletEffect: 2
+    potionEffect: 0
+  potionEffect: 0

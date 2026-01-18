@@ -1,0 +1,1482 @@
+fileFormatVersion: 2
+guid: 0288da4dcd9c40f4d88e8656d124917d
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -5661451427278678
+    second: Fire_AnimeSheet_0
+  - first:
+      213: 2181688407424328897
+    second: Fire_AnimeSheet_1
+  - first:
+      213: 6454551616923224730
+    second: Fire_AnimeSheet_2
+  - first:
+      213: -6230778513060682229
+    second: Fire_AnimeSheet_3
+  - first:
+      213: -5357022217810612437
+    second: Fire_AnimeSheet_4
+  - first:
+      213: 8919338697755469259
+    second: Fire_AnimeSheet_5
+  - first:
+      213: 1423208728470828452
+    second: Fire_AnimeSheet_6
+  - first:
+      213: -5368352101077388009
+    second: Fire_AnimeSheet_7
+  - first:
+      213: -2460033360105594655
+    second: Fire_AnimeSheet_8
+  - first:
+      213: 1430305933515405731
+    second: Fire_AnimeSheet_9
+  - first:
+      213: -321886741994554758
+    second: Fire_AnimeSheet_10
+  - first:
+      213: 6104297711989193982
+    second: Fire_AnimeSheet_11
+  - first:
+      213: -2724335117949097472
+    second: Fire_AnimeSheet_12
+  - first:
+      213: 2794007258360082160
+    second: Fire_AnimeSheet_13
+  - first:
+      213: -8218628422974423552
+    second: Fire_AnimeSheet_14
+  - first:
+      213: 5276803677641666586
+    second: Fire_AnimeSheet_15
+  - first:
+      213: 7077003691358979106
+    second: Fire_AnimeSheet_16
+  - first:
+      213: 980739703946849829
+    second: Fire_AnimeSheet_17
+  - first:
+      213: -6225601953851299594
+    second: Fire_AnimeSheet_18
+  - first:
+      213: 8775711469088614714
+    second: Fire_AnimeSheet_19
+  - first:
+      213: -1096195818409249704
+    second: Fire_AnimeSheet_20
+  - first:
+      213: 831386440803270739
+    second: Fire_AnimeSheet_21
+  - first:
+      213: -5599995557638500772
+    second: Fire_AnimeSheet_22
+  - first:
+      213: 1643584024622384735
+    second: Fire_AnimeSheet_23
+  - first:
+      213: 1105606092430131074
+    second: Fire_AnimeSheet_24
+  - first:
+      213: 5158210294451350226
+    second: Fire_AnimeSheet_25
+  - first:
+      213: 2930835961458183129
+    second: Fire_AnimeSheet_26
+  - first:
+      213: 89614286422701497
+    second: Fire_AnimeSheet_27
+  - first:
+      213: -2144817755088924074
+    second: Fire_AnimeSheet_28
+  - first:
+      213: -1495400515711161506
+    second: Fire_AnimeSheet_29
+  - first:
+      213: -1890118118551533097
+    second: Fire_AnimeSheet_30
+  - first:
+      213: 4412089213749641567
+    second: Fire_AnimeSheet_31
+  - first:
+      213: -1764521888524906521
+    second: Fire_AnimeSheet_32
+  - first:
+      213: -1501776435740116399
+    second: Fire_AnimeSheet_33
+  - first:
+      213: -6509950437036419253
+    second: Fire_AnimeSheet_34
+  - first:
+      213: -3520696331459044940
+    second: Fire_AnimeSheet_35
+  - first:
+      213: 3976665915424636440
+    second: Fire_AnimeSheet_36
+  - first:
+      213: -4378292487187553049
+    second: Fire_AnimeSheet_37
+  - first:
+      213: -38083586678154369
+    second: Fire_AnimeSheet_38
+  - first:
+      213: 2613046268008372172
+    second: Fire_AnimeSheet_39
+  - first:
+      213: -8018148231726125456
+    second: Fire_AnimeSheet_40
+  - first:
+      213: -2801502371969221090
+    second: Fire_AnimeSheet_41
+  - first:
+      213: -4959410891527665769
+    second: Fire_AnimeSheet_42
+  - first:
+      213: 132185095725026470
+    second: Fire_AnimeSheet_43
+  - first:
+      213: 4391727791041252561
+    second: Fire_AnimeSheet_44
+  - first:
+      213: -686076076951710948
+    second: Fire_AnimeSheet_45
+  - first:
+      213: 7754294810990579578
+    second: Fire_AnimeSheet_46
+  - first:
+      213: 8370019098417875889
+    second: Fire_AnimeSheet_47
+  - first:
+      213: -4737336997860721989
+    second: Fire_AnimeSheet_48
+  - first:
+      213: -5523708425097557448
+    second: Fire_AnimeSheet_49
+  - first:
+      213: -1988702010459396855
+    second: Fire_AnimeSheet_50
+  - first:
+      213: 1011918992553931681
+    second: Fire_AnimeSheet_51
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_0
+      rect:
+        serializedVersion: 2
+        x: 124
+        y: 1657
+        width: 261
+        height: 283
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa093ce90f2ebeff0800000000000000
+      internalID: -5661451427278678
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_1
+      rect:
+        serializedVersion: 2
+        x: 624
+        y: 1660
+        width: 297
+        height: 296
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1c46d172c0ae64e10800000000000000
+      internalID: 2181688407424328897
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_2
+      rect:
+        serializedVersion: 2
+        x: 1117
+        y: 1651
+        width: 338
+        height: 324
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a9ac1277f7c239950800000000000000
+      internalID: 6454551616923224730
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_3
+      rect:
+        serializedVersion: 2
+        x: 1617
+        y: 1634
+        width: 371
+        height: 361
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b06a1e654f3d789a0800000000000000
+      internalID: -6230778513060682229
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_4
+      rect:
+        serializedVersion: 2
+        x: 134
+        y: 1359
+        width: 132
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b2fe585fca808a5b0800000000000000
+      internalID: -5357022217810612437
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_5
+      rect:
+        serializedVersion: 2
+        x: 627
+        y: 1381
+        width: 141
+        height: 110
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc52c17f94bd7cb70800000000000000
+      internalID: 8919338697755469259
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_6
+      rect:
+        serializedVersion: 2
+        x: 723
+        y: 1079
+        width: 306
+        height: 314
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4a53dbd4cc040c310800000000000000
+      internalID: 1423208728470828452
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_7
+      rect:
+        serializedVersion: 2
+        x: 1125
+        y: 1385
+        width: 143
+        height: 102
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7157f02f438cf75b0800000000000000
+      internalID: -5368352101077388009
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_8
+      rect:
+        serializedVersion: 2
+        x: 1324
+        y: 1071
+        width: 465
+        height: 334
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1e0ab4b51b43cddd0800000000000000
+      internalID: -2460033360105594655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_9
+      rect:
+        serializedVersion: 2
+        x: 1626
+        y: 1370
+        width: 140
+        height: 106
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a9b15f1ba779d310800000000000000
+      internalID: 1430305933515405731
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_10
+      rect:
+        serializedVersion: 2
+        x: 1844
+        y: 1215
+        width: 194
+        height: 228
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7ab18da6bd688bf0800000000000000
+      internalID: -321886741994554758
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_11
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 1109
+        width: 440
+        height: 273
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: efc78565d62d6b450800000000000000
+      internalID: 6104297711989193982
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_12
+      rect:
+        serializedVersion: 2
+        x: 543
+        y: 1099
+        width: 184
+        height: 210
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00aa585f4a7313ad0800000000000000
+      internalID: -2724335117949097472
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_13
+      rect:
+        serializedVersion: 2
+        x: 1054
+        y: 1095
+        width: 189
+        height: 230
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0fe6a665cce46c620800000000000000
+      internalID: 2794007258360082160
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_14
+      rect:
+        serializedVersion: 2
+        x: 1239
+        y: 1238
+        width: 107
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00e3ea35ef091fd80800000000000000
+      internalID: -8218628422974423552
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_15
+      rect:
+        serializedVersion: 2
+        x: 1802
+        y: 1057
+        width: 156
+        height: 160
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a107e43bcf8fa3940800000000000000
+      internalID: 5276803677641666586
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_16
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 537
+        width: 405
+        height: 411
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22484999c51963260800000000000000
+      internalID: 7077003691358979106
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_17
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 745
+        width: 178
+        height: 218
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52eafd680994c9d00800000000000000
+      internalID: 980739703946849829
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_18
+      rect:
+        serializedVersion: 2
+        x: 520
+        y: 724
+        width: 161
+        height: 216
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f827b3f1083a99a0800000000000000
+      internalID: -6225601953851299594
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_19
+      rect:
+        serializedVersion: 2
+        x: 791
+        y: 770
+        width: 186
+        height: 189
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a39295ed51799c970800000000000000
+      internalID: 8775711469088614714
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_20
+      rect:
+        serializedVersion: 2
+        x: 1053
+        y: 688
+        width: 136
+        height: 248
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 854b27706b789c0f0800000000000000
+      internalID: -1096195818409249704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_21
+      rect:
+        serializedVersion: 2
+        x: 1293
+        y: 800
+        width: 166
+        height: 127
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 350c723209da98b00800000000000000
+      internalID: 831386440803270739
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_22
+      rect:
+        serializedVersion: 2
+        x: 1578
+        y: 734
+        width: 122
+        height: 181
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5e013bd5b1d842b0800000000000000
+      internalID: -5599995557638500772
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_23
+      rect:
+        serializedVersion: 2
+        x: 1801
+        y: 786
+        width: 134
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f56cf1a56fe2fc610800000000000000
+      internalID: 1643584024622384735
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_24
+      rect:
+        serializedVersion: 2
+        x: 1359
+        y: 743
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 28f3ec022e6e75f00800000000000000
+      internalID: 1105606092430131074
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_25
+      rect:
+        serializedVersion: 2
+        x: 1871
+        y: 743
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2da2985fee4a59740800000000000000
+      internalID: 5158210294451350226
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_26
+      rect:
+        serializedVersion: 2
+        x: 607
+        y: 665
+        width: 31
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9dbc7a957cb6ca820800000000000000
+      internalID: 2930835961458183129
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_27
+      rect:
+        serializedVersion: 2
+        x: 638
+        y: 534
+        width: 257
+        height: 187
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b5760df7bf5e3100800000000000000
+      internalID: 89614286422701497
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_28
+      rect:
+        serializedVersion: 2
+        x: 1169
+        y: 547
+        width: 240
+        height: 182
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 65259ff8d931c32e0800000000000000
+      internalID: -2144817755088924074
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_29
+      rect:
+        serializedVersion: 2
+        x: 1631
+        y: 654
+        width: 32
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5ba91867254f3be0800000000000000
+      internalID: -1495400515711161506
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_30
+      rect:
+        serializedVersion: 2
+        x: 1693
+        y: 551
+        width: 198
+        height: 188
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7d9c430e593f4c5e0800000000000000
+      internalID: -1890118118551533097
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_31
+      rect:
+        serializedVersion: 2
+        x: 1142
+        y: 654
+        width: 9
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f5141ee73c3ea3d30800000000000000
+      internalID: 4412089213749641567
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_32
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 235
+        width: 119
+        height: 150
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef4214f0b82387e0800000000000000
+      internalID: -1764521888524906521
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_33
+      rect:
+        serializedVersion: 2
+        x: 261
+        y: 264
+        width: 116
+        height: 127
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15a78a7d94e982be0800000000000000
+      internalID: -1501776435740116399
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_34
+      rect:
+        serializedVersion: 2
+        x: 582
+        y: 236
+        width: 114
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b479b07919208a5a0800000000000000
+      internalID: -6509950437036419253
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_35
+      rect:
+        serializedVersion: 2
+        x: 769
+        y: 262
+        width: 101
+        height: 121
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b9dc590759f32fc0800000000000000
+      internalID: -3520696331459044940
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_36
+      rect:
+        serializedVersion: 2
+        x: 1108
+        y: 147
+        width: 167
+        height: 182
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81ef94fa494ff2730800000000000000
+      internalID: 3976665915424636440
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_37
+      rect:
+        serializedVersion: 2
+        x: 1281
+        y: 254
+        width: 99
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e4ac6a1e2e2d33c0800000000000000
+      internalID: -4378292487187553049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_38
+      rect:
+        serializedVersion: 2
+        x: 1631
+        y: 161
+        width: 143
+        height: 154
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7b96400e23b87ff0800000000000000
+      internalID: -38083586678154369
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_39
+      rect:
+        serializedVersion: 2
+        x: 1794
+        y: 248
+        width: 98
+        height: 134
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc79c4a7cb7634420800000000000000
+      internalID: 2613046268008372172
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_40
+      rect:
+        serializedVersion: 2
+        x: 161
+        y: 41
+        width: 194
+        height: 199
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 07ea98b4aa0d9b090800000000000000
+      internalID: -8018148231726125456
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_41
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 231
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1e3c598f601f19d0800000000000000
+      internalID: -2801502371969221090
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_42
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 47
+        width: 195
+        height: 199
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7974a4bf112ac2bb0800000000000000
+      internalID: -4959410891527665769
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_43
+      rect:
+        serializedVersion: 2
+        x: 847
+        y: 231
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ac8a4be4ad95d100800000000000000
+      internalID: 132185095725026470
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_44
+      rect:
+        serializedVersion: 2
+        x: 1359
+        y: 231
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1dc8937582d82fc30800000000000000
+      internalID: 4391727791041252561
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_45
+      rect:
+        serializedVersion: 2
+        x: 1871
+        y: 231
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c13566861719a76f0800000000000000
+      internalID: -686076076951710948
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_46
+      rect:
+        serializedVersion: 2
+        x: 95
+        y: 142
+        width: 32
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7f8fbceb0acc9b60800000000000000
+      internalID: 7754294810990579578
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_47
+      rect:
+        serializedVersion: 2
+        x: 607
+        y: 142
+        width: 32
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1bbce641608482470800000000000000
+      internalID: 8370019098417875889
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_48
+      rect:
+        serializedVersion: 2
+        x: 1142
+        y: 142
+        width: 9
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bba32359919914eb0800000000000000
+      internalID: -4737336997860721989
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_49
+      rect:
+        serializedVersion: 2
+        x: 1654
+        y: 142
+        width: 9
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83a4a370478d753b0800000000000000
+      internalID: -5523708425097557448
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_50
+      rect:
+        serializedVersion: 2
+        x: 1229
+        y: 52
+        width: 150
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 905667ede06b664e0800000000000000
+      internalID: -1988702010459396855
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Fire_AnimeSheet_51
+      rect:
+        serializedVersion: 2
+        x: 1735
+        y: 53
+        width: 156
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a3f5ac56fe0b0e00800000000000000
+      internalID: 1011918992553931681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Fire_AnimeSheet_0: -5661451427278678
+      Fire_AnimeSheet_1: 2181688407424328897
+      Fire_AnimeSheet_10: -321886741994554758
+      Fire_AnimeSheet_11: 6104297711989193982
+      Fire_AnimeSheet_12: -2724335117949097472
+      Fire_AnimeSheet_13: 2794007258360082160
+      Fire_AnimeSheet_14: -8218628422974423552
+      Fire_AnimeSheet_15: 5276803677641666586
+      Fire_AnimeSheet_16: 7077003691358979106
+      Fire_AnimeSheet_17: 980739703946849829
+      Fire_AnimeSheet_18: -6225601953851299594
+      Fire_AnimeSheet_19: 8775711469088614714
+      Fire_AnimeSheet_2: 6454551616923224730
+      Fire_AnimeSheet_20: -1096195818409249704
+      Fire_AnimeSheet_21: 831386440803270739
+      Fire_AnimeSheet_22: -5599995557638500772
+      Fire_AnimeSheet_23: 1643584024622384735
+      Fire_AnimeSheet_24: 1105606092430131074
+      Fire_AnimeSheet_25: 5158210294451350226
+      Fire_AnimeSheet_26: 2930835961458183129
+      Fire_AnimeSheet_27: 89614286422701497
+      Fire_AnimeSheet_28: -2144817755088924074
+      Fire_AnimeSheet_29: -1495400515711161506
+      Fire_AnimeSheet_3: -6230778513060682229
+      Fire_AnimeSheet_30: -1890118118551533097
+      Fire_AnimeSheet_31: 4412089213749641567
+      Fire_AnimeSheet_32: -1764521888524906521
+      Fire_AnimeSheet_33: -1501776435740116399
+      Fire_AnimeSheet_34: -6509950437036419253
+      Fire_AnimeSheet_35: -3520696331459044940
+      Fire_AnimeSheet_36: 3976665915424636440
+      Fire_AnimeSheet_37: -4378292487187553049
+      Fire_AnimeSheet_38: -38083586678154369
+      Fire_AnimeSheet_39: 2613046268008372172
+      Fire_AnimeSheet_4: -5357022217810612437
+      Fire_AnimeSheet_40: -8018148231726125456
+      Fire_AnimeSheet_41: -2801502371969221090
+      Fire_AnimeSheet_42: -4959410891527665769
+      Fire_AnimeSheet_43: 132185095725026470
+      Fire_AnimeSheet_44: 4391727791041252561
+      Fire_AnimeSheet_45: -686076076951710948
+      Fire_AnimeSheet_46: 7754294810990579578
+      Fire_AnimeSheet_47: 8370019098417875889
+      Fire_AnimeSheet_48: -4737336997860721989
+      Fire_AnimeSheet_49: -5523708425097557448
+      Fire_AnimeSheet_5: 8919338697755469259
+      Fire_AnimeSheet_50: -1988702010459396855
+      Fire_AnimeSheet_51: 1011918992553931681
+      Fire_AnimeSheet_6: 1423208728470828452
+      Fire_AnimeSheet_7: -5368352101077388009
+      Fire_AnimeSheet_8: -2460033360105594655
+      Fire_AnimeSheet_9: 1430305933515405731
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

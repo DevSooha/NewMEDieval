@@ -41,6 +41,12 @@ public class EnemyMovement : MonoBehaviour
         {
             attackCooldownTimer -= Time.deltaTime;
         }
+
+        if(enemyState == EnemyState.Attacking&&attackCooldownTimer<attackCooldown - 0.1f)
+        {
+            ChangeState(EnemyState.Idle);
+        }
+
         if (enemyState != EnemyState.Attacking)
         {
             CheckForPlayer();
@@ -97,6 +103,12 @@ public class EnemyMovement : MonoBehaviour
 
     private void Chase()
     {
+        if(player == null)
+        {
+            ChangeState(EnemyState.Idle);
+            return;
+        }
+
         float distance = Vector2.Distance(transform.position, player.position);
 
         // 감지 범위를 벗어남
@@ -126,22 +138,23 @@ public class EnemyMovement : MonoBehaviour
 
     private void ChangeState(EnemyState newState)
     {
-        if (enemyState == EnemyState.Idle)
-            anim.SetBool("IsIdle", false);
-        else if (enemyState == EnemyState.Chasing)
-            anim.SetBool("IsChasing", false);
-        else if (enemyState == EnemyState.Attacking)
-            anim.SetBool("IsAttacking", false);
+        if (enemyState == newState) return;
 
         enemyState = newState;
 
-        if (enemyState == EnemyState.Idle)
-            anim.SetBool("IsIdle", true);
-        else if (enemyState == EnemyState.Chasing)
-            anim.SetBool("IsChasing", true);
-        else if (enemyState == EnemyState.Attacking)
-            anim.SetBool("IsAttacking", true);
+        switch (enemyState)
+        {
+            case EnemyState.Idle:
+                anim.SetBool("isMoving", false);
+                break;
+
+            case EnemyState.Chasing:
+                anim.SetTrigger("Chase");
+                anim.SetBool("isMoving", true);
+                break;
+        }
     }
+
     private void OnDrawGizmos()
     {
         if (detectionPoint != null)

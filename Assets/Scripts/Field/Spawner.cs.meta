@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 853c88760c528c044b2ba0f8cf6a60a6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - floorTilemap: {instanceID: 0}
+  - monsterPrefab: {fileID: 1252339550663628478, guid: 3e8fdd3dbfb68764fa136d2378087b90, type: 3}
+  - flower70Prefab: {fileID: 2173382326257723820, guid: 16a88d3b2cabb4c4b873224d667d574e, type: 3}
+  - flower33Prefab: {fileID: 5960425676769194747, guid: d77f8112869dd7a419218d85ebb80ec3, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

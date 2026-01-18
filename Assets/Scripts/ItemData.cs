@@ -14,10 +14,12 @@ public class ItemData : ScriptableObject
     public string itemName;
     public string description;
     public Sprite icon;
-    public int maxStack = 99;           // ìµœëŒ€ ì¤‘ì²© ê°œìˆ˜
-    public bool isStackable = true;  
-    public ItemCategory category;
 
-    }
+    public GameObject specificPrefab;
+
+    public int maxStack = 99;           // ÃÖ´ë ÁßÃ¸ °³¼ö
+    public bool isStackable = true;
+    public ItemCategory category;
+}
 
 

@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7510a16807c40b440af27b1d0c25ec34, type: 3}
+  m_Name: spr_3
+  m_EditorClassIdentifier: Assembly-CSharp::RoomData
+  roomID: spr_3
+  roomPrefab: {fileID: 8253143700556295729, guid: 409364e2a42c525458d442a9df213fed, type: 3}
+  north: {fileID: 11400000, guid: 1c75e8bcab7ce5c4cbeac0955cf34f62, type: 2}
+  south: {fileID: 0}
+  east: {fileID: 0}
+  west: {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
+  roomCoord: {x: 1, y: 2}

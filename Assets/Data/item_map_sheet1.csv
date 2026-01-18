@@ -1,0 +1,4 @@
+Item_ID,name,type,spawn_type,map_ID,spawn_rate,respawn_type,respawn_value,interact_type
+MAT_MON_01,Pastelbloom Spawn Wing,MAT,mon_drop,spr_3,100%,Day,1,mon_drop
+MAT_PLANT_01,Dustflare Flower,MAT,gathering,spr_3,70%,Day,1,gathering
+MAT_PLANT_02,Heliospark Flower,MAT,gathering,spr_3,33%,Day,1,gathering

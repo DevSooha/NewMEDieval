@@ -16,6 +16,7 @@ public class PlayerHealth : MonoBehaviour
     // 필요할 때만 호출
     public void TakeDamage(int amount)
     {
+        Debug.Log($"체력: {HP}");
         HP -= amount;
         if (HP > maxHP)
             HP = maxHP;
@@ -29,6 +30,21 @@ public class PlayerHealth : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    // ★ [추가된 부분] 체력 회복 함수
+    public void Heal(int amount)
+    {
+        HP += amount;
+
+        // 최대 체력을 넘지 않게 고정
+        if (HP > maxHP)
+        {
+            HP = maxHP;
+        }
+
+        UpdateHealthBar();
+        Debug.Log($"체력 회복! 현재 HP: {HP}");
     }
 
     private void UpdateHealthBar()

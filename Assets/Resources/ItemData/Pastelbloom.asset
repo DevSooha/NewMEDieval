@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Pastelbloom
   description: "\uBD04/\uBB3C"
-  icon: {fileID: 0}
+  icon: {fileID: 8140422811112854518, guid: 6a48f8222c89d0946ab027fe749afc99, type: 3}
+  specificPrefab: {fileID: 0}
   maxStack: 99
   isStackable: 1
   category: 0
