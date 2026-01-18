@@ -1,55 +1,79 @@
 using UnityEngine;
-using TMPro;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
+    [Header("Health Settings")]
+    public int maxHP = 5;
     public int HP;
-    public int maxHP;
-    public TMP_Text healthBar;
+
+    [Header("Heart UI")]
+    public Sprite fullHeartSprite;
+    public Sprite emptyHeartSprite;
+    public Image[] heartIcons;   
+
+    [SerializeField] private GameObject player;
 
     void Start()
     {
         HP = maxHP;
         UpdateHealthBar();
+         if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag("Player");
+        }
+    }
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.X)) TakeDamage(1);
     }
 
-    // 필요할 때만 호출
     public void TakeDamage(int amount)
     {
-        Debug.Log($"체력: {HP}");
-        HP -= amount;
-        if (HP > maxHP)
-            HP = maxHP;
+        if (player == null) return;
 
-        if (HP < 0)
-            HP = 0;
+        HP -= amount;
+        if (HP > maxHP) HP = maxHP;
+        if (HP < 0) HP = 0;
 
         UpdateHealthBar();
 
         if (HP == 0)
         {
+            Destroy(player);
             Destroy(gameObject);
         }
     }
 
-    // ★ [추가된 부분] 체력 회복 함수
     public void Heal(int amount)
     {
-        HP += amount;
+        if (player == null) return;
 
-        // 최대 체력을 넘지 않게 고정
-        if (HP > maxHP)
-        {
-            HP = maxHP;
-        }
+        HP += amount;
+        if (HP > maxHP) HP = maxHP;
 
         UpdateHealthBar();
-        Debug.Log($"체력 회복! 현재 HP: {HP}");
     }
 
     private void UpdateHealthBar()
     {
-        if (healthBar != null)
-            healthBar.text = "HP: " + HP + " / " + maxHP;
+        if (heartIcons == null || heartIcons.Length == 0) return;
+
+        for (int i = 0; i < heartIcons.Length; i++)
+        {
+            if (heartIcons[i] == null) continue;
+
+            if (i < HP)
+            {
+                heartIcons[i].sprite = fullHeartSprite;
+                heartIcons[i].gameObject.SetActive(true);
+            }
+            else
+            {
+                heartIcons[i].sprite = emptyHeartSprite;
+                heartIcons[i].gameObject.SetActive(true);
+            }
+        }
     }
 }
