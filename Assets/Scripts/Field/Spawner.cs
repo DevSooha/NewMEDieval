@@ -7,39 +7,19 @@ public class Spawner : MonoBehaviour
     public TextAsset csvFile;
     public Tilemap floorTilemap;
 
-<<<<<<< HEAD
     [Header("공용 아이템 프리팹")]
     public GameObject worldItemPrefab;
 
-=======
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
     [System.Serializable]
     public struct SpawnMapping
     {
         public string itemID;
-<<<<<<< HEAD
         public string spritePath;
         //public ItemData itemData;
-=======
-        public GameObject originalTemplate;
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
     }
 
     public List<SpawnMapping> spawnList;
 
-<<<<<<< HEAD
-=======
-    void Awake()
-    {
-        // 1. 원본들은 숨깁니다.
-        foreach (var mapping in spawnList)
-        {
-            if (mapping.originalTemplate != null)
-                mapping.originalTemplate.SetActive(false);
-        }
-    }
-
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
     void Start()
     {
         SpawnFromCSV();
@@ -47,7 +27,6 @@ public class Spawner : MonoBehaviour
 
     public void SpawnFromCSV()
     {
-<<<<<<< HEAD
         if (csvFile == null) return;
 
         ClearPreviousSpawns();
@@ -56,15 +35,6 @@ public class Spawner : MonoBehaviour
             new[] { '\n', '\r' },
             System.StringSplitOptions.RemoveEmptyEntries
         );
-=======
-        if (csvFile == null) { Debug.LogError("CSV 파일이 연결되지 않았습니다!"); return; }
-
-        ClearPreviousSpawns();
-
-        // 유니티 텍스트 에셋 읽기 시 줄바꿈 처리
-        string[] lines = csvFile.text.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
-        Debug.Log("CSV 줄 수: " + lines.Length);
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
 
         for (int i = 1; i < lines.Length; i++)
         {
@@ -75,7 +45,6 @@ public class Spawner : MonoBehaviour
             string mapID = data[4].Trim();
             string rateStr = data[5].Trim().Replace("%", "");
 
-<<<<<<< HEAD
             if (mapID != "spr_3") continue;
 
             float spawnRate = float.Parse(rateStr) / 100f;
@@ -87,36 +56,16 @@ public class Spawner : MonoBehaviour
             if (!string.IsNullOrEmpty(mapping.itemID))
             {
                 TrySpawn(mapping, spawnRate, itemID);
-=======
-            if (mapID == "spr_3")
-            {
-                float spawnRate = float.Parse(rateStr) / 100f;
-                GameObject template = spawnList.Find(x => x.itemID == itemID).originalTemplate;
-
-                if (template != null)
-                {
-                    TrySpawnClone(template, spawnRate, itemID);
-                }
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
             }
         }
     }
 
-<<<<<<< HEAD
     void TrySpawn(SpawnMapping mapping, float rate, string id)
     {
         if (Random.value > rate) return;
 
         BoundsInt bounds = floorTilemap.cellBounds;
 
-=======
-    void TrySpawnClone(GameObject original, float rate, string id)
-    {
-        float dice = Random.value;
-        if (dice > rate) return;
-
-        BoundsInt bounds = floorTilemap.cellBounds;
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
         for (int attempts = 0; attempts < 100; attempts++)
         {
             Vector3Int randomCell = new Vector3Int(
@@ -125,7 +74,6 @@ public class Spawner : MonoBehaviour
                 0
             );
 
-<<<<<<< HEAD
             if (!floorTilemap.HasTile(randomCell)) continue;
 
             Vector3 spawnPos = floorTilemap.GetCellCenterWorld(randomCell);
@@ -166,46 +114,14 @@ public class Spawner : MonoBehaviour
             item.SetActive(true);
             return;
         }
-=======
-            if (floorTilemap.HasTile(randomCell))
-            {
-                Vector3 spawnPos = floorTilemap.GetCellCenterWorld(randomCell);
-                spawnPos.z = 0;
-
-                Collider2D hit = Physics2D.OverlapCircle(spawnPos, 0.3f);
-
-                if (hit == null || !hit.CompareTag("Obstacle"))
-                {
-                    GameObject clone = Instantiate(original, spawnPos, Quaternion.identity, transform);
-                    
-                    clone.SetActive(true);
-                    clone.tag = "Respawn";
-                    return;
-                }
-            }
-        }
-        Debug.LogWarning($"{id} 스폰 실패: 위치 못 찾음");
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
     }
 
     void ClearPreviousSpawns()
     {
-<<<<<<< HEAD
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             // 태그가 Item이든 Respawn이든 Spawner 자식이면 다 지움
             Destroy(transform.GetChild(i).gameObject);
-=======
-        // 내 하위(자식) 오브젝트들 중에서만 찾아서 파괴
-        // 리스트를 역순으로 도는 게 삭제할 때 안전함
-        for (int i = transform.childCount - 1; i >= 0; i--)
-        {
-            Transform child = transform.GetChild(i);
-            if (child.CompareTag("Respawn"))
-            {
-                Destroy(child.gameObject);
-            }
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
         }
     }
 }

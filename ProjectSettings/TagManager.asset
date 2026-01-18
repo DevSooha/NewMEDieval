@@ -5,7 +5,6 @@ TagManager:
   serializedVersion: 3
   tags:
   - NPC
-<<<<<<< HEAD
   - Enemy
   - Obstacle
   - Ground
@@ -14,13 +13,6 @@ TagManager:
   - Stairs
   - Campfire
   - Item
-=======
-  - Obstacle
-  - Stairs
-  - Ground
-  - Grass
-  - Boss
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
   layers:
   - Default
   - TransparentFX
@@ -30,11 +22,7 @@ TagManager:
   - UI
   - NPC
   - Enemy
-<<<<<<< HEAD
   - Background
-=======
-  - EnemyBullet
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
   - 
   - 
   - 
@@ -63,7 +51,6 @@ TagManager:
     uniqueID: 0
     locked: 0
   - name: Background
-<<<<<<< HEAD
     uniqueID: 2096632557
     locked: 0
   - name: Obstacles
@@ -89,24 +76,6 @@ TagManager:
     locked: 0
   - name: EnemyBullet
     uniqueID: 578985339
-    locked: 0
-  - name: PlayerBullet
-    uniqueID: 1805518315
-=======
-    uniqueID: 1051148005
-    locked: 0
-  - name: Decoration
-    uniqueID: 3426632601
-    locked: 0
-  - name: Objects
-    uniqueID: 2732167653
-    locked: 0
-  - name: Characters
-    uniqueID: 713526839
-    locked: 0
-  - name: Foreground
-    uniqueID: 3635387879
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
     locked: 0
   m_RenderingLayers:
   - Default

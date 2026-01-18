@@ -8,15 +8,9 @@ public class EndingEvent : MonoBehaviour
     public string titleSceneName = "TitleScene";
 
     [TextArea] // 인스펙터에서 줄바꿈 가능하게
-<<<<<<< HEAD
-    public string endingMessage = "THE END\nThank you for Playing!";
-
-=======
     public string endingMessage = "THE END\n플레이 해주셔서 감사합니다.";
 
     // ★ 이제 캔버스나 텍스트 오브젝트 연결할 필요 없음 (UIManager가 다 함)
->>>>>>> 90c0ad74131c4196343f1315151c27ea4d457ad6
-
     // 안전장치
     public bool isAuthorized = false;
 
