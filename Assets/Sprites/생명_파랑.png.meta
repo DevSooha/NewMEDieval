@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/Sprites/생명_파랑.png.meta
 guid: 5964e866148eb154b84776e2b9cc1089
-========
-guid: 777279e48db72994ca6ebeb7ce366e9b
->>>>>>>> origin/main:Assets/Sprites/인벤설명창.png.meta
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -67,16 +63,16 @@ TextureImporter:
   compressionQualitySet: 0
   textureFormatSet: 0
   ignorePngGamma: 0
-  applyGammaDecoding: 0
+  applyGammaDecoding: 1
   swizzle: 50462976
-  cookieLightType: 0
+  cookieLightType: 2
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -89,7 +85,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -101,7 +97,6 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-<<<<<<<< HEAD:Assets/Sprites/생명_파랑.png.meta
       name: "\uC0DD\uBA85_\uD30C\uB791_0"
       rect:
         serializedVersion: 2
@@ -109,15 +104,6 @@ TextureImporter:
         y: 0
         width: 300
         height: 320
-========
-      name: "\uC778\uBCA4\uC124\uBA85\uCC3D_0"
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 960
-        height: 640
->>>>>>>> origin/main:Assets/Sprites/인벤설명창.png.meta
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -126,13 +112,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-<<<<<<<< HEAD:Assets/Sprites/생명_파랑.png.meta
-      spriteID: c9aa70331a63e354ead704a09748e2ba
-      internalID: 292622818
-========
-      spriteID: d37619b558f8bcd4c9cfb5103cf89a38
-      internalID: -2138756365
->>>>>>>> origin/main:Assets/Sprites/인벤설명창.png.meta
+      spriteID: 34379e9b9e3da7b4c8cf0102f8be385d
+      internalID: 340473981
       vertices: []
       indices: 
       edges: []
@@ -141,11 +122,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-<<<<<<<< HEAD:Assets/Sprites/생명_파랑.png.meta
-    spriteID: 62b060ac9ceb30c4b966b7760437ccc7
-========
-    spriteID: 152f27e40e1d60f46827f1c8317e6880
->>>>>>>> origin/main:Assets/Sprites/인벤설명창.png.meta
+    spriteID: b66062d865d7a7a4fa0e402c6e57569d
     internalID: 0
     vertices: []
     indices: 
@@ -157,11 +134,7 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-<<<<<<<< HEAD:Assets/Sprites/생명_파랑.png.meta
-      "\uC0DD\uBA85_\uD30C\uB791_0": 292622818
-========
-      "\uC778\uBCA4\uC124\uBA85\uCC3D_0": -2138756365
->>>>>>>> origin/main:Assets/Sprites/인벤설명창.png.meta
+      "\uC0DD\uBA85_\uD30C\uB791_0": 340473981
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -95,7 +95,6 @@ GameObject:
   - component: {fileID: 8413767024519287874}
   - component: {fileID: 6220369492784268104}
   - component: {fileID: 5502386870270325364}
-  - component: {fileID: 5967764604656354505}
   - component: {fileID: 4395408561452145397}
   - component: {fileID: 477969116217681799}
   - component: {fileID: 3358159937687394858}
@@ -248,21 +247,6 @@ MonoBehaviour:
   moveSpeed: 5
   baseSpeed: 5
   animator: {fileID: 8413767024519287874}
---- !u!114 &5967764604656354505
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8131824563140431785}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3f4bf4d631f5dab45afdb0cab21cf9d2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  HP: 10
-  maxHP: 10
-  healthBar: {fileID: 0}
 --- !u!114 &4395408561452145397
 MonoBehaviour:
   m_ObjectHideFlags: 0

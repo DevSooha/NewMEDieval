@@ -337,7 +337,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1815925872, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
+  m_Sprite: {fileID: -2020222973, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -618,7 +618,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1815925872, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
+  m_Sprite: {fileID: -2020222973, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -873,7 +873,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1815925872, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
+  m_Sprite: {fileID: -2020222973, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1026,7 +1026,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1815925872, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
+  m_Sprite: {fileID: -2020222973, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2124,7 +2124,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1815925872, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
+  m_Sprite: {fileID: -2020222973, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2252,17 +2252,43 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5271490804538522593, guid: ccaaa3b3755b3a644815544a75cbf0fd, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7715071043548273040}
+      addedObject: {fileID: 180977277998502178}
     - targetCorrespondingSourceObject: {fileID: 5271490804538522593, guid: ccaaa3b3755b3a644815544a75cbf0fd, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 180977277998502178}
+      addedObject: {fileID: 1032451848504181290}
+    - targetCorrespondingSourceObject: {fileID: 5271490804538522593, guid: ccaaa3b3755b3a644815544a75cbf0fd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6417574021112295601}
   m_SourcePrefab: {fileID: 100100000, guid: ccaaa3b3755b3a644815544a75cbf0fd, type: 3}
 --- !u!1 &3476747309073204930 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5271490804538522593, guid: ccaaa3b3755b3a644815544a75cbf0fd, type: 3}
   m_PrefabInstance: {fileID: 8725719556827069731}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7715071043548273040
+--- !u!114 &180977277998502178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3476747309073204930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f4bf4d631f5dab45afdb0cab21cf9d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
+  maxHP: 5
+  HP: 5
+  fullHeartSprite: {fileID: -2020222973, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
+  emptyHeartSprite: {fileID: 340473981, guid: 5964e866148eb154b84776e2b9cc1089, type: 3}
+  heartIcons:
+  - {fileID: 8702812867179917031}
+  - {fileID: 2501618390082053391}
+  - {fileID: 7782071529378409754}
+  - {fileID: 665482703098024050}
+  - {fileID: 8211334860572650293}
+  player: {fileID: 8131824563140431785, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
+--- !u!114 &1032451848504181290
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2286,7 +2312,7 @@ MonoBehaviour:
   m_Spacing: {x: 10, y: 0}
   m_Constraint: 0
   m_ConstraintCount: 2
---- !u!114 &180977277998502178
+--- !u!114 &6417574021112295601
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2300,16 +2326,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHP: 5
   HP: 5
-  fullHeartSprite: {fileID: 1815925872, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
-  emptyHeartSprite: {fileID: 292622818, guid: 5964e866148eb154b84776e2b9cc1089, type: 3}
+  fullHeartSprite: {fileID: -2020222973, guid: 93f84df39bb182246abee1d6d81a7675, type: 3}
+  emptyHeartSprite: {fileID: 340473981, guid: 5964e866148eb154b84776e2b9cc1089, type: 3}
   heartIcons:
   - {fileID: 8702812867179917031}
   - {fileID: 2501618390082053391}
   - {fileID: 7782071529378409754}
   - {fileID: 665482703098024050}
   - {fileID: 8211334860572650293}
-  player: {fileID: 8131824563140431785, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
-  playerHealth: {fileID: 5271490804538522593, guid: ccaaa3b3755b3a644815544a75cbf0fd, type: 3}
+  player: {fileID: 0}
 --- !u!224 &6059219671605065222 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3242969435095370533, guid: ccaaa3b3755b3a644815544a75cbf0fd, type: 3}

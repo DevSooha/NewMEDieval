@@ -28,8 +28,6 @@ public class PlayerInteraction : MonoBehaviour
         canInteract = false;
         currentItem = null;
     }
-
-    // Update Method for Interaction
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.F))
@@ -93,9 +91,11 @@ public class PlayerInteraction : MonoBehaviour
             isCampfire = true; 
             canInteract = true; 
             UIManager.Instance.ShowSelectPanel(
-                "", 
-                "Crafting", UIManager.Instance.GoCrafting, 
-                "Potion", UIManager.Instance.GoPotion
+            "ìº í”„íŒŒì´ì–´ë¥¼ ì‚¬ìš©í•˜ì‹œê² ìŠµë‹ˆê¹Œ?",
+            "ì œì‘í•˜ê¸°",
+            () => { UIManager.Instance.GoCrafting(); },
+            "ì·¨ì†Œ",
+            () => {}
             );
         }
 
@@ -108,36 +108,30 @@ public class PlayerInteraction : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D other)
     {
-        // 1. NPCÀÎÁö È®ÀÎ (º¯¼ö¿¡ ´ã¾Æ¼­ nullÀÌ ¾Æ´ÑÁö ¸ÕÀú Ã¼Å©)
+        
         NPC exitedNPC = other.GetComponent<NPC>();
         if (exitedNPC != null && exitedNPC == currentNPC)
         {
             currentNPC = null;
         }
 
-        // 2. [¼öÁ¤] else if¸¦ Áö¿ì°í µ¶¸³ÀûÀÎ if¹®À¸·Î º¯°æ
-        // ÀÌ·¸°Ô ÇØ¾ß À§¿¡¼­ ¹«½¼ ÀÏÀÌ ÀÖ¾îµµ Ä·ÇÁÆÄÀÌ¾î ÅÂ±×¸¦ ¹İµå½Ã È®ÀÎÇÕ´Ï´Ù.
+       
         if (other.CompareTag("Campfire"))
         {
-            Debug.Log("Ä·ÇÁÆÄÀÌ¾î ³ª°¨"); // µğ¹ö±ë¿ë ·Î±×
-
             isCampfire = false;
 
-            // ¾ÈÀüÇÏ°Ô UI ´İ±â
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.HideSelectPanel();
             }
         }
 
-        // 3. ¾ÆÀÌÅÛÀÎÁö È®ÀÎ (¿ª½Ã µ¶¸³ÀûÀÎ if¹® »ç¿ë)
         WorldItem exitedItem = other.GetComponent<WorldItem>();
         if (exitedItem != null && exitedItem == currentItem)
         {
             currentItem = null;
         }
 
-        // »óÈ£ÀÛ¿ë °¡´É »óÅÂ ²ô±â
         if (currentNPC == null && !isCampfire && currentItem == null)
         {
             canInteract = false;

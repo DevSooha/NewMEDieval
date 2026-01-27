@@ -2,18 +2,27 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
-  tags: []
+  serializedVersion: 3
+  tags:
+  - NPC
+  - Enemy
+  - Obstacle
+  - Ground
+  - Grass
+  - Boss
+  - Stairs
+  - Campfire
+  - Item
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Player
   - Water
   - UI
-  - 
-  - 
-  - 
+  - NPC
+  - Enemy
+  - Background
   - 
   - 
   - 
@@ -41,36 +50,32 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Background
+    uniqueID: 2096632557
+    locked: 0
+  - name: Obstacles
+    uniqueID: 182476865
+    locked: 0
+  - name: Bushes
+    uniqueID: 3105752119
+    locked: 0
+  - name: Objects
+    uniqueID: 825734181
+    locked: 0
+  - name: Item
+    uniqueID: 3719288777
+    locked: 0
+  - name: Enemy
+    uniqueID: 1423551967
+    locked: 0
+  - name: Characters
+    uniqueID: 2877016291
+    locked: 0
+  - name: Foreground
+    uniqueID: 680892113
+    locked: 0
+  - name: EnemyBullet
+    uniqueID: 578985339
+    locked: 0
   m_RenderingLayers:
   - Default
-  - Light Layer 1
-  - Light Layer 2
-  - Light Layer 3
-  - Light Layer 4
-  - Light Layer 5
-  - Light Layer 6
-  - Light Layer 7
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 

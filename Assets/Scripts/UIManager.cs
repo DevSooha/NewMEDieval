@@ -44,14 +44,14 @@ public class UIManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        // Ç×»ó ÄÑÁ®ÀÖ´Â°Ô ¾Æ´Ñ UIµéÀº ÃÊ±âÈ­ ½Ã ºñÈ°¼ºÈ­
+        // ï¿½×»ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ö´Â°ï¿½ ï¿½Æ´ï¿½ UIï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ ï¿½ï¿½ ï¿½ï¿½È°ï¿½ï¿½È­
         if (messagePanel != null) messagePanel.SetActive(false);
         if (fadeImage != null) fadeImage.color = new Color(0, 0, 0, 0);
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
         if (SelectPanel != null) SelectPanel.SetActive(false);
     }
 
-    #region FadeImage °ü·Ã - FadeIn, FadeOut, LoadSceneWithFade
+    #region FadeImage ï¿½ï¿½ï¿½ï¿½ - FadeIn, FadeOut, LoadSceneWithFade
     public IEnumerator FadeIn(float duration)
     {
         float t = 0;
@@ -84,9 +84,9 @@ public class UIManager : MonoBehaviour
     }
     #endregion
 
-    #region MessagePanel °ü·Ã - ShowWarning, ShowEnding, HideMessage
+    #region MessagePanel ï¿½ï¿½ï¿½ï¿½ - ShowWarning, ShowEnding, HideMessage
 
-    // [Warning] 2ÃÊ µÚ¿¡ ÀÚµ¿À¸·Î »ç¶óÁü
+    // [Warning] 2ï¿½ï¿½ ï¿½Ú¿ï¿½ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
     public void ShowWarning(string message)
     {
         if (messageRoutine != null) StopCoroutine(messageRoutine);
@@ -97,7 +97,7 @@ public class UIManager : MonoBehaviour
         messageRoutine = StartCoroutine(HideMessageRoutine());
     }
 
-    // [Ending] ÀÚµ¿À¸·Î »ç¶óÁöÁö ¾ÊÀ½ (EndingEvent¿¡¼­ »ç¿ë)
+    // [Ending] ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (EndingEventï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
     public void ShowEnding(string message)
     {
         if (messageRoutine != null) StopCoroutine(messageRoutine);
@@ -106,7 +106,7 @@ public class UIManager : MonoBehaviour
         messageText.text = message;
     }
 
-    // UI¸¦ ¼öµ¿À¸·Î ´Ý°í ½ÍÀ» ¶§ È£Ãâ
+    // UIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ý°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½
     public void HideMessage()
     {
         if (messageRoutine != null) StopCoroutine(messageRoutine);
@@ -120,7 +120,7 @@ public class UIManager : MonoBehaviour
     }
     #endregion
 
-    #region DialoguePanel °ü·Ã - StartDialogue, DisplayLine, AdvanceDialogue, EndDialogue, IsDialogueActive
+    #region DialoguePanel ï¿½ï¿½ï¿½ï¿½ - StartDialogue, DisplayLine, AdvanceDialogue, EndDialogue, IsDialogueActive
 
     public void StartDialogue(DialogueData dialogue)
     {
@@ -227,7 +227,7 @@ public class UIManager : MonoBehaviour
 
     #endregion
 
-    #region SelectPanel °ü·Ã- ShowSelectPanel, HideSelectPanel
+    #region SelectPanel ï¿½ï¿½ï¿½ï¿½- ShowSelectPanel, HideSelectPanel
 
     public void ShowSelectPanel(string selectLabel, string btn1Text, UnityAction action1, string btn2Text, UnityAction action2)
     {
@@ -265,12 +265,6 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    // »ç¿ë¿¹
-    //UIManager.Instance.ShowSelectPanel(
-    //    "", 
-    //    "", UIManager.Instance.GoCrafting, 
-    //    "", UIManager.Instance.GoPotion
-    //);
 
     public void HideSelectPanel()
     {
@@ -280,10 +274,13 @@ public class UIManager : MonoBehaviour
 
     #endregion
 
-    public void GoPotion() { StartCoroutine(LoadSceneWithFade("Inventory")); }
-    public void GoCrafting() { StartCoroutine(LoadSceneWithFade("Crafting")); }
-    
 
+    public void GoCrafting() { StartCoroutine(LoadSceneWithFade("Crafting")); }
+
+    public void ExitCrafting()
+{
+    StartCoroutine(LoadSceneWithFade("Field"));
+}
 
 
     
