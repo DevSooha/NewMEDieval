@@ -1,3 +1,3 @@
 repository "MEDieval/MEDieval@14569524200076@cloud"
   path "/"
-    smartbranch "/main/sooha"
+    smartbranch "/main"

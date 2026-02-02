@@ -13,6 +13,7 @@ TagManager:
   - Stairs
   - Campfire
   - Item
+  - Poison
   layers:
   - Default
   - TransparentFX
