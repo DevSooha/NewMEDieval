@@ -20,55 +20,51 @@ public class PlayerInteraction : MonoBehaviour
         interactionCollider = GetComponent<CircleCollider2D>();
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
-
-        isCampfire = false;
-
-        currentNPC = null;
-
-        canInteract = false;
-        currentItem = null;
     }
-    void Update()
+
+    public bool TryInteract()
     {
-        if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.F))
+        // 1. 상호작용 불가능하면 실패 반환
+        if (!canInteract) return false;
+
+        // 2. 아이템 줍기
+        if (currentItem != null)
         {
-            if (!canInteract) return;
-
-            if (currentItem != null)
-            {
-                PickUpItem();
-                return;
-            }
-
-            if (currentNPC != null)
-            {
-                // Dialogue logic...
-                if (UIManager.Instance == null) return;
-                if (!UIManager.Instance.IsDialogueActive())
-                    StartDialogue();
-                else
-                    UIManager.Instance.AdvanceDialogue();
-            }
+            PickUpItem();
+            return true;
         }
+
+        // 3. NPC 대화
+        if (currentNPC != null)
+        {
+            if (UIManager.Instance == null) return false;
+
+            if (!UIManager.Instance.IsDialogueActive())
+                StartDialogue();
+            else
+                UIManager.Instance.AdvanceDialogue();
+
+            return true;
+        }
+
+        // 4. 캠프파이어
+        if (isCampfire)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     void PickUpItem()
     {
-        //if (currentItem != null && Inventory.Instance != null)
-        //{
-        //    if (Inventory.Instance.AddItem(currentItem.itemData, currentItem.quantity))
-        //    {
-        //        Destroy(currentItem.gameObject);
-        //        currentItem = null;
-        //        canInteract = false;
-        //    }
-        //}
-
         if (currentItem != null)
         {
-            Destroy(currentItem.gameObject);
+            currentItem.Pickup();
             currentItem = null;
             canInteract = false;
+
+            if (Player.Instance != null) Player.Instance.OnInteractionFinished();
         }
     }
 
@@ -76,33 +72,45 @@ public class PlayerInteraction : MonoBehaviour
     {
         Vector2 dir = (transform.position - currentNPC.transform.position).normalized;
         currentNPC.FaceDirection(dir);
-        UIManager.Instance.StartDialogue(currentNPC.dialogueData);
+
+        UIManager.Instance.StartDialogue(currentNPC.dialogueData, () =>
+        {
+            if (Player.Instance != null)
+            {
+                Player.Instance.OnInteractionFinished(); // 상태 복귀 함수
+            }
+        });
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.GetComponent<NPC>()) 
-        { 
-            currentNPC = other.GetComponent<NPC>(); 
-            canInteract = true; 
+        NPC npc = other.GetComponent<NPC>();
+        if (npc != null)
+        {
+            currentNPC = npc;
+            canInteract = true;
+            return;
         }
 
-        else if (other.CompareTag("Campfire")) {
-            isCampfire = true; 
-            canInteract = true; 
+        WorldItem item = other.GetComponent<WorldItem>();
+        if (item != null)
+        {
+            currentItem = item;
+            canInteract = true;
+            return;
+        }
+
+        if (other.CompareTag("Campfire"))
+        {
+            isCampfire = true;
+            canInteract = true;
             UIManager.Instance.ShowSelectPanel(
-            "캠프파이어를 사용하시겠습니까?",
-            "제작하기",
+            "Campfire?",
+            "Yes",
             () => { UIManager.Instance.GoCrafting(); },
-            "취소",
-            () => {}
+            "No",
+            () => { }
             );
-        }
-
-        else if (other.GetComponent<WorldItem>()) 
-        { 
-            currentItem = other.GetComponent<WorldItem>(); 
-            canInteract = true; 
         }
     }
 

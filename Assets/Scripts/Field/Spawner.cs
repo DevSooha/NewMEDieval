@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using System.Collections.Generic;
 
 public class Spawner : MonoBehaviour
 {
@@ -15,7 +15,7 @@ public class Spawner : MonoBehaviour
     {
         public string itemID;
         public string spritePath;
-        //public ItemData itemData;
+        public ItemData itemData;
     }
 
     public List<SpawnMapping> spawnList;
@@ -52,7 +52,6 @@ public class Spawner : MonoBehaviour
             // 리스트에서 ID에 맞는 맵핑 데이터 찾기
             SpawnMapping mapping = spawnList.Find(x => x.itemID == itemID);
 
-            // ★ [수정됨] spritePath 체크 대신 itemID가 맞는게 있는지 체크
             if (!string.IsNullOrEmpty(mapping.itemID))
             {
                 TrySpawn(mapping, spawnRate, itemID);
@@ -85,31 +84,24 @@ public class Spawner : MonoBehaviour
             // 1. 아이템 생성
             GameObject item = Instantiate(worldItemPrefab, spawnPos, Quaternion.identity, transform);
 
-            // ★★★ [핵심 수정] WorldItem 컴포넌트 초기화 (Init 호출) ★★★
             WorldItem worldItemScript = item.GetComponent<WorldItem>();
+            if (worldItemScript != null)
+            {
+                if (mapping.itemData != null)
+                {
+                    worldItemScript.Init(mapping.itemData, 1);
+                }
+            }
 
-            //if (mapping.itemData != null)
-            //{
-            //    // 여기서 Init을 해줘야 WorldItem의 initialized가 true가 되어 주워집니다.
-            //    worldItemScript.Init(mapping.itemData, 1);
-            //}
-            //else
-            //{
-            //    Debug.LogError($"Spawner: {id}에 해당하는 ItemData가 Inspector에 연결되지 않았습니다!");
-            //}
-
-            // 2. 스프라이트 설정 (기존 로직 유지)
             Sprite sprite = Resources.Load<Sprite>(mapping.spritePath);
             if (sprite != null)
             {
                 item.GetComponent<SpriteRenderer>().sprite = sprite;
             }
 
-            // 3. 태그 설정 (Item 태그여야 PlayerInteraction이 인식함)
-            // PlayerInteraction에서 "Item" 태그를 줍게 되어 있다면 "Item"으로, 
-            // "Respawn"으로직을 따로 짰다면 "Respawn" 유지.
-            // 보통 줍기 로직은 "Item" 태그를 씁니다. 확인 필요!
-            item.tag = "Item";
+            // 4. 태그 및 레이어 설정 (PlayerInteraction이 찾을 수 있게)
+            item.tag = "Respawn";
+            item.layer = 0;
 
             item.SetActive(true);
             return;

@@ -6,15 +6,23 @@ public class Player : MonoBehaviour
 {
     public static Player Instance { get; private set; }
 
+    public enum PlayerState
+    {
+        Idle,
+        Move,
+        Attack,
+        Interact,
+        Stunned
+    }
+
+    private PlayerState currentState;
+
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
 
     // 버프 관련 변수
     public float baseSpeed = 5f;
     float buffTimeLeft = 0f;
-
-    private bool knockedBack = false;
-    private bool canMove = true;
 
     // 위치 저장 변수
     private Vector3 savedPosition;
@@ -25,7 +33,6 @@ public class Player : MonoBehaviour
     [Header("Animation Settings")]
     private Vector2 lastDirection;
     private float attackDirection = 1f;
-    private bool isAttacking = false;
 
     [Header("Components")]
     private Rigidbody2D rb;
@@ -33,6 +40,7 @@ public class Player : MonoBehaviour
     private Vector2 moveInput;
     public Animator animator;
     private PlayerInteraction playerInteraction;
+    private bool isKnockedBack = false;
 
     void Awake()
     {
@@ -59,35 +67,81 @@ public class Player : MonoBehaviour
             rb.freezeRotation = true;
         }
 
-        playerInteraction = GetComponent<PlayerInteraction>();
+        playerInteraction = GetComponentInChildren<PlayerInteraction>();
 
         moveSpeed = baseSpeed;
     }
 
+
+    // 상태 변경 함수(PlayerState 관리)
+
+    void ChangeState(PlayerState newState)
+    {
+        if (currentState == newState) return;
+
+        currentState = newState;
+
+        animator.ResetTrigger("IsAttack"); 
+    }
+
     void Update()
     {
-        // 1. 넉백 및 이동 불가 상태 체크
-        if (knockedBack) return;
-
-        if (isAttacking)
+        switch (currentState)
         {
-            moveInput = Vector2.zero;
-            return;
-        }
+            case PlayerState.Stunned:
+            case PlayerState.Attack:
+                break;
 
-        if (!canMove)
+            case PlayerState.Interact:
+                HandleInteractionOnly();
+                break;
+
+            case PlayerState.Idle:
+            case PlayerState.Move:
+                HandleMovement();
+                HandleAttack();
+                break;
+        }
+        CheckBuffStatus();
+    }
+
+    // 대화 중에는 '공격'은 안 하고 '상호작용(다음 대사)'만 체크하는 함수
+    void HandleInteractionOnly()
+    {
+        if (Input.GetKeyDown(KeyCode.Z))
         {
-            moveInput = Vector2.zero;
-            animator.SetBool("IsMoving", false);
-            return;
-        }
+            if (playerInteraction != null)
+            {
+                bool success = playerInteraction.TryInteract();
 
+                if (!success)
+                {
+                    ChangeState(PlayerState.Idle);
+                }
+            }
+        }
+    }
+
+
+    // 이동 및 애니메이션 처리 함수
+
+    void HandleMovement()
+    {
         // 2. 이동 입력 처리
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
         moveInput = new Vector2(horizontal, vertical).normalized;
         bool isMoving = moveInput.sqrMagnitude > 0.01f;
+
+        if (isMoving)
+        {
+            ChangeState(PlayerState.Move);
+        }
+        else
+        {
+            ChangeState(PlayerState.Idle);
+        }
 
         // 3. 애니메이션 처리
         if (isMoving)
@@ -110,95 +164,139 @@ public class Player : MonoBehaviour
         }
 
         animator.SetBool("IsMoving", isMoving);
-
-        // 4. 공격 입력
-        if (Input.GetKeyDown(KeyCode.Z))
-        {
-            if (playerInteraction != null && playerInteraction.IsInteractable)
-            {
-                return;
-            }
-
-            StartCoroutine(PerformAttack());
-        }
-
-        // 버프 시간 체크
-        if (buffTimeLeft > 0f)
-        {
-            buffTimeLeft -= Time.deltaTime;
-            if (buffTimeLeft <= 0f)
-            {
-                buffTimeLeft = 0f;
-                moveSpeed = baseSpeed;
-            }
-        }
     }
 
-    void FixedUpdate()
-    {
-        if (knockedBack) return;
-
-        if (isAttacking)
+    void CheckBuffStatus()
         {
-            rb.linearVelocity = Vector2.zero;
-            return;
+            // 버프 시간 체크
+            if (buffTimeLeft > 0f)
+            {
+                buffTimeLeft -= Time.deltaTime;
+                if (buffTimeLeft <= 0f)
+                {
+                    buffTimeLeft = 0f;
+                    moveSpeed = baseSpeed;
+                }
+            }
         }
 
-        rb.linearVelocity = moveInput * moveSpeed;
-    }
-
-    // 버프 적용 함수
     public void ApplySpeedBuff(float duration)
     {
         buffTimeLeft = duration;
         moveSpeed = baseSpeed * 2;
     }
 
+
+    // 공격 관련 처리 함수
+
+    void HandleAttack()
+    {
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            // 1. 상호작용 먼저 시도
+            if (playerInteraction != null && playerInteraction.TryInteract())
+            {
+                return;
+            }
+
+            // 2. 상호작용할 게 없으면 공격
+            StartCoroutine(PerformAttack());
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (isKnockedBack) return; // 넉백 중엔 키보드 입력 무시
+
+        switch (currentState)
+        {
+            case PlayerState.Stunned:
+            case PlayerState.Attack:
+                // 이동력 0으로 설정 (넉백은 KnockBack 함수에서 힘을 가하므로 여기선 0)
+                rb.linearVelocity = Vector2.zero;
+                break;
+
+            case PlayerState.Move:
+                // 이동 상태일 때만 물리 힘 가하기
+                rb.linearVelocity = moveInput * moveSpeed;
+                break;
+
+            case PlayerState.Idle:
+                rb.linearVelocity = Vector2.zero;
+                break;
+        }
+    }
+
     IEnumerator PerformAttack()
     {
-        isAttacking = true;
+        // 1. 공격 상태로 진입
+        ChangeState(PlayerState.Attack);
+
+        // 2. 애니메이션 실행
         animator.SetTrigger("IsAttack");
-        yield return null;
+        yield return null; // 한 프레임 대기 (애니메이터 갱신 위함)
         animator.ResetTrigger("IsAttack");
+
+        // 3. 딜레이 대기
         yield return new WaitForSeconds(0.4f);
-        isAttacking = false;
+
+        // 4. 다시 대기 상태로 복귀 (중요!)
+        ChangeState(PlayerState.Idle);
     }
+
+
+    // 이동 가능 여부 설정 및 확인 함수
 
     public void SetCanMove(bool value)
     {
-        canMove = value;
-        if (!canMove)
-        {
-            rb.linearVelocity = Vector2.zero;
-            animator.SetBool("IsMoving", false);
-        }
+        if (value)
+            currentState = PlayerState.Idle; // 이동 가능하면 Idle
+        else
+            currentState = PlayerState.Stunned; // 이동 불가면 Stunned (혹은 Interact)
     }
 
     public bool CanMove()
     {
-        return canMove;
+        // Idle이나 Move 상태일 때만 true 반환
+        return currentState == PlayerState.Idle || currentState == PlayerState.Move;
     }
 
-    public void KnockBack(Transform enemy, float force, float stunTime)
+    public void KnockBack(Transform sender, float force, float stunTime)
     {
-        knockedBack = true;
-        Vector2 direction = (transform.position - enemy.position).normalized;
-        rb.linearVelocity = direction * force;
-        StartCoroutine(KnockBackCounter(stunTime));
-    }
+        if (!gameObject.activeInHierarchy) return;
+        isKnockedBack = true; // 1. 조작 불능 상태로 전환
 
-    IEnumerator KnockBackCounter(float stunTime)
-    {
-        yield return new WaitForSeconds(stunTime);
+        // 2. 넉백 방향 계산: (나 - 적) 벡터의 방향
+        Vector2 direction = (transform.position - sender.position).normalized;
+
+        // 3. 기존 속도를 0으로 만들고 힘을 가함 (관성 초기화)
         rb.linearVelocity = Vector2.zero;
-        knockedBack = false;
+        rb.AddForce(direction * force, ForceMode2D.Impulse);
+
+        // 4. 기절 시간 카운트 시작
+        StartCoroutine(ResetKnockBackRoutine(stunTime));
     }
+
+    private IEnumerator ResetKnockBackRoutine(float duration)
+    {
+        yield return new WaitForSeconds(duration); // 지정된 시간 대기
+
+        isKnockedBack = false; // 5. 조작 가능 상태로 복구
+        rb.linearVelocity = Vector2.zero; // 밀려나는 힘 제거
+    }
+
+    public void OnInteractionFinished()
+    {
+        ChangeState(PlayerState.Idle);
+    }
+
 
     // 아이템 주울 때 공격 모션 캔슬
+
     public void CancelAttack()
     {
         StopCoroutine("PerformAttack");
-        isAttacking = false;
+        ChangeState(PlayerState.Idle);
         animator.ResetTrigger("IsAttack");
     }
 
@@ -206,6 +304,7 @@ public class Player : MonoBehaviour
     {
         animator.SetBool("IsMoving", false);
     }
+
 
     // --- 씬 이동 및 위치 저장 관련 ---
 
@@ -219,8 +318,8 @@ public class Player : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
+
     // 씬 로드 시 위치 복구 및 카메라 연결
-    // Player.cs 안의 OnSceneLoaded 함수 수정
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -259,7 +358,6 @@ public class Player : MonoBehaviour
 
         if (roomManager != null)
         {
-            // "룸매니저님, 저 여기(savedPosition)에 있으니까 카메라 맞춰주세요"
             roomManager.SyncCameraToPlayer();
         }
         else
@@ -271,6 +369,7 @@ public class Player : MonoBehaviour
             }
         }
     }
+
 
     // 위치 저장 함수
     public void SaveCurrentPosition()

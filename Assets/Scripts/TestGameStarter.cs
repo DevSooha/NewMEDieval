@@ -18,9 +18,7 @@ public class TestGameStarter : MonoBehaviour
 
         if (player != null)
         {
-            player.position = new Vector3(0, -8, 0);
+            player.position = new Vector3(0, -2, 0);
         }
-
-        Debug.Log($"게임 시작! {startingRoom.roomID} 방이 로드되었습니다.");
     }
 }

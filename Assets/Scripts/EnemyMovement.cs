@@ -5,7 +5,6 @@ using UnityEngine;
 public class EnemyMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
-    private Animator anim;
     private EnemyCombat enemyCombat;
     private Transform player;
     private EnemyState enemyState;
@@ -22,7 +21,6 @@ public class EnemyMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        anim = GetComponent<Animator>();
         enemyCombat = GetComponent<EnemyCombat>();
         
         if (detectionPoint == null)
@@ -37,20 +35,26 @@ public class EnemyMovement : MonoBehaviour
 
     void Update()
     {
+        // 1. 쿨타임 감소
         if (attackCooldownTimer > 0)
         {
             attackCooldownTimer -= Time.deltaTime;
         }
 
-        if(enemyState == EnemyState.Attacking&&attackCooldownTimer<attackCooldown - 0.1f)
+        // 2. 공격 중이라면 아무것도 하지 않고 리턴 (매우 중요)
+        // 공격 상태 탈출은 애니메이션 이벤트나 타이머로만 처리
+        if (enemyState == EnemyState.Attacking)
         {
-            ChangeState(EnemyState.Idle);
+            // 공격 애니메이션 시간 체크 로직 (작성하신 부분)
+            if (attackCooldownTimer < attackCooldown - 0.5f) // 0.1f는 너무 짧을 수 있음, 애니메이션 길이에 맞춰 조정 필요
+            {
+                ChangeState(EnemyState.Idle);
+            }
+            return; // <--- 여기서 Update를 끊어주어야 아래 로직(거리재기 등)이 실행되지 않음
         }
 
-        if (enemyState != EnemyState.Attacking)
-        {
-            CheckForPlayer();
-        }
+        // 3. 공격 중이 아닐 때만 플레이어 감지 및 이동
+        CheckForPlayer();
 
         switch (enemyState)
         {
@@ -81,7 +85,17 @@ public class EnemyMovement : MonoBehaviour
 
         if (hits.Length > 0)
         {
-            player = hits[0].transform;
+            Transform targetTransform = hits[0].transform;
+
+            // 플레이어가 죽어서 비활성화 되었다면 추적하지 않음
+            if (!targetTransform.gameObject.activeInHierarchy)
+            {
+                player = null;
+                ChangeState(EnemyState.Idle);
+                return;
+            }
+
+            player = targetTransform;
 
             float distance = Vector2.Distance(detectionPoint.position, player.position);
 
@@ -98,6 +112,12 @@ public class EnemyMovement : MonoBehaviour
             {
                 ChangeState(EnemyState.Idle);
             }
+        }
+        else
+        {
+            // 감지된 게 없으면 타겟을 잃어버린 것임
+            player = null;
+            ChangeState(EnemyState.Idle);
         }
     }
 
@@ -121,12 +141,15 @@ public class EnemyMovement : MonoBehaviour
         
         Vector2 direction = (player.position - transform.position).normalized;
 
-        if ((direction.x < 0 && facingDirection == 1) || 
-            (direction.x > 0 && facingDirection == -1))
+        if (Mathf.Abs(direction.x) > 0.1f)
         {
-            FlipX();
+            if ((direction.x < 0 && facingDirection == 1) ||
+                (direction.x > 0 && facingDirection == -1))
+            {
+                FlipX();
+            }
         }
-        
+
         rb.linearVelocity = direction * movespeed;
     }
 
@@ -145,12 +168,9 @@ public class EnemyMovement : MonoBehaviour
         switch (enemyState)
         {
             case EnemyState.Idle:
-                anim.SetBool("isMoving", false);
                 break;
 
             case EnemyState.Chasing:
-                anim.SetTrigger("Chase");
-                anim.SetBool("isMoving", true);
                 break;
         }
     }

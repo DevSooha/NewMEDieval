@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using static UnityEditor.Progress;
 
 public class EnemyCombat : MonoBehaviour
 {
@@ -26,7 +25,8 @@ public class EnemyCombat : MonoBehaviour
 
     private bool isDead = false;
 
-
+    private float lastAttackTime; // 마지막 공격 시점 기록
+    public float combatCooldown = 1f; // 공격 간격 (이 시간이 지나야만 다시 때림)
 
     void Start()
     {
@@ -47,16 +47,31 @@ public class EnemyCombat : MonoBehaviour
     }
     public void Attack()
     {
+
+        if (Time.time < lastAttackTime + combatCooldown) return;
+
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, attackRange, playerLayer);
 
-        if (hits.Length > 0)
+        foreach (Collider2D hit in hits)
         {
-            hits[0].GetComponent<PlayerHealth>().TakeDamage(damageAmount);
-            hits[0].GetComponent<Player>().KnockBack(transform, knockbackForce, stunTime);
-        }
-        if (hits.Length == 0)
-        {
-            Debug.LogWarning("No hits detected! Check layer settings and attack range.");
+            // [핵심 2] 거대 콜라이더 무시: Trigger(감지 영역)라면 건너뜀
+            if (hit.isTrigger) continue;
+
+            Player playerScript = hit.GetComponent<Player>();
+
+            // [핵심 3] 유효성 검사: 스크립트가 있고 & 오브젝트가 활성화 상태(살아있음)인지
+            if (playerScript != null && hit.gameObject.activeInHierarchy)
+            {
+                // 데미지 처리
+                hit.GetComponent<PlayerHealth>()?.TakeDamage(damageAmount);
+
+                // 넉백 처리 (살아있는 대상에게만 코루틴 실행)
+                playerScript.KnockBack(transform, knockbackForce, stunTime);
+
+                // [핵심 4] 공격 성공 시점 기록 & 루프 종료
+                lastAttackTime = Time.time;
+                return; // 한 명만(혹은 한 부위만) 때리고 즉시 종료 (중복 타격 방지)
+            }
         }
     }
     private void OnDrawGizmos()

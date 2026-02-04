@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Inventory : MonoBehaviour
+public class Inventory : Singleton<Inventory>
 {
     [SerializeField] private InventoryUI inventoryUI;
     [SerializeField] private int slotPerMaterialPage = 6;

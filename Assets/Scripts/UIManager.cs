@@ -1,4 +1,5 @@
 using System.Collections;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -23,6 +24,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI dialogueText;
     [SerializeField] private Image npcIllustrationImage;
+    [SerializeField] private GameObject dialogueDimmer;
+
 
     [Header("Dialogue Typing Settings")]
     [SerializeField] private float typingSpeed = 0.03f; // 30ms per character
@@ -33,6 +36,7 @@ public class UIManager : MonoBehaviour
     private static bool dialogueActive = false;
     private bool isTyping = false;
     private Coroutine typingCoroutine;
+    private Action onDialogueEndedCallback;
 
     [Header("Select UI References")]
     public GameObject SelectPanel;
@@ -122,7 +126,7 @@ public class UIManager : MonoBehaviour
 
     #region DialoguePanel ���� - StartDialogue, DisplayLine, AdvanceDialogue, EndDialogue, IsDialogueActive
 
-    public void StartDialogue(DialogueData dialogue)
+    public void StartDialogue(DialogueData dialogue, Action onEnd = null)
     {
         if (dialogue == null || dialogue.dialogueLines.Count == 0)
         {
@@ -134,7 +138,11 @@ public class UIManager : MonoBehaviour
         currentLineIndex = 0;
         dialogueActive = true;
 
+        onDialogueEndedCallback = onEnd;
+        dialogueDimmer.SetActive(true);
         dialoguePanel.SetActive(true);
+
+        
 
         if (nameText != null)
         {
@@ -210,8 +218,16 @@ public class UIManager : MonoBehaviour
     {
         dialogueActive = false;
         dialoguePanel.SetActive(false);
+        dialogueDimmer.SetActive(false);
         currentDialogue = null;
         currentLineIndex = 0;
+
+        // 저장해둔 행동(상태 복귀) 실행
+        if (onDialogueEndedCallback != null)
+        {
+            onDialogueEndedCallback?.Invoke();
+            onDialogueEndedCallback = null; // 초기화
+        }
 
         if (npcIllustrationImage != null)
         {
@@ -272,7 +288,66 @@ public class UIManager : MonoBehaviour
         SelectPanel.SetActive(false);
     }
 
-    #endregion
+    // 1. 객체가 활성화될 때 이벤트 연결 (구독)
+    void OnEnable()
+    {
+        // PlayerHealth의 OnPlayerDeath 이벤트가 발생하면 HandleGameOver를 실행하라고 '등록'
+        PlayerHealth.OnPlayerDeath += HandleGameOver;
+    }
+
+    // 2. 객체가 비활성화되거나 삭제될 때 이벤트 끊기 (구독 해제)
+    void OnDisable()
+    {
+        PlayerHealth.OnPlayerDeath -= HandleGameOver;
+    }
+
+    void HandleGameOver()
+    {
+        ShowSelectPanel(
+            "YOU DIED ...", // 메세지
+            "Restart",             // 버튼 1 텍스트
+            RestartGame,           // 버튼 1 기능 (씬 재시작)
+            "Quit",             // 버튼 2 텍스트
+            QuitGame               // 버튼 2 기능 (게임 끄기)
+        );
+    }
+
+    // [수정] 기능 1: 게임 재시작 (Field 씬 새로고침)
+    void RestartGame()
+    {
+        // 1. RoomManager에게 재시작 위치 저장 요청
+        if (RoomManager.Instance != null)
+        {
+            RoomManager.Instance.SetRestartPositionToCurrentDoor();
+        }
+
+        // 2. ★ [핵심] 플레이어 강제 부활 및 활성화
+        if (Player.Instance != null)
+        {
+            // 죽으면서 비활성화(SetActive(false))되었다면 다시 켜야 함
+            Player.Instance.gameObject.SetActive(true);
+
+            // (선택) 체력 초기화 로직이 있다면 호출
+            var health = Player.Instance.GetComponent<PlayerHealth>();
+            if (health != null) health.Resurrect();
+        }
+
+        // 3. 씬 다시 로드
+        StartCoroutine(LoadSceneWithFade("Field"));
+    }
+
+    // [수정] 기능 2: 게임 종료
+    void QuitGame()
+    {
+        // 에디터에서는 플레이 모드를 끄고, 빌드된 게임에서는 창을 닫습니다.
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+        #endregion
 
 
     public void GoCrafting() { StartCoroutine(LoadSceneWithFade("Crafting")); }
