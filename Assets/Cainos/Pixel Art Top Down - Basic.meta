@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Cainos/Pixel Art Top Down - Basic.meta
 guid: 16e6903942d9bf94d9dd684620613d02
+========
+guid: 4451b78203ce1474caa69f68067a0221
+>>>>>>>> origin/main:Assets/Cainos/Pixel Art Top Down - Basic/Prefab.meta
 folderAsset: yes
 DefaultImporter:
   externalObjects: {}

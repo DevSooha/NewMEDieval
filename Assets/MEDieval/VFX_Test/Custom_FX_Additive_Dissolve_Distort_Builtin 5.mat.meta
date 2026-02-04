@@ -1,8 +1,15 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/MEDieval/VFX_Test/Custom_FX_Additive_Dissolve_Distort_Builtin 5.mat.meta
 guid: 88f46d24691a9414b9a1cca7c3985794
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 2100000
+========
+guid: c217bb51444dccc43868b31bf0d36f47
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+>>>>>>>> origin/main:Assets/임시맵타일/Textures/Group 1_0.asset.meta
   userData: 
   assetBundleName: 
   assetBundleVariant: 
