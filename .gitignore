@@ -98,11 +98,5 @@ InitTestScene*.unity*
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 Assets/Scripts/Utils/Settings/Build Profiles
-Assets/Prefabs/FX_Bullet_Blue.prefab
-Assets/Prefabs/FX_Bullet_Blue.prefab.meta
-Assets/Prefabs/FX_Bullet_Green.prefab
-Assets/Prefabs/FX_Bullet_Green.prefab.meta
-Assets/Prefabs/FX_Bullet_Red.prefab
-Assets/Prefabs/FX_Bullet_Red.prefab.meta
 .plastic/plastic.wktree
 .plastic/plastic.changes
