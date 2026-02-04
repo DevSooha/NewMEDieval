@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7510a16807c40b440af27b1d0c25ec34, type: 3}
   m_Name: sum_3
   m_EditorClassIdentifier: Assembly-CSharp::RoomData
-  roomID: 
-  roomPrefab: {fileID: 0}
+  roomID: sum_3
+  roomPrefab: {fileID: 4800155932107995836, guid: 665ceaf8f904e654dbfc953e8ee79cac, type: 3}
   north: {fileID: 0}
-  south: {fileID: 0}
+  south: {fileID: 11400000, guid: 1c75e8bcab7ce5c4cbeac0955cf34f62, type: 2}
   east: {fileID: 0}
   west: {fileID: 0}
-  roomCoord: {x: 0, y: 0}
+  roomCoord: {x: 1, y: 4}
