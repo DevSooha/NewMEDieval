@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
   interactionRadius: 1
+  craftUI: {fileID: 0}
 --- !u!58 &6646073668113243694
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -315,4 +316,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f4bf4d631f5dab45afdb0cab21cf9d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHP: 5
+  maxHP: 6

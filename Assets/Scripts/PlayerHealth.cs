@@ -1,5 +1,5 @@
 using UnityEngine;
-using System; // ActionÀ» »ç¿ëÇÏ±â À§ÇØ ÇÊ¿ä
+using System; // Actionï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -7,40 +7,37 @@ public class PlayerHealth : MonoBehaviour
     public int maxHP = 6;
     private int currentHP;
 
-    // 1. ÇÙ½É: Observer ÆÐÅÏÀ» À§ÇÑ ÀÌº¥Æ® ¼±¾ð
-    // ÇöÀç Ã¼·Â°ú ÃÖ´ë Ã¼·ÂÀ» UI¿¡ ¾Ë·ÁÁÖ±â À§ÇØ µÎ °³ÀÇ int¸¦ Àü´ÞÇÕ´Ï´Ù.
     public static Action<int, int> OnHealthChanged;
     public static Action OnPlayerDeath;
 
     void Start()
     {
         currentHP = maxHP;
-        // ½ÃÀÛÇÒ ¶§ UI ÃÊ±âÈ­¸¦ À§ÇØ ÇöÀç »óÅÂ¸¦ ¾Ë¸²
         NotifyHealthChanged();
     }
 
 
 
-    // 2. µ¥¹ÌÁö ·ÎÁ÷
+    // 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     public void TakeDamage(int amount)
     {
         currentHP -= amount;
         currentHP = Mathf.Clamp(currentHP, 0, maxHP);
 
-        NotifyHealthChanged(); // Ã¼·ÂÀÌ º¯ÇßÀ½À» ¾Ë¸²
+        NotifyHealthChanged(); // Ã¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë¸ï¿½
 
         if (currentHP <= 0) Die();
     }
 
     public void Resurrect()
     {
-        currentHP = maxHP; // 1. µ¥ÀÌÅÍ»ó Ã¼·Â 100% º¹±¸
+        currentHP = maxHP; // 1. ï¿½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ Ã¼ï¿½ï¿½ 100% ï¿½ï¿½ï¿½ï¿½
 
-        // 2. Áß¿ä: UIÇÑÅ×µµ "Ã¼·Â ²Ë Ã¡À½"ÀÌ¶ó°í ¾Ë¸² (ÀÌ°Å ¾È ÇÏ¸é UI´Â ¿©ÀüÈ÷ 0Ä­À¸·Î º¸ÀÓ)
+        // 2. ï¿½ß¿ï¿½: UIï¿½ï¿½ï¿½×µï¿½ "Ã¼ï¿½ï¿½ ï¿½ï¿½ Ã¡ï¿½ï¿½"ï¿½Ì¶ï¿½ï¿½ ï¿½Ë¸ï¿½ (ï¿½Ì°ï¿½ ï¿½ï¿½ ï¿½Ï¸ï¿½ UIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0Ä­ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         NotifyHealthChanged();
     }
 
-    // 3. È¸º¹ ·ÎÁ÷
+    // 3. È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     public void Heal(int amount)
     {
         currentHP += amount;
@@ -51,15 +48,15 @@ public class PlayerHealth : MonoBehaviour
 
     private void NotifyHealthChanged()
     {
-        // ±¸µ¶ÀÚ(UI µî)°¡ ÀÖ´Ù¸é ÀÌº¥Æ®¸¦ ¹ß»ý½ÃÅ´
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(UI ï¿½ï¿½)ï¿½ï¿½ ï¿½Ö´Ù¸ï¿½ ï¿½Ìºï¿½Æ®ï¿½ï¿½ ï¿½ß»ï¿½ï¿½ï¿½Å´
         OnHealthChanged?.Invoke(currentHP, maxHP);
     }
 
     private void Die()
     {
-        Debug.Log("ÇÃ·¹ÀÌ¾î »ç¸Á!");
+        Debug.Log("ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½!");
 
-        // 2. »ç¸Á »ç½ÇÀ» ¾Ë¸²
+        // 2. ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë¸ï¿½
         OnPlayerDeath?.Invoke();
 
         gameObject.SetActive(false);

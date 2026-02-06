@@ -52,10 +52,15 @@ public class PoisonZone : MonoBehaviour
 
         timer += Time.deltaTime;
 
+        if (playerInside)
+        {
         if (timer >= damageDelay)
         {
             playerHealth.TakeDamage(damageAmount);
+            playerSprite.color = Color.darkRed;
+            playerSprite.color = Color.magenta;
             timer = 0f;
+        }
         }
     }
 }

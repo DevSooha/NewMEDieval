@@ -7,19 +7,19 @@ public class BossBattleTrigger : MonoBehaviour
     public Transform startPositionTF;
 
     [Header("Exit Settings")]
-    public Vector2 pushDirection = Vector2.down; // (0, -1) È®ÀÎ ÇÊ¼ö
+    public Vector2 pushDirection = Vector2.down;
     public float pushDistance = 3.0f;
 
-    [Header("References")]
-    public ThreeWitchCombat linkedBoss;
+    [Header("Boss Prefabs")]
+    public GameObject rolietPrefab;        
+    public GameObject threeWitchPrefab;   
 
     private bool hasTriggered = false;
     private Transform playerTransform;
 
-    // µğ¹ö±×¿ë ¼± ±×¸®±â
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.red; // »¡°£»öÀ¸·Î º¯°æ (´«¿¡ Àß ¶ç°Ô)
+        Gizmos.color = Color.red;
         Vector3 direction = new Vector3(pushDirection.x, pushDirection.y, 0).normalized;
         Gizmos.DrawLine(transform.position, transform.position + direction * pushDistance);
         Gizmos.DrawWireSphere(transform.position + direction * pushDistance, 0.5f);
@@ -41,7 +41,7 @@ public class BossBattleTrigger : MonoBehaviour
             Time.timeScale = 0;
 
             UIManager.Instance.ShowSelectPanel(
-                "Fight the Three Witches?",
+                "Fight the boss?",
                 "Yes", StartBossSequence,
                 "No", CancelBattle
             );
@@ -50,7 +50,7 @@ public class BossBattleTrigger : MonoBehaviour
 
     public void StartBossSequence()
     {
-        Debug.Log("Yes ¼±ÅÃ: º¸½ºÀü ½ÃÀÛ");
+        Debug.Log("Yes ì„ íƒ: ë³´ìŠ¤ì „ ì‹œì‘");
         Time.timeScale = 1;
 
         if (startPositionTF != null)
@@ -59,19 +59,17 @@ public class BossBattleTrigger : MonoBehaviour
         }
         else
         {
-            // À§Ä¡°¡ ¾øÀ¸¸é ±×³É º¸½ºÀü ½ÃÀÛ
-            TriggerBossBattleLogic();
+            SpawnBoss();
         }
     }
 
     public void CancelBattle()
     {
-        Debug.Log("No ¼±ÅÃ: ³ª°¡±â");
+        Debug.Log("No ì„ íƒ: ì·¨ì†Œ");
         Time.timeScale = 1;
 
         if (playerTransform != null)
         {
-            // ÇöÀç ÇÃ·¹ÀÌ¾î À§Ä¡ ±âÁØ µÚ·Î ÀÌµ¿
             Vector3 pushDir = new Vector3(pushDirection.x, pushDirection.y, 0).normalized;
             Vector3 targetPos = playerTransform.position + (pushDir * pushDistance);
 
@@ -79,27 +77,24 @@ public class BossBattleTrigger : MonoBehaviour
         }
         else
         {
-            hasTriggered = false; // ¿¹¿Ü Ã³¸®
+            hasTriggered = false;
         }
     }
 
-    // ¡Ú ÇÙ½É ¼öÁ¤: ÀÌ¸§ º¯°æ ¹× ¹°¸® ±ú¿ì±â Ãß°¡
     IEnumerator ForceMoveRoutine(Vector3 targetPos, bool isBossStart)
     {
-        // 1. È¤½Ã ¸ğ¸¦ ¹°¸® ¼ö¸é »óÅÂ ±ú¿ì±â
         Rigidbody2D rb = playerTransform.GetComponent<Rigidbody2D>();
         var moveScript = playerTransform.GetComponent<Player>();
 
         if (rb != null)
         {
-            rb.WakeUp(); // ¡Ú ¾ß! ÀÏ¾î³ª! (ÀÌ°Ô ¾øÀ¸¸é ¾ÃÈú ¼ö ÀÖÀ½)
-            rb.bodyType = RigidbodyType2D.Kinematic; // ¹°¸® ²ô±â
+            rb.WakeUp();
+            rb.bodyType = RigidbodyType2D.Kinematic;
             rb.linearVelocity = Vector2.zero;
         }
         if (moveScript != null) moveScript.enabled = false;
 
-        // 2. ÀÌµ¿ (Time.unscaledDeltaTime ´ë½Å deltaTime »ç¿ë. À§¿¡¼­ TimeScale=1 ÇßÀ¸¹Ç·Î ¾ÈÀü)
-        float duration = 0.2f; // ¾ÆÁÖ ºü¸£°Ô ÀÌµ¿
+        float duration = 0.2f;
         float elapsed = 0f;
         Vector3 startPos = playerTransform.position;
 
@@ -110,41 +105,62 @@ public class BossBattleTrigger : MonoBehaviour
             yield return null;
         }
 
-        // 3. µµÂø È®Á¤
         playerTransform.position = targetPos;
 
-        // 4. º¹±¸
         if (rb != null)
         {
             rb.linearVelocity = Vector2.zero;
             rb.bodyType = RigidbodyType2D.Dynamic;
-            rb.WakeUp(); // ´Ù½Ã ÇÑ¹ø ±ú¿ì±â
+            rb.WakeUp();
         }
         if (moveScript != null) moveScript.enabled = true;
 
-        // 5. ÈÄÃ³¸®
         if (isBossStart)
         {
-            TriggerBossBattleLogic();
+            SpawnBoss();
         }
         else
         {
-            // Ãë¼Ò(Cancel)ÀÎ °æ¿ì
             if (RoomManager.Instance != null) RoomManager.Instance.UpdateRoomStateAfterTeleport();
-
-            // Æ®¸®°Å Àç»ç¿ë ´ë±â
             yield return new WaitForSeconds(0.5f);
             hasTriggered = false;
         }
     }
 
-    void TriggerBossBattleLogic()
+    void SpawnBoss()
     {
-        if (BossManager.Instance != null)
+        RoomData currentRoom = RoomManager.Instance?.currentRoomData;
+        if (currentRoom == null) {
+            Debug.LogError("[BossTrigger] No current room data!");
+            return;
+        }
+
+        Debug.Log($"[BossTrigger] Spawning boss for room: {currentRoom.roomID}");
+
+        if (currentRoom.roomID == "sum_3")
         {
-            if (linkedBoss != null) BossManager.Instance.threeWitchCombat = linkedBoss;
-            else BossManager.Instance.threeWitchCombat = transform.parent.GetComponentInChildren<ThreeWitchCombat>(true);
-            BossManager.Instance.StartBossBattle();
+            if (rolietPrefab != null)
+            { 
+                RolietCombat roliet = rolietPrefab.GetComponent<RolietCombat>();
+                    roliet.StartBattle();
+                    Debug.Log("[BossTrigger] Roliet spawned & attacking!");
+                
+            }
+        }
+        else if (currentRoom.roomID == "spr_4")
+        {
+            if (threeWitchPrefab != null)
+            {
+                ThreeWitchCombat witch = threeWitchPrefab.GetComponent<ThreeWitchCombat>();
+                if (witch != null) {
+                    witch.StartBattle();  
+                    Debug.Log("[BossTrigger] ThreeWitch spawned!");
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"No boss configured for room: {currentRoom.roomID}");
         }
     }
 }

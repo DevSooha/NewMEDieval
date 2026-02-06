@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
@@ -9,6 +10,7 @@ public class PlayerInteraction : MonoBehaviour
     private CircleCollider2D interactionCollider;
     private NPC currentNPC;
     private WorldItem currentItem;
+    public CraftUI craftUI;
 
     private bool canInteract = false;
     private bool isCampfire = false;
@@ -20,6 +22,15 @@ public class PlayerInteraction : MonoBehaviour
         interactionCollider = GetComponent<CircleCollider2D>();
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
+        craftUI.gameObject.SetActive(false);
+    }
+    void Update()
+    {
+        if (isCampfire == true && Input.GetKeyDown(KeyCode.Escape))
+        {
+            isCampfire = false;
+            craftUI.gameObject.SetActive(false);
+        }
     }
 
     public bool TryInteract()
@@ -107,7 +118,7 @@ public class PlayerInteraction : MonoBehaviour
             UIManager.Instance.ShowSelectPanel(
             "Campfire?",
             "Yes",
-            () => { UIManager.Instance.GoCrafting(); },
+            () => { craftUI.gameObject.SetActive(true); },
             "No",
             () => { }
             );

@@ -42,10 +42,6 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (isGameActive && Input.GetMouseButton(0) && isDragging == true)
     {
         gaugeValue += GAUGE_UP_SPEED * Time.deltaTime;
-        if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                UIManager.Instance.ExitCrafting();
-            }
     }
     }
 
