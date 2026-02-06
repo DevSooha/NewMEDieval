@@ -12,10 +12,10 @@ GameObject:
   - component: {fileID: 7279865361937070694}
   - component: {fileID: 2282482769173231619}
   - component: {fileID: 1867461833080011061}
-  - component: {fileID: 8034466963393237489}
+  - component: {fileID: 7737206763445412069}
   m_Layer: 0
-  m_Name: Fireball
-  m_TagString: Untagged
+  m_Name: Waterball
+  m_TagString: Bullets
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -79,11 +79,11 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -1562799643
-  m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: 578985339
+  m_SortingLayer: 9
+  m_SortingOrder: 12
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 1, g: 0, b: 0, a: 1}
+  m_Color: {r: 0, g: 0.2834475, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -123,7 +123,7 @@ CircleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -156,7 +156,7 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &8034466963393237489
+--- !u!114 &7737206763445412069
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -165,9 +165,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 4680612044409315822}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 605cfe1612c1bb946b1a09827b4e0730, type: 3}
+  m_Script: {fileID: 11500000, guid: 5aaf917c3b4bc4849904b948081953d9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FireBall
-  speed: 5
+  m_EditorClassIdentifier: Assembly-CSharp::BossProjectile
+  speed: 10
   damage: 1
-  bulletElement: 1
+  projectileElement: 2

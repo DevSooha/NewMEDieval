@@ -29,7 +29,7 @@ public class RoomManager : MonoBehaviour
     public RoomData startRoomData;
     public List<RoomData> allMapRooms = new List<RoomData>();
 
-    private RoomData currentRoomData;
+    public RoomData currentRoomData;
     private Dictionary<string, GameObject> loadedRooms = new Dictionary<string, GameObject>();
     private bool isCoolingDown = false;
     private bool isTransitioning = false;

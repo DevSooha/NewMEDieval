@@ -347,18 +347,7 @@ public class UIManager : MonoBehaviour
 #endif
     }
 
-        #endregion
-
-
-    public void GoCrafting() { StartCoroutine(LoadSceneWithFade("Crafting")); }
-
-    public void ExitCrafting()
-{
-    StartCoroutine(LoadSceneWithFade("Field"));
-}
-
-
-    
+        #endregion  
 
     
 

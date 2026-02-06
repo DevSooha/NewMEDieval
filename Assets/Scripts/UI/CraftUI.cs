@@ -42,10 +42,6 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (isGameActive && Input.GetMouseButton(0) && isDragging == true)
     {
         gaugeValue += GAUGE_UP_SPEED * Time.deltaTime;
-        if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                UIManager.Instance.ExitCrafting();
-            }
     }
     }
 
@@ -67,6 +63,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             potSlot2Image.enabled = true;
             nextReplaceIndex = 0;
         }
+        Debug.Log("솥에 아이템 추가!");
     }
 
     public void OnPointerDown(PointerEventData eventData)
