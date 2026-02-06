@@ -146,16 +146,20 @@ public class Player : MonoBehaviour
         // 3. 애니메이션 처리
         if (isMoving)
         {
-            lastDirection = moveInput;
-
-            if (horizontal != 0)
+            if(vertical > 0.01f)
             {
-                attackDirection = horizontal > 0 ? 1f : -1f;
-                animator.SetFloat("AttackDir", attackDirection);
+                lastDirection = Vector2.up;
             }
 
-            animator.SetFloat("InputX", moveInput.x);
-            animator.SetFloat("InputY", moveInput.y);
+            else if (horizontal != 0)
+            {
+                lastDirection = new Vector2(horizontal, 0).normalized;
+            }
+
+            if (spriteRenderer != null) spriteRenderer.flipX = false;
+
+            animator.SetFloat("InputX", lastDirection.x);
+            animator.SetFloat("InputY", lastDirection.y);
         }
         else
         {
