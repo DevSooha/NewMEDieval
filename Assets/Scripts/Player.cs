@@ -203,6 +203,7 @@ public class Player : MonoBehaviour
                 return;
             }
 
+            Debug.Log($"Logic Dir: {lastDirection} / Animator X: {animator.GetFloat("InputX")} / FlipX: {spriteRenderer.flipX}");
             // 2. 상호작용할 게 없으면 공격
             StartCoroutine(PerformAttack());
         }

@@ -3354,7 +3354,7 @@ GameObject:
   - component: {fileID: 3744737850876984111}
   - component: {fileID: 3456506459664648027}
   m_Layer: 0
-  m_Name: MapNode_B (1)
+  m_Name: MapNode_2to6
   m_TagString: Untagged
   m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -3369,7 +3369,7 @@ Transform:
   m_GameObject: {fileID: 3392821686813764470}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -10, y: 1.5, z: 0}
+  m_LocalPosition: {x: -13.5, y: 5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3419,7 +3419,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 2.5, y: 18}
+  m_Size: {x: 1, y: 18}
   m_EdgeRadius: 0
 --- !u!114 &3456506459664648027
 MonoBehaviour:
@@ -3434,7 +3434,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapNode
   moveDirection: 3
-  nextRoom: {fileID: 0}
+  nextRoom: {fileID: 11400000, guid: 97adaad70f7af8e49b66ed4b806c33a5, type: 2}
   overrideDistance: 0
   defaultBlockMessage: The path is blocked.
   lockedMessage: "\uBCF4\uC2A4\uC804 \uC911\uC5D0\uB294 \uC774\uB3D9\uD560 \uC218
@@ -4006,7 +4006,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7461042424996901053, guid: 88f60bd9777f0194494eff1823b9688b, type: 3}
       propertyPath: m_Name
-      value: MapNode
+      value: MapNode_2to5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4039,11 +4039,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapNode
   moveDirection: 0
-  nextRoom: {fileID: 0}
+  nextRoom: {fileID: 11400000, guid: f00b46fa102cc6a4babd39f05ddf200c, type: 2}
   overrideDistance: 0
   defaultBlockMessage: The path is blocked.
-  lockedMessage: "\uBCF4\uC2A4\uC804 \uC911\uC5D0\uB294 \uC774\uB3D9\uD560 \uC218
-    \uC5C6\uC2B5\uB2C8\uB2E4."
+  lockedMessage: You cannot flee!
   unlockedMessage: Now you can proceed.
 --- !u!1001 &1233764554229406896
 PrefabInstance:

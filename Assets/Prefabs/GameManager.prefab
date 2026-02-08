@@ -50,17 +50,21 @@ MonoBehaviour:
   playerSpawnOffset: 3
   gridWidth: 32
   gridHeight: 18
-  playableWidth: 32
+  playableWidth: 28
   playableHeight: 18
   mainCamera: {fileID: 0}
   player: {fileID: 0}
+  startRoomData: {fileID: 0}
   allMapRooms:
   - {fileID: 11400000, guid: 281cb2b1b56741b4aae9d14976f38bb2, type: 2}
   - {fileID: 11400000, guid: 0648fc3e6498e5c4abec5001fa0aad69, type: 2}
   - {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
   - {fileID: 11400000, guid: d153c3b905d4bde428d051a24f53b523, type: 2}
   - {fileID: 11400000, guid: 1c75e8bcab7ce5c4cbeac0955cf34f62, type: 2}
-  - {fileID: 11400000, guid: 828445048f308a74993b44203785affd, type: 2}
+  - {fileID: 11400000, guid: f00b46fa102cc6a4babd39f05ddf200c, type: 2}
+  - {fileID: 11400000, guid: 97adaad70f7af8e49b66ed4b806c33a5, type: 2}
+  - {fileID: 11400000, guid: 21a547241fef03d49a55ec8d4c20f949, type: 2}
+  currentRoomData: {fileID: 0}
 --- !u!114 &3995192780879610803
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74,6 +78,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossManager
   threeWitchCombat: {fileID: 0}
+  rolietCombat: {fileID: 0}
+  roomBosses: []
 --- !u!114 &6755694373369558612
 MonoBehaviour:
   m_ObjectHideFlags: 0

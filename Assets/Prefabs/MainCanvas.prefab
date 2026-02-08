@@ -658,7 +658,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8244552067336042356}
+  m_Father: {fileID: 4513987443173942245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -957,7 +957,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8244552067336042356}
+  m_Father: {fileID: 4513987443173942245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -1964,6 +1964,8 @@ RectTransform:
   - {fileID: 3408990581426826292}
   - {fileID: 8258378074551955490}
   - {fileID: 8244552067336042356}
+  - {fileID: 5403635618100647063}
+  - {fileID: 3629643526525947477}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2588,16 +2590,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6521865331790873233, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5255314872549604990, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 5989624782997958667, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5403635618100647063}
-    - targetCorrespondingSourceObject: {fileID: 5989624782997958667, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3629643526525947477}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
 --- !u!224 &8244552067336042356 stripped
