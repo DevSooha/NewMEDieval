@@ -12,6 +12,7 @@ public class BossBattleTrigger : MonoBehaviour
 
     [Header("Boss Prefabs")]
     public GameObject rolietPrefab;        
+    public GameObject julmeoPrefab;
     public GameObject threeWitchPrefab;   
 
     private bool hasTriggered = false;
@@ -144,6 +145,13 @@ public class BossBattleTrigger : MonoBehaviour
                 RolietCombat roliet = rolietPrefab.GetComponent<RolietCombat>();
                     roliet.StartBattle();
                     Debug.Log("[BossTrigger] Roliet spawned & attacking!");
+                
+            }
+            if (julmeoPrefab != null)
+            { 
+                JulmeoCombat julmeo = julmeoPrefab.GetComponent<JulmeoCombat>();
+                    julmeo.StartBattle();
+                    Debug.Log("[BossTrigger] Julmeo spawned & attacking!");
                 
             }
         }

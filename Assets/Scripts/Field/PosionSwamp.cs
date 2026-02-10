@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class PoisonZone : MonoBehaviour
 {
     public float damageDelay = 2f;
     public int damageAmount = 1;
 
+    public Tilemap poisonTilemap;
     private bool playerInside = false;
     private float timer = 0f;
 
@@ -12,6 +14,13 @@ public class PoisonZone : MonoBehaviour
     private SpriteRenderer playerSprite;   
     private Color originalColor;       
 
+    void Start()
+    {
+        if (poisonTilemap == null)
+        {
+            poisonTilemap = GetComponent<Tilemap>();
+        }
+    }
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
@@ -26,6 +35,21 @@ public class PoisonZone : MonoBehaviour
             {
                 originalColor = playerSprite.color;              
                 playerSprite.color = Color.magenta;             
+            }
+        }
+        else if (other.CompareTag("Bullets"))
+        {
+            BossProjectile projectile = other.GetComponent<BossProjectile>();
+            if (projectile != null && projectile.projectileElement == ElementType.Water)
+            {
+                Vector3 contactPoint = other.bounds.center;
+                Vector3Int tilePos = poisonTilemap.WorldToCell(contactPoint);
+                
+                poisonTilemap.SetTile(tilePos, null);
+                poisonTilemap.RefreshAllTiles();
+                Debug.Log($"독지대 타일 제거됨: {tilePos}");
+
+                Destroy(other.gameObject);
             }
         }
     }

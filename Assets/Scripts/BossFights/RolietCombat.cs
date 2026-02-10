@@ -3,72 +3,72 @@ using UnityEngine;
 
 public enum RolietState
 {
-    Spawn,      // 순간이동
-    FacePlayer, // 방향고정
-    Dash,       // 돌진
-    Delay       // 딜레이
+    Attack,     
+    Null,       
+    Cooldown
 }
 
 public class RolietCombat : MonoBehaviour
 {
     public Transform playerTF;
+    public JulmeoCombat julmeo;
     public float dashSpeed = 5f;
-    public float cellSize = 0.32f;
-    private bool isBattleActive;
-    private void Start()
-    {
-         isBattleActive = false;
-    }
 
+    private RolietState rolietState = RolietState.Null;
+    
+
+    
     public void StartBattle()
     {
-        if (isBattleActive) return;
+        if (rolietState == RolietState.Attack) return;
 
-        isBattleActive = true;
-
-        if (playerTF == null) {
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            playerTF = playerObj?.transform;
-        }    
-        Vector3 spawnPos = playerTF.position;
-        transform.position = spawnPos;
-        
-        
-        StartCoroutine(BattleRoutine());
+        else 
+        {
+            StartCoroutine(BattleRoutine());
+        }
     }
+
     public void StopBattle()
     {
-        isBattleActive = false;
         StopAllCoroutines();
-        gameObject.SetActive(false);  // BossManager에서 호출
+        gameObject.SetActive(false);
     }
 
     IEnumerator BattleRoutine()
     {
-        while (true)
+        if (playerTF == null)
         {
-            // 1. 스폰 (0.1s)
-            yield return new WaitForSeconds(0.1f);
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            playerTF = playerObj?.transform;
+        }
+        yield return new WaitForSeconds (0.15f);
 
-            // 2. 방향고정 (0.5s)
-            //Vector3 dir = playerTF.position - transform.position;
-            //transform.rotation = Quaternion.LookRotation(dir);
-            //yield return new WaitForSeconds(0.5f);
+        transform.position = playerTF.position + new Vector3 (0, 4.0f, 0);
+        yield return new WaitForSeconds (0.3f);
+        julmeo.StartBattle();
 
-            // 3. 돌진 (0.3s)
-            Vector3 lastPos = playerTF.position;
-            Vector3 startDashPos = transform.position;
+        yield return new WaitForSeconds(0.5f);
+
+        rolietState = RolietState.Attack;
+
+        while (rolietState == RolietState.Attack)
+        {
+            // 2. 현재 플레이어 위치를 목표로 대쉬
+            Vector3 startPos = transform.position;
+            Vector3 targetPos = playerTF.position;   // 매 사이클마다 “지금” 위치
+
             float dashTime = 0.3f;
             float elapsed = 0f;
 
             while (elapsed < dashTime)
             {
                 elapsed += Time.deltaTime;
-                transform.position = Vector3.Lerp(startDashPos, lastPos, elapsed / dashTime);
+                float t = elapsed / dashTime;
+                transform.position = Vector3.Lerp(startPos, targetPos, t);
                 yield return null;
             }
 
-            // 4-5. 딜레이 (2.6s)
+            // 3. 다음 대쉬 전 딜레이
             yield return new WaitForSeconds(2.6f);
         }
     }

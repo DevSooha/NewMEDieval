@@ -119,10 +119,15 @@ public class PlayerInteraction : MonoBehaviour
             "Campfire?",
             "Yes",
             () => { craftUI.gameObject.SetActive(true); },
+            () => { EnterCrafting(); },
             "No",
             () => { }
             );
         }
+    }
+    public void EnterCrafting()
+    {
+        craftUI.gameObject.SetActive(true);
     }
 
     void OnTriggerExit2D(Collider2D other)
