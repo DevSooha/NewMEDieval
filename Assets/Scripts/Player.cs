@@ -32,7 +32,6 @@ public class Player : MonoBehaviour
 
     [Header("Animation Settings")]
     private Vector2 lastDirection;
-    private float attackDirection = 1f;
 
     [Header("Components")]
     private Rigidbody2D rb;

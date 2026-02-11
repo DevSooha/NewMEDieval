@@ -119,7 +119,6 @@ public class PlayerInteraction : MonoBehaviour
             "Campfire?",
             "Yes",
             () => { craftUI.gameObject.SetActive(true); },
-            () => { EnterCrafting(); },
             "No",
             () => { }
             );
