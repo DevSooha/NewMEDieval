@@ -1,12 +1,8 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 
-public enum BulletElement
-{
-    Water,
-    Fire,
-    Lightning
-}
 public enum BulletType
 {
     Fireworks,
@@ -23,29 +19,31 @@ public enum PotionEffect
     EnemyStun,
     BulletSpeedDown
 }
-public enum DamageTarget
+public class PotionData
 {
-    Player,
-    Enemy,
-    Both
-}
-
-[CreateAssetMenu(
-    fileName = "NewPotionData",
-    menuName = "Inventory/Potion Data",
-    order = 1)]
-
-public class PotionData : ItemData
-{
+    public string potionName;
     public int damage1;
     public int damage2;
     public int effectTime;
-    [SerializeField] public BulletType bulletType1;
-    [SerializeField] public BulletType bulletType2;
-    [SerializeField] public PotionEffect potionEffect1;
-    [SerializeField] public PotionEffect potionEffect2;
-    [SerializeField] public DamageTarget damageTarget1;
-    [SerializeField] public DamageTarget damageTarget2;
-    [SerializeField] public BulletElement element1;
-    [SerializeField] public BulletElement element2;
+    public BulletType bulletType1;
+    public BulletType bulletType2;
+    public PotionEffect potionEffect1;
+    public PotionEffect potionEffect2;
+    public Element element1;
+    public Element element2;
+    public Image topIMG;
+    public Image bottomIMG;
+
+    public int maxStack = 20; 
+    public bool isStackable = true;
+}
+public class Potion
+{
+    public PotionData data;
+    public int quantity;
+    public Potion(PotionData data, int quantity = 1)
+    {
+        this.data = data;
+        this.quantity = quantity;
+    }
 }

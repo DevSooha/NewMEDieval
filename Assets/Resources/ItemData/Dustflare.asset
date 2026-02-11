@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d59bd60959b40674d815b75ed82e6639, type: 3}
   m_Name: Dustflare
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Dustflare Flower
+  itemName: Dustflare
   description: "\uB354\uC2A4\uD2B8\uD50C\uB808\uC5B4 \uAF43"
   icon: {fileID: 4715776712294255836, guid: 7b3abdac177e05343a3c600f16410214, type: 3}
   specificPrefab: {fileID: 0}

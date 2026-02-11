@@ -133,7 +133,7 @@ public class PlayerInteraction : MonoBehaviour
             UIManager.Instance.ShowSelectPanel(
             "Campfire?",
             "Yes",
-            () => { craftUI.gameObject.SetActive(true); },
+            () => { EnterCrafting(); },
             "No",
             () => { }
             );

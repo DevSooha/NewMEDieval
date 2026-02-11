@@ -5,19 +5,25 @@ using UnityEngine.EventSystems;
 
 public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
+    public enum PotionTemp { Failure, LowTemp, MidTemp, HighTemp }
+
     [SerializeField] private Image potSlot1Image;
     [SerializeField] private Image potSlot2Image;
     [SerializeField] private ItemData itemData;
     [SerializeField] private Inventory inventory;
+    //[SerializeField] private GameObject itemUI;
 
     [SerializeField] private Image gaugeBar;          
     [SerializeField] private Image needleMarker;      
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI resultText;
     [SerializeField] private GameObject oxygenGauge;
+    //[SerializeField] private Transform container;
+    
 
     private Item slot1Item;
     private Item slot2Item;
+    //private InventorySlot[] craftSlots;
 
     private float gaugeValue = 0f;      
     private float gameTimer = 6f;       
@@ -44,7 +50,19 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         gaugeValue += GAUGE_UP_SPEED * Time.deltaTime;
     }
     }
-
+    //private void InitializeSlots()
+    //{
+    //    int slotCount = 2;
+        
+    //    InventorySlot[] slots = new InventorySlot[slotCount];
+        
+    //    for (int i = 0; i < slotCount; i++)
+    //    {
+    //        GameObject slotObj = Instantiate(itemUI, container);
+    //       InventorySlot slot = slotObj.GetComponent<InventorySlot>();
+    //        slots[i] = slot;
+    //    }
+    //}
     public void OnMaterialSelected(Item item)
     {
         if (item == null || item.data == null) return;
@@ -76,7 +94,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
                 return;
             }
 
-            oxygenGauge.gameObject.SetActive(true);
+            oxygenGauge.SetActive(true);
             isGameActive = true;
             gameStarted = true;
             gaugeValue = 0f;
@@ -132,8 +150,8 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         isGameActive = false;
         isDragging = false;
 
-        PotionCraft.PotionType potionType = PotionCraft.DeterminePotionType(gaugeValue);
-        string resultName = PotionCraft.GetPotionName(potionType);
+        PotionTemp potionTemp = DeterminePotionTemp(gaugeValue);
+        string resultName = GetPotionName(potionTemp);
 
         if (resultText != null)
         {
@@ -141,22 +159,42 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             resultText.gameObject.SetActive(true);
         }
 
-        // PotionCraft에 포션 생성 위임
-        PotionCraft.CreatePotion(potionType);
+        PotionData craftedPotion = CraftPotion(slot1Item, slot2Item);
+        inventory.AddPotion(craftedPotion, 1);
 
         Debug.Log($"게임 종료! 게이지: {gaugeValue:F1}");
 
+        RemoveUsedMaterials();
+
         Invoke(nameof(CloseGame), 1.5f);
     }
+    private void RemoveUsedMaterials()
+    {
+        if (slot1Item != null)
+        {
+            int index = inventory.MaterialItems.IndexOf(slot1Item);
+            if (index >= 0)
+            {
+                inventory.RemoveItem(index, 1);
+            }
+        }
 
+        if (slot2Item != null)
+        {
+            int index = inventory.MaterialItems.IndexOf(slot2Item);
+            if (index >= 0)
+            {
+                inventory.RemoveItem(index, 1);
+            }
+        }
+    }
     private void CloseGame()
     {
-        oxygenGauge.gameObject.SetActive(false);
+        oxygenGauge.SetActive(false);
         if (resultText != null)
             resultText.gameObject.SetActive(false);
         gameStarted = false;
     }
-
     public void ClearSlots()
     {
         slot1Item = null;
@@ -166,12 +204,42 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         nextReplaceIndex = 0;
         gameStarted = false;
     }
-
-    public int GetMaterialCount()
+    public static PotionTemp DeterminePotionTemp(float gaugeValue)
     {
-        int count = 0;
-        if (slot1Item != null) count++;
-        if (slot2Item != null) count++;
-        return count;
+        if (gaugeValue < 25f)
+            return PotionTemp.Failure;
+        else if (gaugeValue < 50f)
+            return PotionTemp.LowTemp;
+        else if (gaugeValue < 75f)
+            return PotionTemp.MidTemp;
+        else
+            return PotionTemp.HighTemp;
+    }
+    public static string GetPotionName(PotionTemp type)
+    {
+        return type switch
+        {
+            PotionTemp.Failure => "FAILED",
+            PotionTemp.LowTemp => "LOW TEMP POTION",
+            PotionTemp.MidTemp => "MID TEMP POTION",
+            PotionTemp.HighTemp => "HIGH TEMP POTION",
+            _ => "Unknown"
+        };
+    }
+    public PotionData CraftPotion(Item first, Item second)
+    {
+        //cp: crafted potion
+        PotionData cp = new()
+        {
+            potionName = first.data.topName + second.data.bottomName,
+
+            damage1 = first.data.topDamage,
+            damage2 = second.data.bottomDamage,
+            
+            element1 = first.data.element,
+            element2 = second.data.element,
+
+        };
+        return cp;
     }
 }
