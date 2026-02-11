@@ -10,23 +10,20 @@ public class InventorySlot : MonoBehaviour
     [SerializeField] private Image slotBackground;
     
     private InventoryUI inventoryUI;  
-    private ItemCategory category;     
     private Item currentItem;
     
     public int SlotIndex { get; set; }
 
 
-    public void Init(InventoryUI ui, int index, ItemCategory cat)
+    public void Init(InventoryUI ui, int index)
     {
         inventoryUI = ui;
         SlotIndex = index;
-        category = cat; 
     }
 
     public void OnClick()
     {
-        // category와 함께 전달
-        inventoryUI.OnSlotClicked(category, SlotIndex);
+        inventoryUI.OnMaterialSlotClicked(SlotIndex);
     }
 
 
@@ -50,7 +47,6 @@ public class InventorySlot : MonoBehaviour
             }
         }
     }
-
     public void Clear()
     {
         currentItem = null;

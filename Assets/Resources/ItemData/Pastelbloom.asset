@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d59bd60959b40674d815b75ed82e6639, type: 3}
   m_Name: Pastelbloom
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Pastelbloom Spawn
+  itemName: Pastelbloom
   description: 
   icon: {fileID: 8140422811112854518, guid: 6a48f8222c89d0946ab027fe749afc99, type: 3}
   specificPrefab: {fileID: 0}

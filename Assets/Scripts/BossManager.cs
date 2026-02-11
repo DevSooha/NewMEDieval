@@ -5,6 +5,7 @@ public class BossManager : MonoBehaviour
     public static BossManager Instance;
     public ThreeWitchCombat threeWitchCombat;
     public RolietCombat rolietCombat;
+    public JulmeoCombat JulmeoCombat;
 
     [Header("Bosses by Room Name")]
     public BossData[] roomBosses;  
@@ -16,7 +17,7 @@ public class BossManager : MonoBehaviour
         public MonoBehaviour bossCombat;
     }
 
-    public enum BossType { ThreeWitch, RJ } 
+    public enum BossType { ThreeWitch, Roliet, Julmeo } 
 
     public bool IsBossActive { get; private set; }
 
@@ -48,6 +49,9 @@ public class BossManager : MonoBehaviour
                 } 
                 else if (boss.bossCombat is RolietCombat rolietCombat) {
                     rolietCombat.StartBattle();
+                }
+                else if (boss.bossCombat is JulmeoCombat julmeoCombat) {
+                    julmeoCombat.StartBattle();
                 }
             }
             return;

@@ -279,6 +279,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8866346546095392634}
     m_Modifications:
+    - target: {fileID: 117460398088026558, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
+      propertyPath: m_Type
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 117460398088026558, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 291694721163546958, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -343,6 +351,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4207853271368110203, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
+      propertyPath: m_Type
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4207853271368110203, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 6813603112888923320, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -425,7 +441,10 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 291694721163546958, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7579647766680684692}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2254936696513944254, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 276044362947903642}
   m_SourcePrefab: {fileID: 100100000, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
 --- !u!114 &3907232892261589300 stripped
 MonoBehaviour:
@@ -443,6 +462,78 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 291694721163546958, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
   m_PrefabInstance: {fileID: 7219083688780556509}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7351080190255777948 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 156251743016951873, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
+  m_PrefabInstance: {fileID: 7219083688780556509}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8891357628792320611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+--- !u!1 &8891357628792320611 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2254936696513944254, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
+  m_PrefabInstance: {fileID: 7219083688780556509}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &276044362947903642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8891357628792320611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 7351080190255777948}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8891357628792320611}
+        m_TargetAssemblyTypeName: CraftUI, Assembly-CSharp
+        m_MethodName: 
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1001 &8044364170194405070
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -453,7 +544,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 790989532697469599, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 790989532697469599, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
       propertyPath: m_AnchorMin.y
@@ -527,6 +618,14 @@ PrefabInstance:
       propertyPath: craftUI
       value: 
       objectReference: {fileID: 3907232892261589300}
+    - target: {fileID: 3319161597603487483, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
+      propertyPath: itemSlotPrefab
+      value: 
+      objectReference: {fileID: 8288547977990307379, guid: 00c881508aa0623479727a6594ab39ff, type: 3}
+    - target: {fileID: 3319161597603487483, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
+      propertyPath: potionSlotPrefab
+      value: 
+      objectReference: {fileID: 8288547977990307379, guid: b9122569528f2f74c8dedf45227aba6d, type: 3}
     - target: {fileID: 5989624782997958667, guid: fd4e0061d41d76649a0d57132bd96db4, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
