@@ -48,6 +48,8 @@ public class RoomManager : MonoBehaviour
     {
         loadedRooms.Clear();
 
+        if (mainCamera == null) mainCamera = Camera.main;
+
         // 1. 플레이어 참조 확보
         if (player == null && Player.Instance != null)
             player = Player.Instance.transform;
@@ -72,6 +74,12 @@ public class RoomManager : MonoBehaviour
             Debug.LogError("[RoomManager] 치명적 오류: Player를 찾을 수 없습니다!");
             return;
         }
+        if (mainCamera == null)
+        {
+            Debug.LogError("[RoomManager] Camera reference is missing and Camera.main was not found.");
+            return;
+        }
+
 
         // =========================================================
         // ★ [핵심 논리 분기] : 재시작 vs 이어하기 vs 새 게임
@@ -210,6 +218,9 @@ public class RoomManager : MonoBehaviour
     {
         if (isTransitioning || (BossManager.Instance != null && BossManager.Instance.IsBossActive)) return;
         if (isCoolingDown) return;
+        if (nextRoom == null) return;
+        if (mainCamera == null) mainCamera = Camera.main;
+        if (mainCamera == null) return;
 
         if (!loadedRooms.ContainsKey(nextRoom.roomID))
         {
@@ -242,6 +253,9 @@ public class RoomManager : MonoBehaviour
 
     private IEnumerator TransitionRoutine(Vector2 direction, RoomData nextRoom, float distanceOverride)
     {
+        if (mainCamera == null) mainCamera = Camera.main;
+        if (mainCamera == null) yield break;
+
         isTransitioning = true;
         isCoolingDown = true;
         SetPlayerInput(false);
@@ -301,7 +315,9 @@ public class RoomManager : MonoBehaviour
     {
         foreach (var data in allMapRooms)
         {
-            if (data.roomCoord == coord) return data;
+            int roomX = Mathf.RoundToInt(data.roomCoord.x);
+            int roomY = Mathf.RoundToInt(data.roomCoord.y);
+            if (roomX == coord.x && roomY == coord.y) return data;
         }
         return null;
     }
