@@ -20,9 +20,24 @@ public class PlayerInteraction : MonoBehaviour
     void Start()
     {
         interactionCollider = GetComponent<CircleCollider2D>();
+        if (interactionCollider == null)
+        {
+            Debug.LogError($"[PlayerInteraction] CircleCollider2D is missing on {gameObject.name}. Disabling PlayerInteraction.");
+            enabled = false;
+            return;
+        }
+
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
-        craftUI.gameObject.SetActive(false);
+
+        if (craftUI != null)
+        {
+            craftUI.gameObject.SetActive(false);
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerInteraction] craftUI is not assigned on {gameObject.name}.");
+        }
     }
     void Update()
     {
@@ -126,7 +141,10 @@ public class PlayerInteraction : MonoBehaviour
     }
     public void EnterCrafting()
     {
-        craftUI.gameObject.SetActive(true);
+        if (craftUI != null)
+        {
+            craftUI.gameObject.SetActive(true);
+        }
     }
 
     void OnTriggerExit2D(Collider2D other)

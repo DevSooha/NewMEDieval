@@ -15,6 +15,7 @@ TagManager:
   - Item
   - Poison
   - Bullets
+  - Wall
   layers:
   - Default
   - TransparentFX
