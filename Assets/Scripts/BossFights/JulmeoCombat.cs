@@ -2,7 +2,7 @@ using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class JulmeoCombat : MonoBehaviour
+public class JulmeoCombat : BossCombatBase
 {
     public GameObject fireStartEffect;
     public GameObject fireBallPrefab;
@@ -19,7 +19,7 @@ public class JulmeoCombat : MonoBehaviour
     {
         canMove = true;
     }
-    public void StartBattle()
+    public override void StartBattle()
     {
         if (canMove == false) return;
         StartCoroutine(BattleRoutine());
