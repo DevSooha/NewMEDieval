@@ -325,8 +325,7 @@ PrefabInstance:
       propertyPath: m_Name
       value: NewPlayer
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 4395408561452145397, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -848,34 +847,11 @@ PrefabInstance:
       propertyPath: startRoomData
       value: 
       objectReference: {fileID: 11400000, guid: 21a547241fef03d49a55ec8d4c20f949, type: 2}
-    m_RemovedComponents:
-    - {fileID: 3995192780879610803, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5741240255520915114, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1613558554}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
---- !u!1 &1613558553 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5741240255520915114, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-  m_PrefabInstance: {fileID: 1613558552}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1613558554
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1613558553}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54b7425429bcc79468decd0d4f1c5026, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
-  interactionRadius: 1
-  craftUI: {fileID: 0}
 --- !u!1 &1639356665
 GameObject:
   m_ObjectHideFlags: 0

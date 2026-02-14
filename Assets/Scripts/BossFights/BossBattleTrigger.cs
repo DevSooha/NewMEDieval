@@ -24,6 +24,8 @@ public class BossBattleTrigger : MonoBehaviour
 
     private void Start()
     {
+        ResolveAssignedBossIfNeeded();
+
         if (assignedBoss != null)
             assignedBoss.gameObject.SetActive(false);
 
@@ -183,6 +185,7 @@ public class BossBattleTrigger : MonoBehaviour
     private void ActivateBossBattle()
     {
         SetBlockades(true);
+        ResolveAssignedBossIfNeeded();
 
         if (assignedBoss != null)
         {
@@ -198,6 +201,37 @@ public class BossBattleTrigger : MonoBehaviour
         {
             Debug.LogError($"[BossTrigger] Assigned boss is missing on {gameObject.name}");
             SetBlockades(false);
+        }
+    }
+
+    private void ResolveAssignedBossIfNeeded()
+    {
+        if (assignedBoss != null) return;
+
+        // 1) Try local children first (inactive included).
+        assignedBoss = GetComponentInChildren<BossCombatBase>(true);
+
+        // 2) If not found, search the room root hierarchy (sibling branches included).
+        if (assignedBoss == null)
+        {
+            Transform roomRoot = transform.root;
+            if (roomRoot != null)
+            {
+                BossCombatBase[] bosses = roomRoot.GetComponentsInChildren<BossCombatBase>(true);
+                if (bosses != null && bosses.Length > 0)
+                {
+                    assignedBoss = bosses[0];
+                }
+            }
+        }
+
+        if (assignedBoss != null)
+        {
+            Debug.LogWarning($"[BossTrigger] assignedBoss was empty on {gameObject.name}. Auto-resolved to {assignedBoss.name}.");
+        }
+        else
+        {
+            Debug.LogError($"[BossTrigger] assignedBoss unresolved on {gameObject.name} (root: {transform.root.name}).");
         }
     }
 }
