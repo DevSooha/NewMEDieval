@@ -36,8 +36,16 @@ public class BedimmedWall : MonoBehaviour
         // 안전지대 안으로 들어오면 소멸
         if (diffX <= boxHalfSize && diffY <= boxHalfSize)
         {
-            Destroy(gameObject);
+            isActive = false;
+            gameObject.SetActive(false);
         }
+    }
+
+
+    private void OnDisable()
+    {
+        isActive = false;
+        targetTransform = null;
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
