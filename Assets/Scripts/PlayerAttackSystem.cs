@@ -34,7 +34,6 @@ public class PlayerAttackSystem : MonoBehaviour
 
     // ÄÄÆ÷³ÍÆ® Ä³½Ì
     private Player playerMovement;
-    private Animator anim;
 
     private Vector2 aimDirection = Vector2.down;
 
@@ -51,7 +50,6 @@ public class PlayerAttackSystem : MonoBehaviour
     void Start()
     {
         playerMovement = GetComponent<Player>();
-        anim = GetComponent<Animator>();
 
         // Å¸ÀÏ¸Ê ÀÚµ¿ Ã£±â
         if (floorTilemap == null)
@@ -156,9 +154,6 @@ public class PlayerAttackSystem : MonoBehaviour
     IEnumerator MeleeAttackRoutine()
     {
         isAttack = true;
-        if (anim != null) anim.SetTrigger("IsAttack");
-        yield return null;
-        if (anim != null) anim.ResetTrigger("IsAttack");
 
         Vector2 attackPos = (Vector2)transform.position + (aimDirection * tileSize);
 
@@ -245,6 +240,7 @@ public class PlayerAttackSystem : MonoBehaviour
                     ShowStackMarker(currentStack);
                 }
             }
+
             yield return null;
         }
     }
@@ -361,3 +357,5 @@ public class PlayerAttackSystem : MonoBehaviour
         Debug.Log($"¹«±â ±³Ã¼µÊ: {slots[0].type}");
     }
 }
+
+
