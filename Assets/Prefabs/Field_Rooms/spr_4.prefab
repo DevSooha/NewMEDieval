@@ -91,11 +91,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ecf3290e88fabc4daf98775606c2af8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossBattleTrigger
+  assignedBoss: {fileID: 6749653791617339144}
+  blockadeParent: {fileID: 8007011453237081102}
   startPositionTF: {fileID: 6551083972248169201}
   pushDirection: {x: 0, y: -1}
   pushDistance: 2.5
-  rolietPrefab: {fileID: 0}
-  threeWitchPrefab: {fileID: 7420740953848309663}
 --- !u!1 &339347697887199049
 GameObject:
   m_ObjectHideFlags: 0
