@@ -5,7 +5,9 @@ public enum ElementType
     None,
     Fire,       // 불
     Water,      // 물
-    Electric    // 전기
+    Electric,   // 전기
+    Light,      // 빛 (New)
+    Dark        // 어둠 (New)
 }
 
 public static class ElementManager
@@ -23,7 +25,7 @@ public static class ElementManager
         switch (attack)
         {
             case ElementType.Water:
-                if (defend == ElementType.Fire) return 2.0f;     // 물 -> 불 (2배)
+                if (defend == ElementType.Fire) return 2.0f;      // 물 -> 불 (2배)
                 if (defend == ElementType.Electric) return 0.5f; // 물 -> 전기 (0.5배)
                 break;
             case ElementType.Fire:
@@ -34,6 +36,7 @@ public static class ElementManager
                 if (defend == ElementType.Water) return 2.0f;    // 전기 -> 물 (2배)
                 if (defend == ElementType.Fire) return 0.5f;     // 전기 -> 불 (0.5배)
                 break;
+            // Light, Dark는 현재 상호 상성이 정의되지 않았으므로 기본 1.0f 반환
         }
 
         return 1.0f; // 그 외
