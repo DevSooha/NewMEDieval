@@ -23,8 +23,8 @@ public class ItemData : ScriptableObject
     public int topDamage;
     public int bottomDamage;
     [SerializeField] public Element element;
-    [SerializeField] public SpriteRenderer TopImage;
-    [SerializeField] public SpriteRenderer BottomImage;
+    [SerializeField] public Sprite topSprite;
+    [SerializeField] public Sprite bottomSprite;
 
     public string description;
     public Sprite icon;

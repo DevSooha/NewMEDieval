@@ -19,6 +19,10 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private GameObject potionSlotPrefab;
     [SerializeField] private TextMeshProUGUI materialPageText;
     [SerializeField] private TextMeshProUGUI potionPageText;
+
+    [Header("Tooltip")]
+    [SerializeField] private GameObject tooltipPanel;
+    [SerializeField] private TextMeshProUGUI tooltipText;
     
     private InventorySlot[] materialSlots;
     private PotionSlot[] potionSlots;
@@ -31,6 +35,7 @@ public class InventoryUI : MonoBehaviour
         materialPageButton.onClick.AddListener(() => NextMaterialPage());
         potionPageButton.onClick.AddListener(() => NextPotionPage());
         
+        HideTooltip();
         RefreshUI();
     }
 
@@ -138,5 +143,32 @@ public class InventoryUI : MonoBehaviour
         
         int maxPage = Mathf.Max(1, inventory.MaxPotionPage);
         potionPageText.text = $"{inventory.CurrentPotionPage + 1} / {maxPage}";
+    }
+    public void ShowPotionTooltip(Potion potion, Vector3 position)
+    {
+        if (potion == null || potion.data == null)
+        {
+            HideTooltip();
+            return;
+        }
+        
+        tooltipText.text = $"{potion.data.potionName}\n" +
+                       $"Damage 1: {potion.data.damage1}\n" +
+                       $"Damage 2: {potion.data.damage2}\n" +
+                       $"Bullet Type 1: {potion.data.bulletType1}\n" +
+                       $"Bullet Type 2: {potion.data.bulletType2}\n" +
+                       $"Element 1: {potion.data.element1}\n" +
+                       $"Element 2: {potion.data.element2}";
+    
+    tooltipPanel.SetActive(true);
+    tooltipPanel.transform.position = position;
+    }
+    
+    public void HideTooltip()
+    {
+        if (tooltipPanel != null)
+        {
+            tooltipPanel.SetActive(false);
+        }
     }
 }

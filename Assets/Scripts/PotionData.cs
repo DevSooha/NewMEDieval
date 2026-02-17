@@ -31,8 +31,8 @@ public class PotionData
     public PotionEffect potionEffect2;
     public Element element1;
     public Element element2;
-    public Image topIMG;
-    public Image bottomIMG;
+    public Sprite topIMG;
+    public Sprite bottomIMG;
 
     public int maxStack = 20; 
     public bool isStackable = true;
