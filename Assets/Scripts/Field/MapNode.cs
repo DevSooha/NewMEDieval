@@ -97,6 +97,8 @@ public class MapNode : MonoBehaviour
     {
         if (other.CompareTag("Player") && other is CapsuleCollider2D)
         {
+            if (UIManager.DialogueActive || UIManager.SelectionActive) return;
+
             float inputX = Input.GetAxisRaw("Horizontal");
             float inputY = Input.GetAxisRaw("Vertical");
 
