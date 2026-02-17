@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
+using System.Collections;
+using System.Collections.Generic;
 
 public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
@@ -31,7 +33,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private bool isDragging = false;
     private bool gameStarted = false;
 
-    private const float GAUGE_HEIGHT = 128f;
+    private const float GAUGE_HEIGHT = 224f;
     private const float GAUGE_UP_SPEED = 28f;   
     private const float GAUGE_DOWN_SPEED = 10f;
 
@@ -138,11 +140,8 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     private void UpdateGaugeUI()
     {
-        float barHeight = (gaugeValue / 100f) * GAUGE_HEIGHT;
-        gaugeBar.rectTransform.sizeDelta = new Vector2(gaugeBar.rectTransform.sizeDelta.x, barHeight);
-
         float needleY = (gaugeValue / 100f) * GAUGE_HEIGHT - GAUGE_HEIGHT / 2f;
-        needleMarker.rectTransform.localPosition = new Vector3(0, needleY, 0);
+        needleMarker.rectTransform.localPosition = new Vector3(27.5f, needleY, 0);
     }
 
     private void EndGame()
@@ -238,6 +237,10 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             
             element1 = first.data.element,
             element2 = second.data.element,
+
+            topIMG = first.data.topSprite,
+            bottomIMG = second.data.bottomSprite,
+            
 
         };
         return cp;
