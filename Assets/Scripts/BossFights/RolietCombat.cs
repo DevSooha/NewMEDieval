@@ -8,7 +8,7 @@ public enum RolietState
     Cooldown
 }
 
-public class RolietCombat : MonoBehaviour
+public class RolietCombat : BossCombatBase
 {
     public Transform playerTF;
     public JulmeoCombat julmeo;
@@ -18,7 +18,7 @@ public class RolietCombat : MonoBehaviour
     
 
     
-    public void StartBattle()
+    public override void StartBattle()
     {
         if (rolietState == RolietState.Attack) return;
 

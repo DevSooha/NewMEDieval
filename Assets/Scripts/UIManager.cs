@@ -10,6 +10,7 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
     public static bool DialogueActive => dialogueActive;
+    public static bool SelectionActive => Instance != null && Instance.SelectPanel != null && Instance.SelectPanel.activeSelf;
 
     [Header("Fade Settings")]
     public Image fadeImage;
@@ -238,6 +239,11 @@ public class UIManager : MonoBehaviour
     public bool IsDialogueActive()
     {
         return dialogueActive;
+    }
+
+    public bool IsSelectPanelActive()
+    {
+        return SelectPanel != null && SelectPanel.activeSelf;
     }
 
 
