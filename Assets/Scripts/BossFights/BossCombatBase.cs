@@ -1,10 +1,28 @@
 using UnityEngine;
 
-// ÀÌ ½ºÅ©¸³Æ®´Â ¾Æ¹«µ¥µµ ºÙÀÌÁö ¸¶¼¼¿ä. ±×³É ÆÄÀÏ¸¸ ÀÖÀ¸¸é µË´Ï´Ù.
+// ï¿½ï¿½ ï¿½ï¿½Å©ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Æ¹ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½. ï¿½×³ï¿½ ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë´Ï´ï¿½.
 public abstract class BossCombatBase : MonoBehaviour
 {
+    
+    [Header("Default Knockback Settings")]
+    [SerializeField] protected float defaultKnockbackForce = 8f;
+    [SerializeField] protected float defaultKnockbackStunTime = 0.2f;
+    
     public abstract void StartBattle();
+    
+    protected void Knockback(Player player, Transform sender, float? forceOverride = null, float? stunOverride = null)
+    {
+        if (player == null || sender == null) return;
+
+        float force = forceOverride ?? defaultKnockbackForce;
+        float stun  = stunOverride  ?? defaultKnockbackStunTime;
+
+        player.KnockBack(sender, force, stun);
+    }
+
+
 }
+
 
 public interface IBossDamageModifier
 {

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_FX_EnergyBall 1
-  m_Shader: {fileID: 4800000, guid: dabf04bca013f584aa42c948d81065e6, type: 3}
+  m_Name: M_Particle_01 4
+  m_Shader: {fileID: 4800000, guid: b14ed25d7742239468e13c159248f01f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -23,30 +23,25 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _DissolveTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DistortTex:
-        m_Texture: {fileID: 2800000, guid: 528998efa04a61e44b924bfe25c1ce89, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 56c768aade3b42d4ca7bf5dacbb4f234, type: 3}
+        m_Texture: {fileID: 2800000, guid: a34213c75015512468cea15e72a7efef, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _MaskTex:
+    - _NoiseTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _DissolveAmount: 0
-    - _DissolveEdge: 0
-    - _DistortStrength: 0.109
+    - _AlphaCut: 0
+    - _DissolveEdgeWidth: 0
+    - _DissolveThreshold: 0
+    - _DistortSpeed: 0
+    - _DistortStrength: 0
+    - _GrabMix: 0.5
+    - _NoiseScale: 4
     m_Colors:
-    - _Color: {r: 0.07058824, g: 0.5294118, b: 0.2479179, a: 1}
-    - _DissolveEdgeColor: {r: 1, g: 1, b: 1, a: 0}
-    - _DistortSpeed: {r: 0.1, g: -0.5, b: 0, a: 0}
+    - _EdgeColor: {r: 1, g: 0.6, b: 0, a: 1}
+    - _Tint: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
