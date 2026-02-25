@@ -6,6 +6,10 @@ public class TestGameStarter : MonoBehaviour
     [Header("시작 설정")]
     public RoomData startingRoom;
     public Transform player;
+    public Transform playerSpawnPointOverride;
+    public string playerSpawnPointName = "PlayerSpawnPoint";
+
+    private bool spawnPointRetryQueued = false;
 
     private IEnumerator Start()
     {
@@ -38,33 +42,36 @@ public class TestGameStarter : MonoBehaviour
     {
         // 기본 위치 설정
         Vector3 spawnPos = new Vector3(0, -2, 0);
-        GameObject spawnPointObj = null;
+        Transform spawnPoint = playerSpawnPointOverride;
 
-        // 1. 활성화된 오브젝트 중에서 우선 검색 (빠름)
-        spawnPointObj = GameObject.Find("PlayerSpawnPoint");
-
-        // 2. 못 찾았다면 비활성화된 오브젝트까지 포함하여 전역 검색 (느리지만 확실함)
-        if (spawnPointObj == null)
+        // 0. 현재 방 내부에서 캐시된 스폰 포인트 조회 (가장 빠름)
+        if (spawnPoint == null && RoomManager.Instance != null)
         {
-            Transform[] allTransforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var t in allTransforms)
-            {
-                if (t.name == "PlayerSpawnPoint")
-                {
-                    spawnPointObj = t.gameObject;
-                    break;
-                }
-            }
+            spawnPoint = RoomManager.Instance.GetSpawnPointForCurrentRoom(playerSpawnPointName);
         }
 
-        if (spawnPointObj != null)
+        // 1. 활성화된 오브젝트 중에서 우선 검색 (빠름)
+        if (spawnPoint == null)
         {
-            spawnPos = spawnPointObj.transform.position;
+            GameObject spawnPointObj = GameObject.Find(playerSpawnPointName);
+            if (spawnPointObj != null) spawnPoint = spawnPointObj.transform;
+        }
+
+        if (spawnPoint != null)
+        {
+            spawnPos = spawnPoint.position;
             Debug.Log($"[TestGameStarter] 스폰 포인트 발견: {spawnPos}");
         }
         else
         {
-            Debug.LogWarning("[TestGameStarter] 'PlayerSpawnPoint'를 찾을 수 없어 기본 위치(0, -2, 0)로 이동합니다.");
+            if (!spawnPointRetryQueued)
+            {
+                spawnPointRetryQueued = true;
+                StartCoroutine(RetrySpawnPointNextFrame());
+                return;
+            }
+
+            Debug.LogWarning($"[TestGameStarter] '{playerSpawnPointName}'를 찾을 수 없어 기본 위치(0, -2, 0)로 이동합니다.");
         }
 
         player.position = spawnPos;
@@ -74,5 +81,11 @@ public class TestGameStarter : MonoBehaviour
         {
             RoomManager.Instance.SyncCameraToPlayer();
         }
+    }
+
+    private IEnumerator RetrySpawnPointNextFrame()
+    {
+        yield return null;
+        MovePlayerToSpawnPoint();
     }
 }
