@@ -244,7 +244,7 @@ public class Player : MonoBehaviour
     }
     bool IsInteractOrAttackPressed()
     {
-        return Input.GetKeyDown(KeyCode.Z) || Input.GetMouseButtonDown(1);
+        return CombatInputHelper.IsAttackPressed();
     }
 
 

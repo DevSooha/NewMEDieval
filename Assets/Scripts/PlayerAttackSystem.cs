@@ -390,12 +390,12 @@ public class PlayerAttackSystem : MonoBehaviour
 
     bool IsAttackPressed()
     {
-        return Input.GetKeyDown(KeyCode.Z) || Input.GetMouseButtonDown(1);
+        return CombatInputHelper.IsAttackPressed();
     }
 
     bool IsAttackReleased()
     {
-        return Input.GetKeyUp(KeyCode.Z) || Input.GetMouseButtonUp(1);
+        return CombatInputHelper.IsAttackReleased();
     }
 
     void SyncPotionSlotCounts()
@@ -488,5 +488,21 @@ public class PlayerAttackSystem : MonoBehaviour
 
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireCube(attackPos, attackBoxSize);
+    }
+}
+
+internal static class CombatInputHelper
+{
+    private const KeyCode AttackKey = KeyCode.Z;
+    private const int AttackMouseButton = 1;
+
+    internal static bool IsAttackPressed()
+    {
+        return Input.GetKeyDown(AttackKey) || Input.GetMouseButtonDown(AttackMouseButton);
+    }
+
+    internal static bool IsAttackReleased()
+    {
+        return Input.GetKeyUp(AttackKey) || Input.GetMouseButtonUp(AttackMouseButton);
     }
 }
