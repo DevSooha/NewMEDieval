@@ -304,6 +304,20 @@ public class Player : MonoBehaviour
         // Idle?? ìŽˆêµ?Move ?? ì?ê¹???? ìŽˆì­?true è«›ì„‘??
         return currentState == PlayerState.Idle || currentState == PlayerState.Move;
     }
+    public void KnockBack(Transform sender, float force, float stunTime)
+    {
+        if (sender == null) return;
+
+        Vector2 direction = (Vector2)(transform.position - sender.position);
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            direction = lastDirection.sqrMagnitude > 0.0001f ? lastDirection : Vector2.up;
+        }
+
+        float duration = Mathf.Max(0.01f, stunTime);
+        float distance = Mathf.Max(0f, force) * duration;
+        KnockBackByDistance(direction, distance, duration);
+    }
     public void KnockBackByDistance(Vector2 direction, float distance, float duration)
     {
         if (!gameObject.activeInHierarchy) return;
