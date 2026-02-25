@@ -6,6 +6,7 @@ using UnityEngine;
 public class StainedSwordProjectile : MonoBehaviour
 {
     [SerializeField] private float speedPerSecond = 2f;
+    [SerializeField] private float followStartDelay = 0.2f;
     [SerializeField] private float homingDuration = 2.8f;
     [SerializeField] private float fadeOutDuration = 0.1f;
     [SerializeField] private int damage = 1;
@@ -13,18 +14,25 @@ public class StainedSwordProjectile : MonoBehaviour
     private Transform target;
     private Action<StainedSwordProjectile> onDestroyed;
     private bool isFading;
+    private bool canCollide;
     private Collider2D projectileCollider;
     private SpriteRenderer[] spriteRenderers;
+
+    private void Awake()
+    {
+        projectileCollider = GetComponent<Collider2D>();
+        projectileCollider.isTrigger = true;
+        projectileCollider.enabled = false;
+        spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+    }
 
     public void Initialize(Transform followTarget, Action<StainedSwordProjectile> onDestroyedCallback)
     {
         target = followTarget;
         onDestroyed = onDestroyedCallback;
-
-        projectileCollider = GetComponent<Collider2D>();
-        projectileCollider.isTrigger = true;
-
-        spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        projectileCollider.enabled = false;
+        isFading = false;
+        canCollide = false;
 
         StopAllCoroutines();
         StartCoroutine(HomingRoutine());
@@ -32,6 +40,14 @@ public class StainedSwordProjectile : MonoBehaviour
 
     private IEnumerator HomingRoutine()
     {
+        if (followStartDelay > 0f)
+        {
+            yield return new WaitForSeconds(followStartDelay);
+        }
+
+        projectileCollider.enabled = true;
+        canCollide = true;
+
         float elapsed = 0f;
 
         while (elapsed < homingDuration)
@@ -55,10 +71,8 @@ public class StainedSwordProjectile : MonoBehaviour
         if (isFading) yield break;
         isFading = true;
 
-        if (projectileCollider != null)
-        {
-            projectileCollider.enabled = false;
-        }
+        projectileCollider.enabled = false;
+        canCollide = false;
 
         float elapsed = 0f;
         while (elapsed < fadeOutDuration)
@@ -83,17 +97,23 @@ public class StainedSwordProjectile : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (isFading) return;
+        if (isFading || !canCollide) return;
 
         if (other.CompareTag("Player"))
         {
-            PlayerHealth health = other.GetComponent<PlayerHealth>();
-            if (health == null) health = other.GetComponentInParent<PlayerHealth>();
+            Vector2 fallbackDirection = target != null
+                ? ((Vector2)(target.position - transform.position))
+                : (Vector2)transform.right;
 
-            if (health != null)
-            {
-                health.TakeDamage(damage);
-            }
+            BossHitResolver.TryApplyBossHit(
+                other,
+                damage,
+                transform.position,
+                BossHitResolver.DefaultKnockbackDistance,
+                BossHitResolver.DefaultKnockbackDuration,
+                true,
+                fallbackDirection
+            );
 
             DestroyProjectile();
         }

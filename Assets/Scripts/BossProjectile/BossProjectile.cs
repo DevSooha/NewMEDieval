@@ -1,35 +1,55 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 public class BossProjectile : MonoBehaviour
 {
     public float speed = 10.0f;
     public int damage = 1;
 
+    [Header("Hit Reaction")]
+    [SerializeField] protected bool applyKnockbackOnHit = true;
+    [SerializeField] protected float knockbackDistance = 1f;
+    [SerializeField] protected float knockbackDuration = 0.2f;
+
     public ElementType projectileElement = ElementType.Fire;
 
     private Action<BossProjectile> returnToPool;
+    private bool useCustomDirection;
+    private Vector2 customDirection = Vector2.right;
 
     public void SetPoolCallback(Action<BossProjectile> callback)
     {
         returnToPool = callback;
     }
 
-    // 자식이 덮어쓸 수 있도록 virtual 추가
     public virtual void Setup(ElementType element)
     {
+        useCustomDirection = false;
+        customDirection = Vector2.right;
         projectileElement = element;
         CancelInvoke(nameof(DestroyProjectile));
         Invoke(nameof(DestroyProjectile), 3.0f);
     }
 
-    // 자식이 이동 방식을 바꿀 수 있도록 protected virtual 추가
     protected virtual void Update()
     {
-        transform.Translate(Vector2.right * speed * Time.deltaTime);
+        Vector2 moveDir = useCustomDirection ? customDirection : (Vector2)transform.right;
+        transform.Translate(moveDir * speed * Time.deltaTime, Space.World);
     }
 
-    // 자식이 풀 반환 로직을 사용할 수 있도록 protected virtual 추가 (private -> protected)
+    public void SetMoveDirection(Vector2 direction)
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            useCustomDirection = false;
+            customDirection = Vector2.right;
+            return;
+        }
+
+        useCustomDirection = true;
+        customDirection = direction.normalized;
+    }
+
     protected virtual void DestroyProjectile()
     {
         CancelInvoke(nameof(DestroyProjectile));
@@ -45,20 +65,23 @@ public class BossProjectile : MonoBehaviour
         }
     }
 
-    // 자식이 충돌 로직(구속 미니게임)을 바꿀 수 있도록 protected virtual 추가
     protected virtual void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Boss")) return;
 
         if (other.CompareTag("Player"))
         {
-            PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
-            if (playerHealth == null) playerHealth = other.GetComponentInParent<PlayerHealth>();
+            Vector2 fallbackDirection = useCustomDirection ? customDirection : (Vector2)transform.right;
+            BossHitResolver.TryApplyBossHit(
+                other,
+                damage,
+                transform.position,
+                knockbackDistance,
+                knockbackDuration,
+                applyKnockbackOnHit,
+                fallbackDirection
+            );
 
-            if (playerHealth != null)
-            {
-                playerHealth.TakeDamage(damage);
-            }
             DestroyProjectile();
         }
         else if (other.CompareTag("Grass"))
