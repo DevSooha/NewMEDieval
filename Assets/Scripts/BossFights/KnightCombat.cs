@@ -198,22 +198,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private bool ResolvePlayerTransform()
     {
-        if (playerTransform != null) return true;
-
-        if (Player.Instance != null)
-        {
-            playerTransform = Player.Instance.transform;
-        }
-        else
-        {
-            GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-            if (playerObject != null)
-            {
-                playerTransform = playerObject.transform;
-            }
-        }
-
-        return playerTransform != null;
+        return TryResolvePlayerTransform(ref playerTransform);
     }
 
     private IEnumerator TeleportSmooth(Vector3 targetPosition, float duration)

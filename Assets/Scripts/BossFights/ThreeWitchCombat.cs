@@ -69,26 +69,11 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
     private IEnumerator AppearRoutine()
     {
-        float timer = 0f;
         float appearTime = 1.0f;
+        yield return FadeSpriteAlpha(spriteRenderer, appearTime, 0f, 1f);
 
-        while (timer < appearTime)
+        if (TryResolvePlayerTransform(ref playerTF))
         {
-            timer += Time.deltaTime;
-            float alpha = Mathf.Lerp(0f, 1f, timer / appearTime);
-            if (spriteRenderer != null)
-            {
-                Color c = spriteRenderer.color;
-                c.a = alpha;
-                spriteRenderer.color = c;
-            }
-            yield return null;
-        }
-
-        GameObject foundPlayer = GameObject.FindGameObjectWithTag("Player");
-        if (foundPlayer != null)
-        {
-            playerTF = foundPlayer.transform;
             StartCoroutine(BattleRoutine());
         }
         else

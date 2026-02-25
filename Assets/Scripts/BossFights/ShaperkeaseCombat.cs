@@ -89,26 +89,11 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     IEnumerator AppearRoutine()
     {
-        float timer = 0f;
         float appearTime = 1.0f;
+        yield return FadeSpriteAlpha(spriteRenderer, appearTime, 0f, 1f);
 
-        while (timer < appearTime)
+        if (TryResolvePlayerTransform(ref player))
         {
-            timer += Time.deltaTime;
-            float alpha = Mathf.Lerp(0f, 1f, timer / appearTime);
-            if (spriteRenderer != null)
-            {
-                Color c = spriteRenderer.color;
-                c.a = alpha;
-                spriteRenderer.color = c;
-            }
-            yield return null;
-        }
-
-        GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p != null)
-        {
-            player = p.transform;
             Debug.Log("[Shaperkease] 플레이어 탐색 완료, 전투 루틴 돌입");
             StartCombat();
         }

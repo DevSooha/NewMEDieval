@@ -54,8 +54,6 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
     [SerializeField] private float landingScaleMultiplier = 1f;
     [SerializeField] private float flyingScaleMultiplier = 2.5f;
 
-    private const string PlayerTag = "Player";
-
     public static DragonCombat ActiveInstance { get; private set; }
 
     public event Action OnBattleReset;
@@ -359,16 +357,7 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
 
     private void ResolvePlayer()
     {
-        if (player != null)
-        {
-            return;
-        }
-
-        GameObject playerObj = GameObject.FindGameObjectWithTag(PlayerTag);
-        if (playerObj != null)
-        {
-            player = playerObj.GetComponent<Player>();
-        }
+        TryResolvePlayer(ref player);
     }
 
     private void SetPlayerStun(bool shouldStun)
