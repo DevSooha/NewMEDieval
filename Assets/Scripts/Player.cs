@@ -19,12 +19,13 @@ public class Player : MonoBehaviour
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private LayerMask knockbackObstacleLayers;
 
-    // ë²„í”„ ê´€??ë³€??
+    // è¸°ê¾ªë´??¿Â€??è¹‚Â€??
     public float baseSpeed = 5f;
     float buffTimeLeft = 0f;
 
-    // ?„ì¹˜ ?€??ë³€??
+    // ?? ìŒ??????è¹‚Â€??
     private Vector3 savedPosition;
     private bool hasSavedPosition = false;
 
@@ -41,11 +42,15 @@ public class Player : MonoBehaviour
     private Vector2 moveInput;
     public Animator animator;
     private PlayerInteraction playerInteraction;
+    private InventoryUI inventoryUI;
     private bool isKnockedBack = false;
+    private RigidbodyType2D defaultBodyType;
+    private Coroutine knockbackRoutine;
+    private Coroutine blinkRoutine;
 
     void Awake()
     {
-        // ?±ê????¨í„´ ?ìš©
+        // ?? ì™?????? ì?ê½??? ìŒ??
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -68,13 +73,26 @@ public class Player : MonoBehaviour
             rb.freezeRotation = true;
         }
 
+        defaultBodyType = rb.bodyType;
+
         playerInteraction = GetComponentInChildren<PlayerInteraction>();
+        inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
 
         moveSpeed = baseSpeed;
+
+        int obstacleMask = LayerMask.GetMask("Obstacle");
+        if (knockbackObstacleLayers.value == 0)
+        {
+            knockbackObstacleLayers = obstacleMask;
+        }
+        else if (obstacleMask != 0 && (knockbackObstacleLayers.value & obstacleMask) == 0)
+        {
+            knockbackObstacleLayers |= obstacleMask;
+        }
     }
 
 
-    // ?íƒœ ë³€ê²??¨ìˆ˜(PlayerState ê´€ë¦?
+    // ?? ì?ê¹?è¹‚Â€???? ìŒ??PlayerState ?¿Â€??
 
     void ChangeState(PlayerState newState)
     {
@@ -87,6 +105,8 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        HandleInventoryToggle();
+
         switch (currentState)
         {
             case PlayerState.Stunned:
@@ -105,11 +125,15 @@ public class Player : MonoBehaviour
         }
         CheckBuffStatus();
     }
+    void HandleInventoryToggle()
+    {
+        // Inventory is controlled by Crafting UI only.
+        return;
+    }
 
-    // ?€??ì¤‘ì—??'ê³µê²©'?€ ???˜ê³  '?í˜¸?‘ìš©(?¤ìŒ ?€??'ë§?ì²´í¬?˜ëŠ” ?¨ìˆ˜
     void HandleInteractionOnly()
     {
-        if (Input.GetKeyDown(KeyCode.Z))
+        if (IsInteractOrAttackPressed())
         {
             if (playerInteraction != null)
             {
@@ -124,11 +148,11 @@ public class Player : MonoBehaviour
     }
 
 
-    // ?´ë™ ë°?? ë‹ˆë©”ì´??ì²˜ë¦¬ ?¨ìˆ˜
+    // ?? ìˆë£????? ìˆ?²ï§ë¶¿ì” ??ï§£ì„???? ìŒ??
 
     void HandleMovement()
     {
-        // 2. ?´ë™ ?…ë ¥ ì²˜ë¦¬
+        // 2. ?? ìˆë£??? ìˆ??ï§£ì„??
         if (UIManager.DialogueActive || UIManager.SelectionActive)
         {
             moveInput = Vector2.zero;
@@ -152,7 +176,7 @@ public class Player : MonoBehaviour
             ChangeState(PlayerState.Idle);
         }
 
-        // 3. ? ë‹ˆë©”ì´??ì²˜ë¦¬
+        // 3. ?? ìˆ?²ï§ë¶¿ì” ??ï§£ì„??
         if (isMoving)
         {
             if(vertical > 0.01f)
@@ -181,7 +205,7 @@ public class Player : MonoBehaviour
 
     void CheckBuffStatus()
         {
-            // ë²„í”„ ?œê°„ ì²´í¬
+            // è¸°ê¾ªë´??? ì„ì»?ï§£ëŒ„ê²?
             if (buffTimeLeft > 0f)
             {
                 buffTimeLeft -= Time.deltaTime;
@@ -189,6 +213,7 @@ public class Player : MonoBehaviour
                 {
                     buffTimeLeft = 0f;
                     moveSpeed = baseSpeed;
+
                 }
             }
         }
@@ -200,38 +225,43 @@ public class Player : MonoBehaviour
     }
 
 
-    // ê³µê²© ê´€??ì²˜ë¦¬ ?¨ìˆ˜
+    // ?¨ë“¦êº??¿Â€??ï§£ì„???? ìŒ??
 
     void HandleAttack()
     {
-        if (Input.GetKeyDown(KeyCode.Z))
+        if (IsInteractOrAttackPressed())
         {
-            // 1. ?í˜¸?‘ìš© ë¨¼ì? ?œë„
+            // 1. ?? ì???? ìŒ???’ì‡½?? ?? ìˆë£?
             if (playerInteraction != null && playerInteraction.TryInteract())
             {
                 return;
             }
 
             Debug.Log($"Logic Dir: {lastDirection} / Animator X: {animator.GetFloat("InputX")} / FlipX: {spriteRenderer.flipX}");
-            // 2. ?í˜¸?‘ìš©??ê²??†ìœ¼ë©?ê³µê²©
+            // 2. ?? ì???? ìŒ??????? ìŒ?å ??¨ë“¦êº?
             StartCoroutine(PerformAttack());
         }
     }
+    bool IsInteractOrAttackPressed()
+    {
+        return Input.GetKeyDown(KeyCode.Z) || Input.GetMouseButtonDown(1);
+    }
+
 
     void FixedUpdate()
     {
-        if (isKnockedBack) return; // ?‰ë°± ì¤‘ì—” ?¤ë³´???…ë ¥ ë¬´ì‹œ
+        if (isKnockedBack) return; // ?? ìˆê°?ä»¥ë¬’ë¿??? ìˆ????? ìˆ???¾ëŒ??
 
         switch (currentState)
         {
             case PlayerState.Stunned:
             case PlayerState.Attack:
-                // ?´ë™??0?¼ë¡œ ?¤ì • (?‰ë°±?€ KnockBack ?¨ìˆ˜?ì„œ ?˜ì„ ê°€?˜ë?ë¡??¬ê¸°??0)
+                // ?? ìˆë£??0?? ìˆì¤??? ìŒ??(?? ìˆê°???KnockBack ?? ìŒ??? ìŒê½??? ìŒ??åª›Â€?? ì™?????? ì„ë¦??0)
                 rb.linearVelocity = Vector2.zero;
                 break;
 
             case PlayerState.Move:
-                // ?´ë™ ?íƒœ???Œë§Œ ë¬¼ë¦¬ ??ê°€?˜ê¸°
+                // ?? ìˆë£??? ì?ê¹???? ìˆì­??¾ì‡°????åª›Â€?? ì„ë¦?
                 rb.linearVelocity = moveInput * moveSpeed;
                 break;
 
@@ -243,69 +273,195 @@ public class Player : MonoBehaviour
 
     IEnumerator PerformAttack()
     {
-        // 1. ê³µê²© ?íƒœë¡?ì§„ì…
+        // 1. ?¨ë“¦êº??? ì?ê¹? ?ï§ê¾©??
         ChangeState(PlayerState.Attack);
 
-        // 2. ? ë‹ˆë©”ì´???¤í–‰
+        // 2. ?? ìˆ?²ï§ë¶¿ì” ???? ì?ë»?
         animator.SetTrigger("IsAttack");
-        yield return null; // ???„ë ˆ???€ê¸?(? ë‹ˆë©”ì´??ê°±ì‹  ?„í•¨)
+        yield return null; // ???? ìˆ????? ì™??(?? ìˆ?²ï§ë¶¿ì” ??åª›ê¹†???? ì?ë¸?
         animator.ResetTrigger("IsAttack");
 
-        // 3. ?œë ˆ???€ê¸?
+        // 3. ?? ìˆ????? ì™??
         yield return new WaitForSeconds(0.4f);
 
-        // 4. ?¤ì‹œ ?€ê¸??íƒœë¡?ë³µê? (ì¤‘ìš”!)
+        // 4. ?? ìŒ???? ì™???? ì?ê¹? ?è¹‚ë“¸?? (ä»¥ë¬’??)
         ChangeState(PlayerState.Idle);
     }
 
 
-    // ?´ë™ ê°€???¬ë? ?¤ì • ë°??•ì¸ ?¨ìˆ˜
+    // ?? ìˆë£?åª›Â€???? ì™?? ?? ìŒ?????? ìŒ???? ìŒ??
 
     public void SetCanMove(bool value)
     {
         if (value)
-            currentState = PlayerState.Idle; // ?´ë™ ê°€?¥í•˜ë©?Idle
+            currentState = PlayerState.Idle; // ?? ìˆë£?åª›Â€?? ì?ë¸? ?Idle
         else
-            currentState = PlayerState.Stunned; // ?´ë™ ë¶ˆê?ë©?Stunned (?¹ì? Interact)
+            currentState = PlayerState.Stunned; // ?? ìˆë£??ºëŒ????Stunned (?? ì™?? Interact)
     }
 
     public bool CanMove()
     {
-        // Idle?´ë‚˜ Move ?íƒœ???Œë§Œ true ë°˜í™˜
+        // Idle?? ìˆêµ?Move ?? ì?ê¹???? ìˆì­?true è«›ì„‘??
         return currentState == PlayerState.Idle || currentState == PlayerState.Move;
     }
-
-    public void KnockBack(Transform sender, float force, float stunTime)
+    public void KnockBackByDistance(Vector2 direction, float distance, float duration)
     {
         if (!gameObject.activeInHierarchy) return;
-        isKnockedBack = true; // 1. ì¡°ì‘ ë¶ˆëŠ¥ ?íƒœë¡??„í™˜
+        if (distance <= 0f || duration <= 0f) return;
 
-        // 2. ?‰ë°± ë°©í–¥ ê³„ì‚°: (??- ?? ë²¡í„°??ë°©í–¥
-        Vector2 direction = (transform.position - sender.position).normalized;
+        if (knockbackRoutine != null)
+        {
+            StopKnockbackImmediately();
+        }
 
-        // 3. ê¸°ì¡´ ?ë„ë¥?0?¼ë¡œ ë§Œë“¤ê³??˜ì„ ê°€??(ê´€??ì´ˆê¸°??
-        rb.linearVelocity = Vector2.zero;
-        rb.AddForce(direction * force, ForceMode2D.Impulse);
-
-        // 4. ê¸°ì ˆ ?œê°„ ì¹´ìš´???œì‘
-        StartCoroutine(ResetKnockBackRoutine(stunTime));
+        knockbackRoutine = StartCoroutine(KnockBackDistanceRoutine(direction, distance, duration));
     }
 
-    private IEnumerator ResetKnockBackRoutine(float duration)
+    private void StopKnockbackImmediately()
     {
-        yield return new WaitForSeconds(duration); // ì§€?•ëœ ?œê°„ ?€ê¸?
+        if (knockbackRoutine != null)
+        {
+            StopCoroutine(knockbackRoutine);
+            knockbackRoutine = null;
+        }
 
-        isKnockedBack = false; // 5. ì¡°ì‘ ê°€???íƒœë¡?ë³µêµ¬
-        rb.linearVelocity = Vector2.zero; // ë°€?¤ë‚˜?????œê±°
+        isKnockedBack = false;
+        if (rb != null)
+        {
+            rb.bodyType = defaultBodyType;
+            rb.linearVelocity = Vector2.zero;
+        }
     }
 
+    private IEnumerator KnockBackDistanceRoutine(Vector2 direction, float distance, float duration)
+    {
+        if (direction.sqrMagnitude < 0.0001f) yield break;
+
+        isKnockedBack = true;
+        SetCanMove(false);
+
+        Vector2 dir = direction.normalized;
+        float speed = distance / duration;
+        float remaining = distance;
+
+        ContactFilter2D filter = new ContactFilter2D
+        {
+            useLayerMask = true,
+            layerMask = knockbackObstacleLayers,
+            useTriggers = false
+        };
+
+        RaycastHit2D[] hits = new RaycastHit2D[4];
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.bodyType = RigidbodyType2D.Kinematic;
+        }
+
+        while (remaining > 0f)
+        {
+            float step = speed * Time.fixedDeltaTime;
+            if (step > remaining) step = remaining;
+
+            float moveDistance = step;
+            bool blocked = false;
+
+            if (rb != null && knockbackObstacleLayers.value != 0)
+            {
+                int hitCount = rb.Cast(dir, filter, hits, step);
+                if (hitCount > 0)
+                {
+                    float minDistance = float.MaxValue;
+                    for (int i = 0; i < hitCount; i++)
+                    {
+                        if (hits[i].distance < minDistance)
+                        {
+                            minDistance = hits[i].distance;
+                        }
+                    }
+
+                    if (minDistance <= 0.001f)
+                    {
+                        moveDistance = 0f;
+                        blocked = true;
+                    }
+                    else
+                    {
+                        moveDistance = Mathf.Min(step, Mathf.Max(0f, minDistance - 0.01f));
+                        blocked = moveDistance < step;
+                    }
+                }
+            }
+
+            if (rb != null)
+            {
+                rb.MovePosition(rb.position + dir * moveDistance);
+            }
+            else
+            {
+                transform.position += (Vector3)(dir * moveDistance);
+            }
+
+            remaining -= moveDistance;
+
+            if (blocked)
+            {
+                break;
+            }
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        isKnockedBack = false;
+        if (rb != null)
+        {
+            rb.bodyType = defaultBodyType;
+            rb.linearVelocity = Vector2.zero;
+        }
+        SetCanMove(true);
+
+        knockbackRoutine = null;
+    }
+    public void StartBlink(float duration, float interval)
+    {
+        if (spriteRenderer == null) return;
+
+        // If a previous blink stopped while invisible, force visible before restarting.
+        if (blinkRoutine != null)
+        {
+            StopCoroutine(blinkRoutine);
+            blinkRoutine = null;
+        }
+
+        spriteRenderer.enabled = true;
+        float safeInterval = Mathf.Max(0.02f, interval);
+        blinkRoutine = StartCoroutine(BlinkRoutine(duration, safeInterval));
+    }
+
+    private IEnumerator BlinkRoutine(float duration, float interval)
+    {
+        float elapsed = 0f;
+        bool visible = true;
+
+        while (elapsed < duration)
+        {
+            visible = !visible;
+            spriteRenderer.enabled = visible;
+            yield return new WaitForSeconds(interval);
+            elapsed += interval;
+        }
+
+        spriteRenderer.enabled = true;
+        blinkRoutine = null;
+    }
     public void OnInteractionFinished()
     {
         ChangeState(PlayerState.Idle);
     }
 
 
-    // ?„ì´??ì£¼ìš¸ ??ê³µê²© ëª¨ì…˜ ìº”ìŠ¬
+    // ?? ìŒ???äºŒì‡±?????¨ë“¦êº?ï§â‘¥??ï§?¶¿??
 
     public void CancelAttack()
     {
@@ -320,7 +476,7 @@ public class Player : MonoBehaviour
     }
 
 
-    // --- ???´ë™ ë°??„ì¹˜ ?€??ê´€??---
+    // --- ???? ìˆë£????? ìŒ???????¿Â€??---
 
     void OnEnable()
     {
@@ -330,10 +486,25 @@ public class Player : MonoBehaviour
     void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        // Coroutines stop on disable, so knockback state must be restored manually.
+        StopKnockbackImmediately();
+        SetCanMove(true);
+
+        if (blinkRoutine != null)
+        {
+            StopCoroutine(blinkRoutine);
+            blinkRoutine = null;
+        }
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.enabled = true;
+        }
     }
 
 
-    // ??ë¡œë“œ ???„ì¹˜ ë³µêµ¬ ë°?ì¹´ë©”???°ê²°
+    // ??æ¿¡ì’•ë±????? ìŒ??è¹‚ë“¦????ç§»ë?ì°???? ì„ê»?
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -342,7 +513,7 @@ public class Player : MonoBehaviour
             StartCoroutine(UIManager.Instance.FadeIn(0.3f));
         }
 
-        // 2. ?„ì¹˜ ?¡ê¸°
+        // 2. ?? ìŒ???? ì„ë¦?
         if (scene.name == "Field")
         {
             if (hasSavedPosition)
@@ -355,7 +526,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            // ë¯¸ë‹ˆê²Œì„ ?¬ì—?œëŠ” (0,0)?´ë‚˜ ì§€?•ëœ ?¤í° ?¬ì¸?¸ë¡œ ê°•ì œ ?´ë™
+            // èª˜ëªƒ?²å¯ƒ??—« ?? ìŒë¿?? ìˆ??(0,0)?? ìˆêµ?ï§Â€?? ìˆë§??? ì?ë£??? ìŒ??? ìˆì¤?åª›ëº¤???? ìˆë£?
             transform.position = new Vector3(0, 0, 0);
             if (rb != null) rb.linearVelocity = Vector2.zero;
             SetCanMove(true);
@@ -364,10 +535,10 @@ public class Player : MonoBehaviour
 
     IEnumerator ForceCameraSync()
     {
-        // ???µì‹¬ ?˜ì •: 0.1ì´ˆë? ?•ì‹¤??ê¸°ë‹¤?¤ì„œ ?¤ë¥¸ ë§¤ë‹ˆ?€?¤ì˜ ì´ˆê¸°??ì¹´ë©”??ë¦¬ì…‹ ??ê°€ ?ë‚œ ?¤ì— ?¤í–‰
+        // ???? ìŒ???? ìŒ?? 0.1?¥ëŒ?? ?? ìŒ???æ¹²ê³•??? ìŒê½??? ìˆ??ï§ã…»????? ìŒ???¥ë‡ë¦??ç§»ë?ì°???±ÑŠë€???åª›Â€ ?? ìˆê¶??? ìŒë¿??? ì?ë»?
         yield return new WaitForSeconds(0.1f);
 
-        // ë£¸ë§¤?ˆì? ì°¾ê¸° (?¬ì´ ë°”ë€Œì—ˆ?¼ë?ë¡??ˆë¡œ ì°¾ì•„????
+        // ?·ëªƒ??? ì™?? ï§¡ì–˜ë¦?(?? ìŒ??è«›ë¶¾?????? ì™?????? ìˆì¤?ï§¡ì– ë¸????
         RoomManager roomManager = FindFirstObjectByType<RoomManager>();
 
         if (roomManager != null)
@@ -376,7 +547,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            // ë£¸ë§¤?ˆì?ê°€ ?†ëŠ” ê²½ìš° ë¹„ìƒ ?€ì±? ì§ì ‘ ë©”ì¸ ì¹´ë©”????¸°ê¸?
+            // ?·ëªƒ??? ì™??åª›Â€ ?? ìˆ??å¯ƒìŒ????¾©ê¸??? ì™?? ï§ê³¸??ï§ë¶¿??ç§»ë?ì°????? ì™?™å ?
             if (Camera.main != null)
             {
                 Camera.main.transform.position = new Vector3(transform.position.x, transform.position.y, -10f);
@@ -385,11 +556,13 @@ public class Player : MonoBehaviour
     }
 
 
-    // ?„ì¹˜ ?€???¨ìˆ˜
+    // ?? ìŒ???????? ìŒ??
     public void SaveCurrentPosition()
     {
         savedPosition = transform.position;
         hasSavedPosition = true;
-        Debug.Log($"ì¢Œí‘œ ?€?¥ë¨: {savedPosition}");
+        Debug.Log($"?«ëš°ëª????? ìˆë§? {savedPosition}");
     }
 }
+
+

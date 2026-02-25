@@ -1,15 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
+﻿using System.Collections;
 using UnityEngine;
 
 public class EnemyCombat : MonoBehaviour
 {
     public float attackRange = 0.8f;
-    public float knockbackForce = 20f;
-    public float stunTime = 0.2f;
+    public float knockbackTileSize = 1f;
+    public float knockbackTiles = 1f;
+    public float knockbackDuration = 0.2f;
     public int damageAmount = 1;
     private LayerMask playerLayer;
+
+    [Header("Melee Attack")]
+    [SerializeField] private Transform attackPoint;
+    [SerializeField] private Vector2 attackBoxSize = new Vector2(1f, 1f);
+    [SerializeField] private float windupTime = 0f;
+    [SerializeField] private float activeTime = 0f;
+    [SerializeField] private float recoveryTime = 0f;
+    [SerializeField] private float attackOffset = 1f;
 
     public int maxHealth = 200;
     private int currentHealth;
@@ -25,14 +32,34 @@ public class EnemyCombat : MonoBehaviour
 
     private bool isDead = false;
 
-    private float lastAttackTime; // 마지막 공격 시점 기록
-    public float combatCooldown = 1f; // 공격 간격 (이 시간이 지나야만 다시 때림)
+    private float lastAttackTime;
+    public float combatCooldown = 1f;
+    private bool isAttacking = false;
+
+    private Vector2 attackDirection = Vector2.left;
 
     void Start()
     {
         playerLayer = LayerMask.GetMask("Player");
-        rb= GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
         currentHealth = maxHealth;
+
+        if (attackPoint == null)
+        {
+            attackPoint = transform.Find("AttackPoint");
+        }
+
+        if (attackPoint != null)
+        {
+            Vector2 local = attackPoint.localPosition;
+            if (local.sqrMagnitude > 0.001f)
+            {
+                attackDirection = GetCardinal(local);
+                if (attackOffset <= 0f) attackOffset = local.magnitude;
+            }
+        }
+
+        if (attackOffset <= 0f) attackOffset = 1f;
 
         Debug.Log($"EnemyCombat initialized. Player layer mask: {playerLayer.value}");
     }
@@ -45,55 +72,106 @@ public class EnemyCombat : MonoBehaviour
         }
         Attack();
     }
+
     public void Attack()
     {
+        TryAttack();
+    }
 
-        if (Time.time < lastAttackTime + combatCooldown) return;
+    public bool TryAttack()
+    {
+        if (isAttacking) return false;
+        if (Time.time < lastAttackTime + combatCooldown) return false;
+        StartCoroutine(AttackRoutine());
+        return true;
+    }
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, attackRange, playerLayer);
+    public bool IsAttacking => isAttacking;
+
+    public void SetAttackDirection(Vector2 direction)
+    {
+        if (direction.sqrMagnitude < 0.001f) return;
+        attackDirection = GetCardinal(direction);
+    }
+
+    private IEnumerator AttackRoutine()
+    {
+        isAttacking = true;
+
+        if (windupTime > 0f)
+        {
+            yield return new WaitForSeconds(windupTime);
+        }
+
+        ApplyAttackHit();
+
+        if (activeTime > 0f)
+        {
+            yield return new WaitForSeconds(activeTime);
+        }
+
+        if (recoveryTime > 0f)
+        {
+            yield return new WaitForSeconds(recoveryTime);
+        }
+
+        lastAttackTime = Time.time;
+        isAttacking = false;
+    }
+
+    private void ApplyAttackHit()
+    {
+        Vector2 center = (Vector2)transform.position + (attackDirection * attackOffset);
+        Collider2D[] hits = Physics2D.OverlapBoxAll(center, attackBoxSize, 0f, playerLayer);
 
         foreach (Collider2D hit in hits)
         {
-            // [핵심 2] 거대 콜라이더 무시: Trigger(감지 영역)라면 건너뜀
             if (hit.isTrigger) continue;
 
             Player playerScript = hit.GetComponent<Player>();
 
-            // [핵심 3] 유효성 검사: 스크립트가 있고 & 오브젝트가 활성화 상태(살아있음)인지
             if (playerScript != null && hit.gameObject.activeInHierarchy)
             {
-                // 데미지 처리
                 hit.GetComponent<PlayerHealth>()?.TakeDamage(damageAmount);
-
-                // 넉백 처리 (살아있는 대상에게만 코루틴 실행)
-                playerScript.KnockBack(transform, knockbackForce, stunTime);
-
-                // [핵심 4] 공격 성공 시점 기록 & 루프 종료
-                lastAttackTime = Time.time;
-                return; // 한 명만(혹은 한 부위만) 때리고 즉시 종료 (중복 타격 방지)
+                playerScript.KnockBackByDistance(((Vector2)(hit.transform.position - transform.position)).normalized, knockbackTileSize * knockbackTiles, knockbackDuration);
+                return;
             }
         }
     }
+
+    private Vector2 GetCardinal(Vector2 direction)
+    {
+        if (Mathf.Abs(direction.x) >= Mathf.Abs(direction.y))
+        {
+            return new Vector2(Mathf.Sign(direction.x), 0f);
+        }
+        return new Vector2(0f, Mathf.Sign(direction.y));
+    }
+
     private void OnDrawGizmos()
     {
-        Vector2 attackPos = transform.position;
-        
-        // 공격 범위를 빨간 원으로 표시
+        if (attackPoint == null)
+        {
+            Transform found = transform.Find("AttackPoint");
+            if (found != null) attackPoint = found;
+        }
+
+        Vector2 center = (Vector2)transform.position + (attackDirection * attackOffset);
+
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(attackPos, attackRange);
-        
-        // 중심점 표시
+        Gizmos.DrawWireCube(center, attackBoxSize);
+
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(attackPos, 0.1f);
+        Gizmos.DrawWireSphere(center, 0.1f);
     }
 
     public void EnemyTakeDamage(int damage)
     {
         if (isDead) return;
 
-        if(Time.time - lastDamageTime < 0.1f)
+        if (Time.time - lastDamageTime < 0.1f)
         {
-            return; // 최근에 데미지를 받았다면 무시
+            return;
         }
         lastDamageTime = Time.time;
         currentHealth -= damage;
@@ -105,6 +183,7 @@ public class EnemyCombat : MonoBehaviour
             Die();
         }
     }
+
     private void Die()
     {
         Debug.Log("Enemy died.");
@@ -128,7 +207,6 @@ public class EnemyCombat : MonoBehaviour
 
         WorldItem wi = item.GetComponent<WorldItem>();
 
-        //WorldItem이 확실히 있는지 체크 (안전장치)
         if (wi != null)
         {
             wi.Init(pastelbloomItemData, dropAmount);
