@@ -112,11 +112,14 @@ public class FateSeverSpearEmitterController : MonoBehaviour
         index = Mathf.Clamp(index, 0, count - 1);
 
         int y = fixedXStartY - index;
+        int width = Mathf.Max(1, fixedXWidth);
+        Vector3 sum = Vector3.zero;
 
-        Vector3 c1 = groundTilemap.GetCellCenterWorld(new Vector3Int(fixedXLeftX,     y, 0));
-        Vector3 c2 = groundTilemap.GetCellCenterWorld(new Vector3Int(fixedXLeftX + 1, y, 0));
-        Vector3 c3 = groundTilemap.GetCellCenterWorld(new Vector3Int(fixedXLeftX + 2, y, 0));
+        for (int i = 0; i < width; i++)
+        {
+            sum += groundTilemap.GetCellCenterWorld(new Vector3Int(fixedXLeftX + i, y, 0));
+        }
 
-        return (c1 + c2 + c3) / 3f;
+        return sum / width;
     }
 }

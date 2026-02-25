@@ -100,7 +100,17 @@ public class Player : MonoBehaviour
 
         currentState = newState;
 
-        animator.ResetTrigger("IsAttack"); 
+        if (CanUseAnimator()) animator.ResetTrigger("IsAttack");
+    }
+
+    bool CanUseAnimator()
+    {
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
+        }
+
+        return animator != null && animator.isActiveAndEnabled && animator.runtimeAnimatorController != null;
     }
 
     void Update()
@@ -157,7 +167,7 @@ public class Player : MonoBehaviour
         {
             moveInput = Vector2.zero;
             ChangeState(PlayerState.Idle);
-            animator.SetBool("IsMoving", false);
+            if (CanUseAnimator()) animator.SetBool("IsMoving", false);
             return;
         }
 
@@ -191,16 +201,16 @@ public class Player : MonoBehaviour
 
             if (spriteRenderer != null) spriteRenderer.flipX = false;
 
-            animator.SetFloat("InputX", lastDirection.x);
-            animator.SetFloat("InputY", lastDirection.y);
+            if (CanUseAnimator()) animator.SetFloat("InputX", lastDirection.x);
+            if (CanUseAnimator()) animator.SetFloat("InputY", lastDirection.y);
         }
         else
         {
-            animator.SetFloat("InputX", lastDirection.x);
-            animator.SetFloat("InputY", lastDirection.y);
+            if (CanUseAnimator()) animator.SetFloat("InputX", lastDirection.x);
+            if (CanUseAnimator()) animator.SetFloat("InputY", lastDirection.y);
         }
 
-        animator.SetBool("IsMoving", isMoving);
+        if (CanUseAnimator()) animator.SetBool("IsMoving", isMoving);
     }
 
     void CheckBuffStatus()
@@ -237,7 +247,8 @@ public class Player : MonoBehaviour
                 return;
             }
 
-            Debug.Log($"Logic Dir: {lastDirection} / Animator X: {animator.GetFloat("InputX")} / FlipX: {spriteRenderer.flipX}");
+            bool isFlipX = spriteRenderer != null && spriteRenderer.flipX;
+            Debug.Log($"Logic Dir: {lastDirection} / Animator X: {(CanUseAnimator() ? animator.GetFloat("InputX") : 0f)} / FlipX: {isFlipX}");
             // 2. ??†Ï????†Ïéå???????†Ïéå?ùÂç†??®Îì¶Í∫?
             StartCoroutine(PerformAttack());
         }
@@ -277,9 +288,9 @@ public class Player : MonoBehaviour
         ChangeState(PlayerState.Attack);
 
         // 2. ??†Ïéà?≤ÔßéÎ∂øÏî†????†Ï?Îª?
-        animator.SetTrigger("IsAttack");
+        if (CanUseAnimator()) animator.SetTrigger("IsAttack");
         yield return null; // ????†Ïéà?????†Ïèô??(??†Ïéà?≤ÔßéÎ∂øÏî†??Â™õÍπÜ????†Ï?Î∏?
-        animator.ResetTrigger("IsAttack");
+        if (CanUseAnimator()) animator.ResetTrigger("IsAttack");
 
         // 3. ??†Ïéà?????†Ïèô??
         yield return new WaitForSeconds(0.4f);
@@ -481,12 +492,12 @@ public class Player : MonoBehaviour
     {
         StopCoroutine("PerformAttack");
         ChangeState(PlayerState.Idle);
-        animator.ResetTrigger("IsAttack");
+        if (CanUseAnimator()) animator.ResetTrigger("IsAttack");
     }
 
     public void StopMoving()
     {
-        animator.SetBool("IsMoving", false);
+        if (CanUseAnimator()) animator.SetBool("IsMoving", false);
     }
 
 

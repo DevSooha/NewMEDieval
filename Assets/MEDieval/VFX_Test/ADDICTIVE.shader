@@ -1,4 +1,4 @@
-﻿Shader "Custom/FX/Additive_Dissolve_Distort_Builtin_Fixed"
+Shader "Custom/FX/Additive_Dissolve_Distort_Builtin_Fixed"
 {
     Properties
     {
