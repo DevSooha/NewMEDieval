@@ -2,13 +2,16 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-// 이 스크립트는 아무데도 붙이지 마세요. 그냥 파일만 있으면 됩니다.
+// 이 스크립트는 아무데도 붙이지 마세요. 파일만 존재하면 됩니다.
 public abstract class BossCombatBase : MonoBehaviour
 {
     [SerializeField, Min(0)] private int collisionContactDamage = 0;
     private const string PlayerTag = "Player";
 
-    // 근접 보스는 공격 타이밍 피격만 사용하고 싶을 때 override로 false 설정.
+    [Header("Default Knockback Settings")]
+    [SerializeField] protected float defaultKnockbackForce = 8f;
+    [SerializeField] protected float defaultKnockbackStunTime = 0.2f;
+
     // Legacy toggle name kept for compatibility with existing boss overrides.
     // This now gates collision contact damage instead of granting free invulnerability.
     protected virtual bool UseCollisionInvulnerability => true;
@@ -17,13 +20,13 @@ public abstract class BossCombatBase : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (!collision.collider.CompareTag("Player")) return;
+        if (!collision.collider.CompareTag(PlayerTag)) return;
         HandlePlayerCollision(collision.collider);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.CompareTag("Player")) return;
+        if (!other.CompareTag(PlayerTag)) return;
         HandlePlayerCollision(other);
     }
 
@@ -37,6 +40,15 @@ public abstract class BossCombatBase : MonoBehaviour
             collisionContactDamage,
             transform.position
         );
+    }
+
+    protected void Knockback(Player player, Transform sender, float? forceOverride = null, float? stunOverride = null)
+    {
+        if (player == null || sender == null) return;
+
+        float force = forceOverride ?? defaultKnockbackForce;
+        float stun = stunOverride ?? defaultKnockbackStunTime;
+        player.KnockBack(sender, force, stun);
     }
 
     protected bool TryResolvePlayerTransform(ref Transform cachedPlayerTransform)
@@ -131,4 +143,3 @@ public interface IBossStartPositioner
 {
     void SetToPointAImmediate();
 }
-
