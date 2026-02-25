@@ -1,27 +1,36 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class InstantBossBattleTrigger : MonoBehaviour
 {
-    [SerializeField] private KnightCombat knightCombat;
+    [SerializeField] private BossCombatBase bossCombat;
     [SerializeField] private Transform bossPositionA;
 
     private bool hasTriggered;
+    private IBossBattleResetNotifier resetNotifier;
+    private IBossStartPositioner startPositioner;
 
     private void Start()
     {
-        if (knightCombat != null)
+        if (bossCombat != null)
         {
-            knightCombat.gameObject.SetActive(false);
-            knightCombat.OnBattleReset += HandleBattleReset;
+            bossCombat.gameObject.SetActive(false);
+
+            resetNotifier = bossCombat as IBossBattleResetNotifier;
+            if (resetNotifier != null)
+            {
+                resetNotifier.OnBattleReset += HandleBattleReset;
+            }
+
+            startPositioner = bossCombat as IBossStartPositioner;
         }
     }
 
     private void OnDestroy()
     {
-        if (knightCombat != null)
+        if (resetNotifier != null)
         {
-            knightCombat.OnBattleReset -= HandleBattleReset;
+            resetNotifier.OnBattleReset -= HandleBattleReset;
         }
     }
 
@@ -32,6 +41,17 @@ public class InstantBossBattleTrigger : MonoBehaviour
 
         hasTriggered = true;
         StartCoroutine(BeginBattleRoutine(other));
+    }
+
+    private void Update()
+    {
+        if (!hasTriggered) return;
+        if (BossManager.Instance == null || !BossManager.Instance.IsBossActive) return;
+
+        if (bossCombat == null || !bossCombat.gameObject.activeInHierarchy)
+        {
+            BossManager.Instance.EndBossBattle();
+        }
     }
 
     private IEnumerator BeginBattleRoutine(Collider2D playerCollider)
@@ -54,17 +74,17 @@ public class InstantBossBattleTrigger : MonoBehaviour
             BossManager.Instance.NotifyBossStart();
         }
 
-        if (knightCombat != null)
+        if (bossCombat != null)
         {
-            knightCombat.gameObject.SetActive(true);
+            bossCombat.gameObject.SetActive(true);
 
             if (bossPositionA != null)
             {
-                knightCombat.transform.position = bossPositionA.position;
+                bossCombat.transform.position = bossPositionA.position;
             }
-            else
+            else if (startPositioner != null)
             {
-                knightCombat.SetToPointAImmediate();
+                startPositioner.SetToPointAImmediate();
             }
         }
 
@@ -75,9 +95,9 @@ public class InstantBossBattleTrigger : MonoBehaviour
             playerScript.enabled = true;
         }
 
-        if (knightCombat != null)
+        if (bossCombat != null)
         {
-            knightCombat.StartBattle();
+            bossCombat.StartBattle();
         }
     }
 

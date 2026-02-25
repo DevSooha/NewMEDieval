@@ -1,10 +1,11 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
-public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandler
+public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandler, IBossBattleResetNotifier, IBossStartPositioner
 {
     [Header("References")]
-    [SerializeField] private BossHealth bossHealth;
+    [SerializeField] private BossHealth dragonBossHealth;
     [SerializeField] private Animator dragonAnimator;
     [SerializeField] private Transform projectileSpawnPivot;
 
@@ -48,22 +49,35 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
     [SerializeField] private float takeOffClipDuration = 0.8f;
     [SerializeField] private float sequenceGap = 0.05f;
 
+    [Header("Visual Scale")]
+    [SerializeField] private Transform dragonVisualRoot;
+    [SerializeField] private float landingScaleMultiplier = 1f;
+    [SerializeField] private float flyingScaleMultiplier = 2.5f;
+
     private const string PlayerTag = "Player";
 
     public static DragonCombat ActiveInstance { get; private set; }
+
+    public event Action OnBattleReset;
 
     private Coroutine battleLoopRoutine;
     private Player player;
     private bool isBattleActive;
     private bool isStealthSkipped;
     private bool battleResultHandled;
+    private Vector3 baseVisualScale = Vector3.one;
+    private bool hasBaseVisualScale;
+    private float currentVisualScaleMultiplier = 1f;
 
     private void Awake()
     {
         ActiveInstance = this;
 
-        if (bossHealth == null) bossHealth = GetComponent<BossHealth>();
+        if (dragonBossHealth == null) dragonBossHealth = GetComponent<BossHealth>();
         if (dragonAnimator == null) dragonAnimator = GetComponentInChildren<Animator>();
+        if (dragonVisualRoot == null && dragonAnimator != null) dragonVisualRoot = dragonAnimator.transform;
+
+        CacheVisualScale();
 
         ApplyDragonStats();
         ApplyFlyingStandbyPose();
@@ -72,6 +86,8 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
 
     private void OnEnable()
     {
+        ActiveInstance = this;
+        ApplyFlyingStandbyPose();
         PlayerHealth.OnPlayerDeath += HandlePlayerDeath;
     }
 
@@ -112,9 +128,9 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
         isBattleActive = true;
         battleResultHandled = false;
 
-        if (bossHealth != null)
+        if (dragonBossHealth != null)
         {
-            bossHealth.currentHP = bossHealth.maxHP;
+            dragonBossHealth.currentHP = dragonBossHealth.maxHP;
         }
 
         StartCoroutine(BattleStartSequence());
@@ -143,15 +159,15 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
 
     private void ApplyDragonStats()
     {
-        if (bossHealth == null)
+        if (dragonBossHealth == null)
         {
             return;
         }
 
-        bossHealth.maxHP = maxHp;
-        bossHealth.currentHP = maxHp;
-        bossHealth.currentElement = dragonElement;
-        bossHealth.bossName = "Dragon";
+        dragonBossHealth.maxHP = maxHp;
+        dragonBossHealth.currentHP = maxHp;
+        dragonBossHealth.currentElement = dragonElement;
+        dragonBossHealth.bossName = "Dragon";
     }
 
     private void ApplyFlyingStandbyPose()
@@ -161,8 +177,15 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
             transform.position = flyingStandbyPoint.position;
         }
 
+        currentVisualScaleMultiplier = flyingScaleMultiplier;
+        ApplyVisualScale(currentVisualScaleMultiplier);
         PlayStateImmediate(flyingStateName);
         SetFlyingRestrictionZoneActive(true);
+    }
+
+    public void SetToPointAImmediate()
+    {
+        ApplyFlyingStandbyPose();
     }
 
     private IEnumerator BattleStartSequence()
@@ -177,6 +200,8 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
             transform.position = landingPoint.position;
         }
 
+        currentVisualScaleMultiplier = landingScaleMultiplier;
+        ApplyVisualScale(currentVisualScaleMultiplier);
         PlayStateImmediate(landingStateName);
         yield return new WaitForSeconds(landingClipDuration);
 
@@ -192,6 +217,8 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
 
         if (sequenceGap > 0f) yield return new WaitForSeconds(sequenceGap);
 
+        currentVisualScaleMultiplier = flyingScaleMultiplier;
+        ApplyVisualScale(currentVisualScaleMultiplier);
         PlayStateImmediate(flyingStateName);
         SetFlyingRestrictionZoneActive(true);
 
@@ -218,18 +245,31 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
             yield break;
         }
 
+        bool isAquaRay = eternalNightWallPrefab.GetComponent<AquaRay>() != null;
         Quaternion pivotRotation = projectileSpawnPivot != null ? projectileSpawnPivot.rotation : transform.rotation;
         Vector3 pivotPosition = projectileSpawnPivot != null ? projectileSpawnPivot.position : transform.position;
 
-        for (int i = 0; i < wallAngles.Length; i++)
+        int volleyCount = isAquaRay ? 6 : wallAngles.Length;
+        for (int i = 0; i < volleyCount; i++)
         {
-            float angle = wallAngles[i];
-            // 기준 0도는 화면의 아래 방향(Vector3.down)
-            Vector3 fireDirection = pivotRotation * (Quaternion.Euler(0f, 0f, angle) * Vector3.down);
+            Vector3 fireDirection;
+            if (isAquaRay)
+            {
+                float fixedAngle = i * 60f; // 0, 60, 120, 180, 240, 300
+                fireDirection = Quaternion.Euler(0f, 0f, fixedAngle) * Vector3.right;
+            }
+            else
+            {
+                float angle = wallAngles[i];
+                fireDirection = pivotRotation * (Quaternion.Euler(0f, 0f, angle) * Vector3.down);
+            }
+
             fireDirection.z = 0f;
             fireDirection.Normalize();
 
-            Quaternion projectileRotation = Quaternion.FromToRotation(Vector3.right, fireDirection);
+            Quaternion projectileRotation = isAquaRay
+                ? Quaternion.FromToRotation(Vector3.down, fireDirection)
+                : Quaternion.FromToRotation(Vector3.right, fireDirection);
             Vector3 spawnPos = pivotPosition + (fireDirection * wallSpawnRadius);
 
             GameObject wallObj = Instantiate(eternalNightWallPrefab, spawnPos, projectileRotation);
@@ -254,6 +294,36 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
         }
 
         dragonAnimator.Play(stateName, animatorLayerIndex, 0f);
+    }
+
+    private void LateUpdate()
+    {
+        // Animator scale curves can overwrite localScale every frame.
+        // Re-apply configured visual scale after animation evaluation.
+        if (currentVisualScaleMultiplier > 0f)
+        {
+            ApplyVisualScale(currentVisualScaleMultiplier);
+        }
+    }
+
+    private void CacheVisualScale()
+    {
+        if (hasBaseVisualScale) return;
+        if (dragonVisualRoot == null) return;
+
+        baseVisualScale = dragonVisualRoot.localScale;
+        hasBaseVisualScale = true;
+    }
+
+    private void ApplyVisualScale(float multiplier)
+    {
+        if (dragonVisualRoot == null) return;
+
+        CacheVisualScale();
+        if (!hasBaseVisualScale) return;
+
+        float safeMultiplier = Mathf.Max(0.01f, multiplier);
+        dragonVisualRoot.localScale = baseVisualScale * safeMultiplier;
     }
 
     private void SetFlyingRestrictionZoneActive(bool isActive)
@@ -324,7 +394,14 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
         }
 
         battleResultHandled = true;
+        Debug.Log("[Dragon] Player defeated.");
+        ResetBattleForRetry();
+    }
+
+    private void ResetBattleForRetry()
+    {
         isBattleActive = false;
+        battleResultHandled = false;
 
         if (battleLoopRoutine != null)
         {
@@ -332,7 +409,20 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
             battleLoopRoutine = null;
         }
 
-        Debug.Log("[Dragon] Player defeated.");
+        if (dragonBossHealth != null)
+        {
+            dragonBossHealth.currentHP = dragonBossHealth.maxHP;
+        }
+
+        ApplyFlyingStandbyPose();
+
+        if (BossManager.Instance != null)
+        {
+            BossManager.Instance.EndBossBattle();
+        }
+
+        gameObject.SetActive(false);
+        OnBattleReset?.Invoke();
     }
 
     private void HandleBossDefeated()
@@ -348,3 +438,4 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
         Debug.Log("[Dragon] Defeated.");
     }
 }
+

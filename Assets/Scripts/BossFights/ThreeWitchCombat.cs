@@ -1,4 +1,4 @@
-using System.Collections;
+Ôªøusing System.Collections;
 using UnityEngine;
 
 public enum BossState
@@ -10,8 +10,6 @@ public enum BossState
 
 public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 {
-    public static ThreeWitchCombat Instance;
-
     public BossState currentState;
     public int phase = 1;
     public Transform playerTF;
@@ -22,6 +20,11 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     [SerializeField] private int phase2HpThreshold = 8000;
     [SerializeField] private int phase3HpThreshold = 4000;
 
+    [Header("Animation")]
+    [SerializeField] private Animator threeWitchAnimator;
+    [SerializeField] private int animatorLayerIndex = 0;
+    [SerializeField] private float directionEpsilon = 0.05f;
+
     public GameObject fireStartEffect;
     public GameObject fireWallPrefab;
     public GameObject aquaRayPrefab;
@@ -29,17 +32,13 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     public GameObject electricRayPrefab;
 
     private SpriteRenderer spriteRenderer;
+    private string lastPlayedStateName;
+    private int lastHorizontalFacing = 1;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (threeWitchAnimator == null) threeWitchAnimator = GetComponentInChildren<Animator>();
 
         if (spriteRenderer != null)
         {
@@ -63,12 +62,12 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
         if (phase != nextPhase)
         {
-            Debug.Log($"[BOSS] ∆‰¿Ã¡Ó ∫Ø∞Ê! {phase} -> {nextPhase}");
+            Debug.Log($"[BOSS] ÌéòÏù¥Ï¶à Î≥ÄÍ≤Ω! {phase} -> {nextPhase}");
             phase = nextPhase;
         }
     }
 
-    IEnumerator AppearRoutine()
+    private IEnumerator AppearRoutine()
     {
         float timer = 0f;
         float appearTime = 1.0f;
@@ -94,11 +93,11 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         }
         else
         {
-            Debug.LogError("Player∏¶ √£¿ª ºˆ æ¯¿Ω!");
+            Debug.LogError("PlayerÎ•º Ï∞æÏùÑ Ïàò ÏóÜÏùå!");
         }
     }
 
-    IEnumerator BattleRoutine()
+    private IEnumerator BattleRoutine()
     {
         while (true)
         {
@@ -107,6 +106,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
             if (currentState == BossState.Move)
             {
+                UpdateAnimatorForState(BossState.Move, playerTF.position - transform.position);
                 transform.position = Vector2.MoveTowards(transform.position, playerTF.position, moveSpeed * Time.deltaTime);
 
                 if (currentDistance > 3.0f)
@@ -130,9 +130,10 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         }
     }
 
-    IEnumerator AttackRoutine()
+    private IEnumerator AttackRoutine()
     {
-        Debug.Log("∞¯∞›!");
+        Debug.Log("Í≥µÍ≤©!");
+        UpdateAnimatorForState(BossState.Attack, playerTF != null ? (playerTF.position - transform.position) : Vector2.right);
 
         switch (phase)
         {
@@ -150,15 +151,16 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         yield return new WaitForSeconds(0.5f);
 
         currentState = BossState.Cooldown;
+        UpdateAnimatorForState(BossState.Cooldown, playerTF != null ? (playerTF.position - transform.position) : Vector2.right);
         yield return new WaitForSeconds(4.0f);
 
         currentState = BossState.Move;
     }
 
-    IEnumerator FirePattern()
+    private IEnumerator FirePattern()
     {
         if (playerTF == null) yield break;
-        Debug.Log("∆ƒ¿ÃæÓø˘ ∏≈¡˜!");
+        Debug.Log("ÌååÏù¥Ïñ¥Ïõî Îß§ÏßÅ!");
         Vector2 dir = playerTF.position - transform.position;
 
         for (int i = 0; i < 2; i++)
@@ -182,19 +184,19 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         }
     }
 
-    IEnumerator WaterPattern()
+    private IEnumerator WaterPattern()
     {
         if (playerTF == null) yield break;
-        Debug.Log("æ∆ƒÌæ∆∑π¿Ã ∏≈¡˜!");
-
+        Debug.Log("ÏïÑÏø†ÏïÑÎ†àÏù¥ Îß§ÏßÅ!");
         Vector2 dir = playerTF.position - transform.position;
         float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
         for (int i = 0; i < 6; i++)
         {
             float finalAngle = baseAngle + (i * 60f);
-            Quaternion rot = Quaternion.Euler(0, 0, finalAngle);
-            Vector3 spawnPos = transform.position + (rot * Vector3.right * 2.5f);
+            Vector3 fireDir = Quaternion.Euler(0f, 0f, finalAngle) * Vector3.right;
+            Vector3 spawnPos = transform.position + (fireDir * 2.5f);
+            Quaternion rot = Quaternion.FromToRotation(Vector3.down, fireDir);
 
             GameObject rayObj = Instantiate(aquaRayPrefab, spawnPos, rot);
             rayObj.GetComponent<BossProjectile>()?.Setup(ElementType.Water);
@@ -202,10 +204,10 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         yield return new WaitForSeconds(0.5f);
     }
 
-    IEnumerator ElectricPattern()
+    private IEnumerator ElectricPattern()
     {
         if (playerTF == null) yield break;
-        Debug.Log("∆«µµ∂Û¿« ¿¸±‚ ∏≈¡˜!");
+        Debug.Log("ÌåêÎèÑÎùºÏùò Ï†ÑÍ∏∞ Îß§ÏßÅ!");
 
         Vector2 dir = playerTF.position - transform.position;
         float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
@@ -228,11 +230,84 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         for (int i = 0; i < 6; i++)
         {
             float finalAngle = baseAngle + (i * 60f);
-            Quaternion rot = Quaternion.Euler(0, 0, finalAngle);
-            Vector3 spawnPos = transform.position + (rot * Vector3.right * 2.5f);
+            Vector3 fireDir = Quaternion.Euler(0f, 0f, finalAngle) * Vector3.right;
+            Vector3 spawnPos = transform.position + (fireDir * 2.5f);
+            Quaternion rot = Quaternion.FromToRotation(Vector3.down, fireDir);
 
             GameObject rayObj = Instantiate(electricRayPrefab, spawnPos, rot);
             rayObj.GetComponent<BossProjectile>()?.Setup(ElementType.Electric);
         }
+    }
+
+    private void UpdateAnimatorForState(BossState state, Vector2 dirToPlayer)
+    {
+        if (threeWitchAnimator == null)
+        {
+            return;
+        }
+
+        string element = phase switch
+        {
+            1 => "Fire",
+            2 => "Water",
+            _ => "Electric"
+        };
+
+        string action = state == BossState.Attack ? "Attack" : "Idle";
+        string direction = ResolveDirectionSuffix(dirToPlayer);
+        string stateName = $"{element}_{action}_{direction}";
+
+        if (!threeWitchAnimator.HasState(animatorLayerIndex, Animator.StringToHash(stateName)))
+        {
+            string fallbackName = $"{stateName} 0";
+            if (threeWitchAnimator.HasState(animatorLayerIndex, Animator.StringToHash(fallbackName)))
+            {
+                stateName = fallbackName;
+            }
+        }
+
+        if (stateName == lastPlayedStateName)
+        {
+            return;
+        }
+
+        lastPlayedStateName = stateName;
+        threeWitchAnimator.Play(stateName, animatorLayerIndex, 0f);
+    }
+
+    private string ResolveDirectionSuffix(Vector2 dirToPlayer)
+    {
+        if (dirToPlayer.sqrMagnitude <= directionEpsilon * directionEpsilon)
+        {
+            return lastHorizontalFacing >= 0 ? "E" : "W";
+        }
+
+        if (Mathf.Abs(dirToPlayer.x) >= Mathf.Abs(dirToPlayer.y))
+        {
+            if (dirToPlayer.x >= 0f)
+            {
+                lastHorizontalFacing = 1;
+                return "E";
+            }
+
+            lastHorizontalFacing = -1;
+            return "W";
+        }
+
+        if (dirToPlayer.y < 0f)
+        {
+            return "S";
+        }
+
+        if (dirToPlayer.x >= directionEpsilon)
+        {
+            lastHorizontalFacing = 1;
+        }
+        else if (dirToPlayer.x <= -directionEpsilon)
+        {
+            lastHorizontalFacing = -1;
+        }
+
+        return lastHorizontalFacing >= 0 ? "E" : "W";
     }
 }
