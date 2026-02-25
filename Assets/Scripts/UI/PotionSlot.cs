@@ -1,13 +1,15 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class PotionSlot : MonoBehaviour
+public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private Image topIMG;
     [SerializeField] private Image bottomIMG;
     [SerializeField] private Image frame;
     [SerializeField] private TextMeshProUGUI quantityText;
+    [SerializeField] private Image clickArea;
     
     private InventoryUI inventoryUI;  
     private Potion currentPotion;
@@ -18,10 +20,24 @@ public class PotionSlot : MonoBehaviour
     {
         inventoryUI = ui;
         SlotIndex = index;
+        EnsureClickArea();
     }
 
     public void OnClick()
     {
+        if (inventoryUI != null)
+        {
+            inventoryUI.OnPotionSlotClicked(SlotIndex);
+        }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left)
+        {
+            return;
+        }
+        OnClick();
     }
 
     public void SetPotion(Potion potion)
@@ -72,23 +88,36 @@ public class PotionSlot : MonoBehaviour
         frame.enabled = false;
         quantityText.enabled = false;
     }
-    
-    // 마우스 올렸을 때 호출될 메서드
-    public void OnMouseEnter()
+
+    public void OnPointerEnter(PointerEventData eventData)
     {
         if (currentPotion != null && inventoryUI != null)
         {
-            inventoryUI.ShowPotionTooltip(currentPotion, transform.position);
+            inventoryUI.ShowPotionTooltip(currentPotion, eventData.position);
         }
     }
-    
-    // 마우스 벗어났을 때 호출될 메서드
-    public void OnMouseExit()
+
+    public void OnPointerExit(PointerEventData eventData)
     {
         if (inventoryUI != null)
         {
             inventoryUI.HideTooltip();
         }
     }
-}
 
+    private void EnsureClickArea()
+    {
+        if (clickArea == null)
+        {
+            clickArea = GetComponent<Image>();
+        }
+
+        if (clickArea == null)
+        {
+            clickArea = gameObject.AddComponent<Image>();
+        }
+
+        clickArea.color = new Color(1f, 1f, 1f, 0f);
+        clickArea.raycastTarget = true;
+    }
+}

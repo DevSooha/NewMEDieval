@@ -13,6 +13,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     [SerializeField] private Image potSlot2Image;
     [SerializeField] private ItemData itemData;
     [SerializeField] private Inventory inventory;
+    [SerializeField] private InventoryUI inventoryUI;
     //[SerializeField] private GameObject itemUI;
 
     [SerializeField] private Image gaugeBar;          
@@ -20,6 +21,8 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI resultText;
     [SerializeField] private GameObject oxygenGauge;
+    [SerializeField] private Button closeButton;
+    [SerializeField] private Button resetButton;
     //[SerializeField] private Transform container;
     
 
@@ -38,9 +41,34 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private const float GAUGE_DOWN_SPEED = 10f;
 
     private int nextReplaceIndex = 0;
+    private const float CORNER_BUTTON_SIZE = 32f;
+    private const float CORNER_BUTTON_MARGIN = 16f;
+
+    private void OnEnable()
+    {
+        EnsureInventoryUI();
+        SetInventoryVisible(true);
+        EnsureCloseButton();
+        EnsureResetButton();
+        SetCloseButtonVisible(true);
+        SetResetButtonVisible(true);
+    }
+
+    private void OnDisable()
+    {
+        SetCloseButtonVisible(false);
+        SetResetButtonVisible(false);
+        SetInventoryVisible(false);
+        ResetCraftingState();
+    }
 
     private void Start()
-    {        
+    {
+        EnsureInventoryUI();
+        EnsureCloseButton();
+        EnsureResetButton();
+        SetCloseButtonVisible(true);
+        SetResetButtonVisible(true);
         oxygenGauge.gameObject.SetActive(false);
         if (resultText != null)
             resultText.gameObject.SetActive(false);
@@ -193,6 +221,86 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (resultText != null)
             resultText.gameObject.SetActive(false);
         gameStarted = false;
+        ClearSlots();
+    }
+
+    public void ForceCloseImmediate(bool clearSlots = false)
+    {
+        CancelInvoke(nameof(CloseGame));
+
+        isGameActive = false;
+        isDragging = false;
+        gameStarted = false;
+
+        if (oxygenGauge != null)
+            oxygenGauge.SetActive(false);
+
+        if (resultText != null)
+            resultText.gameObject.SetActive(false);
+
+        ClearSlots();
+        gaugeValue = 0f;
+        gameTimer = 6f;
+
+        SetCloseButtonVisible(false);
+        SetResetButtonVisible(false);
+        gameObject.SetActive(false);
+    }
+
+    private void EnsureCloseButton()
+    {
+        closeButton = EnsureCornerButton(
+            closeButton,
+            "CloseButton",
+            "X",
+            new Vector2(1f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(-CORNER_BUTTON_MARGIN, -CORNER_BUTTON_MARGIN)
+        );
+
+        closeButton.onClick.RemoveListener(OnCloseButtonClicked);
+        closeButton.onClick.AddListener(OnCloseButtonClicked);
+    }
+
+    private void EnsureResetButton()
+    {
+        resetButton = EnsureCornerButton(
+            resetButton,
+            "ResetButton",
+            "R",
+            new Vector2(0f, 1f),
+            new Vector2(0f, 1f),
+            new Vector2(CORNER_BUTTON_MARGIN, -CORNER_BUTTON_MARGIN)
+        );
+
+        resetButton.onClick.RemoveListener(OnResetButtonClicked);
+        resetButton.onClick.AddListener(OnResetButtonClicked);
+    }
+
+    private void OnCloseButtonClicked()
+    {
+        RequestCloseConfirm();
+    }
+
+    private void OnResetButtonClicked()
+    {
+        RequestResetConfirm();
+    }
+
+    private void SetCloseButtonVisible(bool visible)
+    {
+        if (closeButton != null)
+        {
+            closeButton.gameObject.SetActive(visible);
+        }
+    }
+
+    private void SetResetButtonVisible(bool visible)
+    {
+        if (resetButton != null)
+        {
+            resetButton.gameObject.SetActive(visible);
+        }
     }
     public void ClearSlots()
     {
@@ -202,6 +310,150 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         potSlot2Image.enabled = false;
         nextReplaceIndex = 0;
         gameStarted = false;
+    }
+
+    private void ResetCraftingState()
+    {
+        CancelInvoke(nameof(CloseGame));
+        isGameActive = false;
+        isDragging = false;
+        gameStarted = false;
+        gaugeValue = 0f;
+        gameTimer = 6f;
+
+        if (oxygenGauge != null)
+            oxygenGauge.SetActive(false);
+
+        if (resultText != null)
+            resultText.gameObject.SetActive(false);
+
+        ClearSlots();
+    }
+
+    public void RequestResetConfirm()
+    {
+        if (UIManager.Instance == null)
+        {
+            ResetCraftingState();
+            return;
+        }
+
+        UIManager.Instance.ShowSelectPanel(
+            "Discard the potion in progress?",
+            "Yes",
+            () => { ResetCraftingState(); },
+            "No",
+            () => { }
+        );
+    }
+
+    public void RequestCloseConfirm()
+    {
+        if (IsResetState())
+        {
+            ForceCloseImmediate();
+            return;
+        }
+
+        if (UIManager.Instance == null)
+        {
+            ForceCloseImmediate();
+            return;
+        }
+
+        UIManager.Instance.ShowSelectPanel(
+            "Exit crafting? Changes will not be saved.",
+            "Yes",
+            () =>
+            {
+                ResetCraftingState();
+                ForceCloseImmediate();
+            },
+            "No",
+            () => { }
+        );
+    }
+
+    private bool IsResetState()
+    {
+        return slot1Item == null
+            && slot2Item == null
+            && !gameStarted
+            && !isGameActive
+            && !isDragging;
+    }
+
+    private Button EnsureCornerButton(Button button, string name, string labelText, Vector2 anchor, Vector2 pivot, Vector2 anchoredPosition)
+    {
+        if (button == null)
+        {
+            Transform existing = transform.Find(name);
+            if (existing != null)
+            {
+                button = existing.GetComponent<Button>();
+            }
+        }
+
+        if (button == null)
+        {
+            GameObject buttonObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            Transform parentForButton = transform;
+            Canvas parentCanvas = GetComponentInParent<Canvas>();
+            if (parentCanvas != null)
+            {
+                parentForButton = parentCanvas.transform;
+            }
+
+            buttonObj.transform.SetParent(parentForButton, false);
+
+            Image bg = buttonObj.GetComponent<Image>();
+            bg.color = new Color(0f, 0f, 0f, 0.65f);
+
+            button = buttonObj.GetComponent<Button>();
+
+            GameObject labelObj = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            labelObj.transform.SetParent(buttonObj.transform, false);
+            RectTransform labelRect = labelObj.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI label = labelObj.GetComponent<TextMeshProUGUI>();
+            label.text = labelText;
+            label.fontSize = 20f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = Color.white;
+        }
+
+        Transform targetParent = transform;
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas != null)
+        {
+            targetParent = canvas.transform;
+        }
+        button.transform.SetParent(targetParent, false);
+
+        RectTransform rect = button.GetComponent<RectTransform>();
+        rect.anchorMin = anchor;
+        rect.anchorMax = anchor;
+        rect.pivot = pivot;
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = new Vector2(CORNER_BUTTON_SIZE, CORNER_BUTTON_SIZE);
+
+        return button;
+    }
+    private void EnsureInventoryUI()
+    {
+        if (inventoryUI != null) return;
+
+        inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+    }
+
+    private void SetInventoryVisible(bool visible)
+    {
+        if (inventoryUI == null) return;
+        inventoryUI.gameObject.SetActive(visible);
     }
     public static PotionTemp DeterminePotionTemp(float gaugeValue)
     {
@@ -228,21 +480,15 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public PotionData CraftPotion(Item first, Item second)
     {
         //cp: crafted potion
-        PotionData cp = new()
-        {
-            potionName = first.data.topName + second.data.bottomName,
+        PotionData cp = ScriptableObject.CreateInstance<PotionData>();
+        cp.potionName = first.data.topName + second.data.bottomName;
+        cp.damage1 = first.data.topDamage;
+        cp.damage2 = second.data.bottomDamage;
+        cp.element1 = first.data.element;
+        cp.element2 = second.data.element;
+        cp.topIMG = first.data.topSprite;
+        cp.bottomIMG = second.data.bottomSprite;
 
-            damage1 = first.data.topDamage,
-            damage2 = second.data.bottomDamage,
-            
-            element1 = first.data.element,
-            element2 = second.data.element,
-
-            topIMG = first.data.topSprite,
-            bottomIMG = second.data.bottomSprite,
-            
-
-        };
         return cp;
     }
 }

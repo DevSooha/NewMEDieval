@@ -94,12 +94,12 @@ public class Inventory : Singleton<Inventory>
         remaining -= addNow;
     }
 
-        int newMaxPage = Mathf.CeilToInt((float)items.Count / slotPerMaterialPage);
+        int newMaxPage = Mathf.CeilToInt((float)potions.Count / slotPerPotionPage);
         if (newMaxPage <= 0) newMaxPage = 1;
 
-        if (currentMaterialPage >= newMaxPage)
+        if (currentPotionPage >= newMaxPage)
         {
-            currentMaterialPage = newMaxPage - 1;
+            currentPotionPage = newMaxPage - 1;
         }
         return true;
     }

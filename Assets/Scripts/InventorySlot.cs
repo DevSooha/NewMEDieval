@@ -1,19 +1,35 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-
-public class InventorySlot : MonoBehaviour
+public class InventorySlot : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI quantityText;
     [SerializeField] private Image slotBackground;
+    [SerializeField] private Button button;
+    [SerializeField] private Image clickArea;
     
     private InventoryUI inventoryUI;  
     private Item currentItem;
     
     public int SlotIndex { get; set; }
 
+    private void Awake()
+    {
+        if (button == null)
+        {
+            button = GetComponent<Button>();
+        }
+
+        if (button != null)
+        {
+            button.enabled = false;
+        }
+
+        EnsureClickArea();
+    }
 
     public void Init(InventoryUI ui, int index)
     {
@@ -25,6 +41,16 @@ public class InventorySlot : MonoBehaviour
     {
         inventoryUI.OnMaterialSlotClicked(SlotIndex);
     }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left)
+        {
+            return;
+        }
+        OnClick();
+    }
+
 
 
     public void SetItem(Item item)
@@ -52,6 +78,22 @@ public class InventorySlot : MonoBehaviour
         currentItem = null;
         itemIcon.enabled = false;
         quantityText.enabled = false;
+    }
+
+    private void EnsureClickArea()
+    {
+        if (clickArea == null)
+        {
+            clickArea = GetComponent<Image>();
+        }
+
+        if (clickArea == null)
+        {
+            clickArea = gameObject.AddComponent<Image>();
+        }
+
+        clickArea.color = new Color(1f, 1f, 1f, 0f);
+        clickArea.raycastTarget = true;
     }
     
 }

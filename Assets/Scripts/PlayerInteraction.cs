@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
@@ -41,10 +40,14 @@ public class PlayerInteraction : MonoBehaviour
     }
     void Update()
     {
-        if (isCampfire == true && Input.GetKeyDown(KeyCode.Escape))
+        if (craftUI != null && craftUI.gameObject.activeSelf && Input.GetKeyDown(KeyCode.X))
         {
-            isCampfire = false;
-            craftUI.gameObject.SetActive(false);
+            craftUI.RequestCloseConfirm();
+        }
+
+        if (UIManager.Instance != null && UIManager.Instance.IsSelectPanelActive() && Input.GetKeyDown(KeyCode.X))
+        {
+            UIManager.Instance.HideSelectPanel();
         }
     }
 
@@ -144,6 +147,16 @@ public class PlayerInteraction : MonoBehaviour
         if (craftUI != null)
         {
             craftUI.gameObject.SetActive(true);
+        }
+    }
+
+    public void ForceCloseCraftingUI()
+    {
+        isCampfire = false;
+
+        if (craftUI != null)
+        {
+            craftUI.ForceCloseImmediate();
         }
     }
 
