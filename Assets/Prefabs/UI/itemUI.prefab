@@ -394,9 +394,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 8418890782419250756, guid: db5d4cde3dabde14abf73e38017ea5aa, type: 3}
+      - m_Target: {fileID: 5635145578169163321}
         m_TargetAssemblyTypeName: InventorySlot, Assembly-CSharp
-        m_MethodName: 
+        m_MethodName: OnClick
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

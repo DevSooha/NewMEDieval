@@ -17,6 +17,11 @@ public class TestInventory : MonoBehaviour
             inventory.AddItem(testItem1, 100);
             Debug.Log("아이템 추가!");
         }
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            inventory.AddItem(testItem1, 100);
+            Debug.Log("아이템 추가!");
+        }
     }
 }
 

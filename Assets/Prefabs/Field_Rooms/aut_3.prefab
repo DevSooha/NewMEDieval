@@ -482,6 +482,7 @@ GameObject:
   - component: {fileID: 5993491392409483037}
   - component: {fileID: 4826535274895048763}
   - component: {fileID: 3994795130455486569}
+  - component: {fileID: 7688535529572214153}
   m_Layer: 7
   m_Name: Boss
   m_TagString: Boss
@@ -564,7 +565,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.5, y: 2.5}
+  m_Size: {x: 1, y: 2}
   m_EdgeRadius: 0
 --- !u!114 &4826535274895048763
 MonoBehaviour:
@@ -581,9 +582,12 @@ MonoBehaviour:
   defaultKnockbackForce: 8
   defaultKnockbackStunTime: 0.2
   pearlBeam: {fileID: 8001153937124812941}
-  knockbackForce: 8
+  groundTilemap: {fileID: 3547592342040487347}
+  knockbackForce: 20
   knockbackStunTime: 0.2
-  kbProxySideOffset: 1
+  kbProxyOffset: 2
+  invincibleTime: 0.8
+  flickerInterval: 0.08
   repeatDelay: 1.8
 --- !u!212 &3994795130455486569
 SpriteRenderer:
@@ -643,6 +647,33 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!50 &7688535529572214153
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2240094992806593953}
+  m_BodyType: 2
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 4
 --- !u!1 &2465280919033226790
 GameObject:
   m_ObjectHideFlags: 0
@@ -3021,6 +3052,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   blockerSkin: 0.02
+  knockbackForce: 8
+  knockbackStunTime: 0.15
+  knockbackSenderOffsetX: 1
 --- !u!1 &7324405701204135057
 GameObject:
   m_ObjectHideFlags: 0

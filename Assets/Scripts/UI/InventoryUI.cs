@@ -1,8 +1,8 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
-
 
 public class InventoryUI : MonoBehaviour
 {
@@ -15,130 +15,160 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private Transform potionContainer;
     [SerializeField] private Button potionPageButton;
     
-    [SerializeField] private GameObject slotPrefab;
+    [SerializeField] private GameObject itemSlotPrefab;
+    [SerializeField] private GameObject potionSlotPrefab;
     [SerializeField] private TextMeshProUGUI materialPageText;
     [SerializeField] private TextMeshProUGUI potionPageText;
-    
-    [SerializeField] private int slotsPerMaterialPage = 6;
-    [SerializeField] private int slotsPerPotionPage = 5;
+
+    [Header("Tooltip")]
+    [SerializeField] private GameObject tooltipPanel;
+    [SerializeField] private TextMeshProUGUI tooltipText;
     
     private InventorySlot[] materialSlots;
-    private InventorySlot[] potionSlots;
-
-    private int materialCurrentPage = 0;
-    private int potionCurrentPage = 0;
-
+    private PotionSlot[] potionSlots;
 
     private void Start()
     {
-        InitializeSlots(ItemCategory.Material);
-        InitializeSlots(ItemCategory.Potion);
+        InitializeMaterialSlots();
+        InitializePotionSlots();
         
         materialPageButton.onClick.AddListener(() => NextMaterialPage());
         potionPageButton.onClick.AddListener(() => NextPotionPage());
         
+        HideTooltip();
         RefreshUI();
     }
+
     private void FixedUpdate()
     {
         RefreshUI();
     }
 
-
-    private void InitializeSlots(ItemCategory category)
+    private void InitializeMaterialSlots()
     {
-        int slotCount = (category == ItemCategory.Material) ? slotsPerMaterialPage : slotsPerPotionPage;
-        Transform container = (category == ItemCategory.Material) ? materialContainer : potionContainer;
+        materialSlots = new InventorySlot[inventory.slotPerMaterialPage];
         
-        InventorySlot[] slots = new InventorySlot[slotCount];
-        
-        for (int i = 0; i < slotCount; i++)
+        for (int i = 0; i < inventory.slotPerMaterialPage; i++)
         {
-            GameObject slotObj = Instantiate(slotPrefab, container);
+            GameObject slotObj = Instantiate(itemSlotPrefab, materialContainer);
             InventorySlot slot = slotObj.GetComponent<InventorySlot>();
-            slot.Init(this, i, category);
-            slots[i] = slot;
+            slot.Init(this, i); // true = 재료 슬롯
+            materialSlots[i] = slot;
         }
-        
-        if (category == ItemCategory.Material)
-            materialSlots = slots;
-        else if (category == ItemCategory.Potion)
-            potionSlots = slots;
     }
 
-
-     private void NextMaterialPage()
+    private void InitializePotionSlots()
     {
-        int maxPage = GetMaxPage(ItemCategory.Material, slotsPerMaterialPage);
-        materialCurrentPage++;
-        if (materialCurrentPage >= maxPage)
-            materialCurrentPage = 0;
+        potionSlots = new PotionSlot[inventory.slotPerPotionPage];
+        
+        for (int i = 0; i < inventory.slotPerPotionPage; i++)
+        {
+            GameObject slotObj = Instantiate(potionSlotPrefab, potionContainer);
+            PotionSlot slot = slotObj.GetComponent<PotionSlot>();
+            slot.Init(this, i); // false = 포션 슬롯
+            potionSlots[i] = slot;
+        }
+    }
+
+    private void NextMaterialPage()
+    {
+        inventory.NextItemPage();
         RefreshUI();
     }
 
     private void NextPotionPage()
     {
-        int maxPage = GetMaxPage(ItemCategory.Potion, slotsPerPotionPage);
-        potionCurrentPage++;
-        if (potionCurrentPage >= maxPage)
-            potionCurrentPage = 0;
+        inventory.NextPotionPage();
         RefreshUI();
     }
 
-    public void OnSlotClicked(ItemCategory category, int localIndex)
+    // 재료 슬롯만 클릭 처리
+    public void OnMaterialSlotClicked(int localIndex)
     {
-        List<Item> allItems = (category == ItemCategory.Material) ? 
-            inventory.MaterialItems : inventory.PotionItems;
+        List<Item> items = inventory.MaterialItems;
+        int globalIndex = inventory.currentMaterialPage * inventory.slotPerMaterialPage + localIndex;
         
-        int currentPage = (category == ItemCategory.Material) ? materialCurrentPage : potionCurrentPage;
-        int slotPerPage = (category == ItemCategory.Material) ? slotsPerMaterialPage : slotsPerPotionPage;
-        
-        int globalIndex = currentPage * slotPerPage + localIndex;
-        
-        if (globalIndex < 0 || globalIndex >= allItems.Count)
+        if (globalIndex < 0 || globalIndex >= items.Count)
             return;
         
-        Item selectedItem = allItems[globalIndex];
+        Item selectedItem = items[globalIndex];
         if (selectedItem == null || selectedItem.data == null)
             return;
         
-        if (category == ItemCategory.Material && craftUI != null)
+        if (craftUI != null)
         {
             craftUI.OnMaterialSelected(selectedItem);
         }
     }
 
+    // 포션 슬롯 클릭 (아무 동작 안함)
+    public void OnPotionSlotClicked(int localIndex)
+    {
+        // 포션은 클릭해도 아무 일 없음
+    }
 
     public void RefreshUI()
     {
-        RefreshCategoryUI(ItemCategory.Material, materialSlots, materialCurrentPage, slotsPerMaterialPage, materialPageText);
-        RefreshCategoryUI(ItemCategory.Potion, potionSlots, potionCurrentPage, slotsPerPotionPage, potionPageText);
-
+        RefreshMaterialUI();
+        RefreshPotionUI();
     }
-    public void RefreshCategoryUI(ItemCategory category, InventorySlot[] slots, int currentPage, int slotPerPage, TextMeshProUGUI pageTextUI)
+
+    private void RefreshMaterialUI()
     {
-        List<Item> allItems = (category == ItemCategory.Material) ? 
-            inventory.MaterialItems : inventory.PotionItems;
+        List<Item> currentPageItems = inventory.GetCurrentItems();
         
-        int startIndex = currentPage * slotPerPage;
-        int endIndex = Mathf.Min(startIndex + slotPerPage, allItems.Count);
-        
-        for (int i = 0; i < slots.Length; i++)
+        for (int i = 0; i < materialSlots.Length; i++)
         {
-            if (startIndex + i < endIndex)
-                slots[i].SetItem(allItems[startIndex + i]);
+            if (i < currentPageItems.Count)
+                materialSlots[i].SetItem(currentPageItems[i]);
             else
-                slots[i].Clear();
+                materialSlots[i].Clear();
         }
         
-        int maxPage = GetMaxPage(category, slotPerPage);
-        pageTextUI.text = $"{currentPage + 1} / {maxPage}";
+        int maxPage = Mathf.Max(1, inventory.MaxMaterialPage);
+        materialPageText.text = $"{inventory.CurrentMaterialPage + 1} / {maxPage}";
     }
-    private int GetMaxPage(ItemCategory category, int slotPerPage)
+
+    private void RefreshPotionUI()
     {
-        List<Item> allItems = category == ItemCategory.Material ? 
-            inventory.MaterialItems : inventory.PotionItems;
+        List<Potion> currentPagePotions = inventory.GetCurrentPotionss();
         
-        return Mathf.Max(1, Mathf.CeilToInt((float)allItems.Count / slotPerPage));
+        for (int i = 0; i < potionSlots.Length; i++)
+        {
+            if (i < currentPagePotions.Count)
+                potionSlots[i].SetPotion(currentPagePotions[i]);
+            else
+                potionSlots[i].Clear();
+        }
+        
+        int maxPage = Mathf.Max(1, inventory.MaxPotionPage);
+        potionPageText.text = $"{inventory.CurrentPotionPage + 1} / {maxPage}";
+    }
+    public void ShowPotionTooltip(Potion potion, Vector3 position)
+    {
+        if (potion == null || potion.data == null)
+        {
+            HideTooltip();
+            return;
+        }
+        
+        tooltipText.text = $"{potion.data.potionName}\n" +
+                       $"Damage 1: {potion.data.damage1}\n" +
+                       $"Damage 2: {potion.data.damage2}\n" +
+                       $"Bullet Type 1: {potion.data.bulletType1}\n" +
+                       $"Bullet Type 2: {potion.data.bulletType2}\n" +
+                       $"Element 1: {potion.data.element1}\n" +
+                       $"Element 2: {potion.data.element2}";
+    
+    tooltipPanel.SetActive(true);
+    tooltipPanel.transform.position = position;
+    }
+    
+    public void HideTooltip()
+    {
+        if (tooltipPanel != null)
+        {
+            tooltipPanel.SetActive(false);
+        }
     }
 }
