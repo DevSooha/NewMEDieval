@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -7508704074719222937}
   - component: {fileID: -6040761480903949293}
   m_Layer: 0
-  m_Name: "\uC784\uC2DC\uD30C\uD3B8_0"
+  m_Name: StainedSwordPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -179,6 +179,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StainedSwordProjectile
   speedPerSecond: 2
+  followStartDelay: 0.2
   homingDuration: 2.8
   fadeOutDuration: 0.1
   damage: 1
