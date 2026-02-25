@@ -46,7 +46,7 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         
         if (potion != null && potion.data != null)
         {
-            if (potion.data.topIMG != null && potion.data.topIMG != null)
+            if (potion.data.topIMG != null)
             {
                 topIMG.sprite = potion.data.topIMG;
                 topIMG.enabled = true;
@@ -56,7 +56,7 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
                 topIMG.enabled = false;
             }
             
-            if (potion.data.bottomIMG != null && potion.data.bottomIMG != null)
+            if (potion.data.bottomIMG != null)
             {
                 bottomIMG.sprite = potion.data.bottomIMG;
                 bottomIMG.enabled = true;

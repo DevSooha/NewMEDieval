@@ -93,14 +93,12 @@ public class InventoryUI : MonoBehaviour
 
     private void NextMaterialPage()
     {
-        inventory.NextItemPage();
-        RefreshUI();
+        TurnPage(inventory.NextItemPage);
     }
 
     private void NextPotionPage()
     {
-        inventory.NextPotionPage();
-        RefreshUI();
+        TurnPage(inventory.NextPotionPage);
     }
 
     public void OnMaterialSlotClicked(int localIndex)
@@ -348,8 +346,7 @@ public class InventoryUI : MonoBehaviour
 
         if (potionInventoryRoot == null)
         {
-            Transform found = transform.Find("PotionInventory");
-            if (found != null) potionInventoryRoot = found as RectTransform;
+            TryResolvePotionInventoryRoot();
         }
 
         GameObject dimObj = new GameObject("WeaponSlotDimmer", typeof(RectTransform), typeof(Image));
@@ -398,8 +395,7 @@ public class InventoryUI : MonoBehaviour
 
         if (potionInventoryRoot == null)
         {
-            Transform found = transform.Find("PotionInventory");
-            if (found != null) potionInventoryRoot = found as RectTransform;
+            TryResolvePotionInventoryRoot();
         }
 
         if (potionInventoryRoot != null)
@@ -418,11 +414,7 @@ public class InventoryUI : MonoBehaviour
         DisableRaycastOnImage(materialContainer);
         DisableRaycastOnImage(potionContainer);
 
-        if (potionInventoryRoot == null)
-        {
-            Transform found = transform.Find("PotionInventory");
-            if (found != null) potionInventoryRoot = found as RectTransform;
-        }
+        TryResolvePotionInventoryRoot();
 
         if (potionInventoryRoot != null)
         {
@@ -444,5 +436,32 @@ public class InventoryUI : MonoBehaviour
         {
             img.raycastTarget = false;
         }
+    }
+
+    private void TurnPage(System.Action changePageAction)
+    {
+        if (changePageAction == null)
+        {
+            return;
+        }
+
+        changePageAction.Invoke();
+        RefreshUI();
+    }
+
+    private bool TryResolvePotionInventoryRoot()
+    {
+        if (potionInventoryRoot != null)
+        {
+            return true;
+        }
+
+        Transform found = transform.Find("PotionInventory");
+        if (found != null)
+        {
+            potionInventoryRoot = found as RectTransform;
+        }
+
+        return potionInventoryRoot != null;
     }
 }

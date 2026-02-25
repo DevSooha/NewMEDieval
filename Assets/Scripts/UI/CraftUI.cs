@@ -46,29 +46,22 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     private void OnEnable()
     {
-        EnsureInventoryUI();
+        InitializeUiRefs();
         SetInventoryVisible(true);
-        EnsureCloseButton();
-        EnsureResetButton();
-        SetCloseButtonVisible(true);
-        SetResetButtonVisible(true);
+        SetCornerButtonsVisible(true);
     }
 
     private void OnDisable()
     {
-        SetCloseButtonVisible(false);
-        SetResetButtonVisible(false);
+        SetCornerButtonsVisible(false);
         SetInventoryVisible(false);
         ResetCraftingState();
     }
 
     private void Start()
     {
-        EnsureInventoryUI();
-        EnsureCloseButton();
-        EnsureResetButton();
-        SetCloseButtonVisible(true);
-        SetResetButtonVisible(true);
+        InitializeUiRefs();
+        SetCornerButtonsVisible(true);
         oxygenGauge.gameObject.SetActive(false);
         if (resultText != null)
             resultText.gameObject.SetActive(false);
@@ -301,6 +294,19 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         {
             resetButton.gameObject.SetActive(visible);
         }
+    }
+
+    private void InitializeUiRefs()
+    {
+        EnsureInventoryUI();
+        EnsureCloseButton();
+        EnsureResetButton();
+    }
+
+    private void SetCornerButtonsVisible(bool visible)
+    {
+        SetCloseButtonVisible(visible);
+        SetResetButtonVisible(visible);
     }
     public void ClearSlots()
     {

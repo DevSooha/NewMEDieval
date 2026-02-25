@@ -31,7 +31,7 @@ public class WeaponSlotUI : MonoBehaviour
 
         if (inventoryUI == null)
         {
-            inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+            TryResolveInventoryUI();
         }
 
         if (slot1 == null || slot2 == null || slot3 == null || slot4 == null)
@@ -160,10 +160,7 @@ public class WeaponSlotUI : MonoBehaviour
 
     public void HandleSlotClick(int index)
     {
-        if (inventoryUI == null)
-        {
-            inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
-        }
+        TryResolveInventoryUI();
 
         if (inventoryUI != null)
         {
@@ -209,5 +206,16 @@ public class WeaponSlotUI : MonoBehaviour
         img.color = new Color(1f, 1f, 1f, 0f);
         img.raycastTarget = true;
         img.preserveAspect = false;
+    }
+
+    private bool TryResolveInventoryUI()
+    {
+        if (inventoryUI != null)
+        {
+            return true;
+        }
+
+        inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+        return inventoryUI != null;
     }
 }
