@@ -63,7 +63,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
         if (phase != nextPhase)
         {
-            Debug.Log($"[BOSS] ÆäÀÌÁî º¯°æ! {phase} -> {nextPhase}");
+            Debug.Log($"[BOSS] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½! {phase} -> {nextPhase}");
             phase = nextPhase;
         }
     }
@@ -94,7 +94,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         }
         else
         {
-            Debug.LogError("Player¸¦ Ã£À» ¼ö ¾øÀ½!");
+            Debug.LogError("Playerï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½!");
         }
     }
 
@@ -132,7 +132,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
     IEnumerator AttackRoutine()
     {
-        Debug.Log("°ø°Ý!");
+        Debug.Log("ï¿½ï¿½ï¿½ï¿½!");
 
         switch (phase)
         {
@@ -158,7 +158,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     IEnumerator FirePattern()
     {
         if (playerTF == null) yield break;
-        Debug.Log("ÆÄÀÌ¾î¿ù ¸ÅÁ÷!");
+        Debug.Log("ï¿½ï¿½ï¿½Ì¾ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½!");
         Vector2 dir = playerTF.position - transform.position;
 
         for (int i = 0; i < 2; i++)
@@ -185,7 +185,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     IEnumerator WaterPattern()
     {
         if (playerTF == null) yield break;
-        Debug.Log("¾ÆÄí¾Æ·¹ÀÌ ¸ÅÁ÷!");
+        Debug.Log("ï¿½ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½!");
 
         Vector2 dir = playerTF.position - transform.position;
         float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
@@ -205,7 +205,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     IEnumerator ElectricPattern()
     {
         if (playerTF == null) yield break;
-        Debug.Log("ÆÇµµ¶óÀÇ Àü±â ¸ÅÁ÷!");
+        Debug.Log("ï¿½Çµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½!");
 
         Vector2 dir = playerTF.position - transform.position;
         float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
