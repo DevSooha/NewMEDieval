@@ -15,7 +15,7 @@ MonoBehaviour:
   roomID: win_1
   roomPrefab: {fileID: 4350292270541437146, guid: c97d5f0ce1ea7e94782ab2b5dc8d7280, type: 3}
   north: {fileID: 0}
-  south: {fileID: 0}
+  south: {fileID: 11400000, guid: c7f36f3ced0638c43bda10e785f9c36f, type: 2}
   east: {fileID: 0}
   west: {fileID: 0}
-  roomCoord: {x: 0, y: 0}
+  roomCoord: {x: 0, y: 7}

@@ -37,6 +37,17 @@ public class BossBattleTrigger : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (!hasTriggered) return;
+        if (BossManager.Instance == null || !BossManager.Instance.IsBossActive) return;
+
+        if (assignedBoss == null || !assignedBoss.gameObject.activeInHierarchy)
+        {
+            BossManager.Instance.EndBossBattle();
+        }
+    }
+
     private void OnDisable()
     {
         if (Time.timeScale == 0f)

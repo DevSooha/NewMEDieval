@@ -1,31 +1,35 @@
 using UnityEngine;
-using System.Collections; // ÄÚ·çÆ¾ »ç¿ëÀ» À§ÇØ Ãß°¡
+using System.Collections; // ï¿½Ú·ï¿½Æ¾ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
 
 public class TestGameStarter : MonoBehaviour
 {
-    [Header("½ÃÀÛ ¼³Á¤")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
     public RoomData startingRoom;
     public Transform player;
+    public Transform playerSpawnPointOverride;
+    public string playerSpawnPointName = "PlayerSpawnPoint";
+
+    private bool spawnPointRetryQueued = false;
 
     private IEnumerator Start()
     {
         if (startingRoom == null)
         {
-            Debug.LogError("GameStarter: ½ÃÀÛÇÒ ¹æ µ¥ÀÌÅÍ°¡ ºñ¾îÀÖ½À´Ï´Ù!");
+            Debug.LogError("GameStarter: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½Ï´ï¿½!");
             yield break;
         }
 
-        // 1. RoomManager°¡ ¸ÕÀú ÃÊ±âÈ­µÇ°í ¹æÀ» »ý¼ºÇÒ ½Ã°£À» ÁÖ±â À§ÇØ 1ÇÁ·¹ÀÓ ´ë±â
-        // (RoomManager.Start()°¡ ½ÇÇàµÇ¾î ÇÃ·¹ÀÌ¾î À§Ä¡¸¦ 0,0,0À¸·Î ¸®¼ÂÇÏ´Â °ÍÀ» ¹æÁö)
+        // 1. RoomManagerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ï¿½Ç°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½Ö±ï¿½ ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+        // (RoomManager.Start()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ 0,0,0ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         yield return null;
 
-        // RoomManager°¡ ¾ÆÁ÷ ¹æÀ» »ý¼ºÇÏÁö ¾Ê¾Ò´Ù¸é »ý¼º ¿äÃ»
+        // RoomManagerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾Ò´Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã»
         if (RoomManager.Instance.currentRoomData == null)
         {
             RoomManager.Instance.InitializeFirstRoom(startingRoom, Vector3.zero);
         }
 
-        // 2. ¹æ »ý¼º Á÷ÈÄ ¿ÀºêÁ§Æ®µéÀÌ È°¼ºÈ­µÇ°í °Ë»ö °¡´ÉÇÑ »óÅÂ°¡ µÇµµ·Ï ¾ÈÀüÇÏ°Ô ÇÑ ¹ø ´õ ´ë±â
+        // 2. ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ È°ï¿½ï¿½È­ï¿½Ç°ï¿½ ï¿½Ë»ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â°ï¿½ ï¿½Çµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½
         yield return null;
 
         if (player != null)
@@ -36,43 +40,52 @@ public class TestGameStarter : MonoBehaviour
 
     private void MovePlayerToSpawnPoint()
     {
-        // ±âº» À§Ä¡ ¼³Á¤
+        // ï¿½âº» ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½
         Vector3 spawnPos = new Vector3(0, -2, 0);
-        GameObject spawnPointObj = null;
+        Transform spawnPoint = playerSpawnPointOverride;
 
-        // 1. È°¼ºÈ­µÈ ¿ÀºêÁ§Æ® Áß¿¡¼­ ¿ì¼± °Ë»ö (ºü¸§)
-        spawnPointObj = GameObject.Find("PlayerSpawnPoint");
-
-        // 2. ¸ø Ã£¾Ò´Ù¸é ºñÈ°¼ºÈ­µÈ ¿ÀºêÁ§Æ®±îÁö Æ÷ÇÔÇÏ¿© Àü¿ª °Ë»ö (´À¸®Áö¸¸ È®½ÇÇÔ)
-        if (spawnPointObj == null)
+        // 0. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ Ä³ï¿½Ãµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½È¸ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+        if (spawnPoint == null && RoomManager.Instance != null)
         {
-            Transform[] allTransforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var t in allTransforms)
-            {
-                if (t.name == "PlayerSpawnPoint")
-                {
-                    spawnPointObj = t.gameObject;
-                    break;
-                }
-            }
+            spawnPoint = RoomManager.Instance.GetSpawnPointForCurrentRoom(playerSpawnPointName);
         }
 
-        if (spawnPointObj != null)
+        // 1. È°ï¿½ï¿½È­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ß¿ï¿½ï¿½ï¿½ ï¿½ì¼± ï¿½Ë»ï¿½ (ï¿½ï¿½ï¿½ï¿½)
+        if (spawnPoint == null)
         {
-            spawnPos = spawnPointObj.transform.position;
-            Debug.Log($"[TestGameStarter] ½ºÆù Æ÷ÀÎÆ® ¹ß°ß: {spawnPos}");
+            GameObject spawnPointObj = GameObject.Find(playerSpawnPointName);
+            if (spawnPointObj != null) spawnPoint = spawnPointObj.transform;
+        }
+
+        if (spawnPoint != null)
+        {
+            spawnPos = spawnPoint.position;
+            Debug.Log($"[TestGameStarter] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ß°ï¿½: {spawnPos}");
         }
         else
         {
-            Debug.LogWarning("[TestGameStarter] 'PlayerSpawnPoint'¸¦ Ã£À» ¼ö ¾ø¾î ±âº» À§Ä¡(0, -2, 0)·Î ÀÌµ¿ÇÕ´Ï´Ù.");
+            if (!spawnPointRetryQueued)
+            {
+                spawnPointRetryQueued = true;
+                StartCoroutine(RetrySpawnPointNextFrame());
+                return;
+            }
+
+            Debug.LogWarning($"[TestGameStarter] '{playerSpawnPointName}'ï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½Ä¡(0, -2, 0)ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Õ´Ï´ï¿½.");
         }
 
         player.position = spawnPos;
 
-        // ÇÃ·¹ÀÌ¾î ÀÌµ¿ ÈÄ Ä«¸Þ¶ó µ¿±âÈ­ (RoomManager°¡ ÃÊ±âÈ­µÉ ¶§ Ä«¸Þ¶ó°¡ ¾û¶×ÇÑ °÷¿¡ ÀÖÀ» ¼ö ÀÖÀ½)
+        // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½È­ (RoomManagerï¿½ï¿½ ï¿½Ê±ï¿½È­ï¿½ï¿½ ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         if (RoomManager.Instance != null)
         {
             RoomManager.Instance.SyncCameraToPlayer();
         }
+    }
+
+    private IEnumerator RetrySpawnPointNextFrame()
+    {
+        yield return null;
+        MovePlayerToSpawnPoint();
     }
 }

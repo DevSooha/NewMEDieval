@@ -1,6 +1,4 @@
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 
 public enum BulletType
@@ -19,7 +17,8 @@ public enum PotionEffect
     EnemyStun,
     BulletSpeedDown
 }
-public class PotionData
+[CreateAssetMenu(fileName = "PotionData", menuName = "Data/Potion")]
+public class PotionData : ScriptableObject
 {
     public string potionName;
     public int damage1;
