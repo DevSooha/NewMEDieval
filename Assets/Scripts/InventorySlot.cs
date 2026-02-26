@@ -13,6 +13,7 @@ public class InventorySlot : MonoBehaviour
     private Item currentItem;
     
     public int SlotIndex { get; set; }
+    private Potion currentPotion;
 
 
     public void Init(InventoryUI ui, int index)
@@ -53,5 +54,20 @@ public class InventorySlot : MonoBehaviour
         itemIcon.enabled = false;
         quantityText.enabled = false;
     }
+    public void OnMouseEnter()
+    {
+        if (inventoryUI != null)
+        {
+            inventoryUI.ShowPotionTooltip(currentPotion, transform.position);
+        }
+    }
     
+    // 마우스 벗어났을 때 호출될 메서드
+    public void OnMouseExit()
+    {
+        if (inventoryUI != null)
+        {
+            inventoryUI.HideTooltip();
+        }
+    }
 }

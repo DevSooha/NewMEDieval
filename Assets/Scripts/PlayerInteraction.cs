@@ -10,7 +10,7 @@ public class PlayerInteraction : MonoBehaviour
     private CircleCollider2D interactionCollider;
     private NPC currentNPC;
     private WorldItem currentItem;
-    public CraftUI craftUI;
+    public GameObject craftingMenu;
 
     private bool canInteract = false;
     private bool isCampfire = false;
@@ -30,9 +30,9 @@ public class PlayerInteraction : MonoBehaviour
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
 
-        if (craftUI != null)
+        if (craftingMenu != null)
         {
-            craftUI.gameObject.SetActive(false);
+            craftingMenu.SetActive(false);
         }
         else
         {
@@ -44,7 +44,7 @@ public class PlayerInteraction : MonoBehaviour
         if (isCampfire == true && Input.GetKeyDown(KeyCode.Escape))
         {
             isCampfire = false;
-            craftUI.gameObject.SetActive(false);
+            craftingMenu.SetActive(false);
         }
     }
 
@@ -141,10 +141,7 @@ public class PlayerInteraction : MonoBehaviour
     }
     public void EnterCrafting()
     {
-        if (craftUI != null)
-        {
-            craftUI.gameObject.SetActive(true);
-        }
+        craftingMenu?.SetActive(true);
     }
 
     void OnTriggerExit2D(Collider2D other)

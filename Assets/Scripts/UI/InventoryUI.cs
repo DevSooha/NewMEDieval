@@ -27,8 +27,9 @@ public class InventoryUI : MonoBehaviour
     private InventorySlot[] materialSlots;
     private PotionSlot[] potionSlots;
 
-    private void Start()
-    {
+    private void Awake()
+    {   
+        
         InitializeMaterialSlots();
         InitializePotionSlots();
         
