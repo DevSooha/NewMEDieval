@@ -73,7 +73,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     public override void StartBattle()
     {
-        Debug.Log("[Shaperkease] StartBattle() í˜¸ì¶œë¨! ë“±ì¥ ë£¨í‹´ ì‹œì‘");
+        Debug.Log("[Shaperkease] StartBattle() È£ÃâµÊ! µîÀå ·çÆ¾ ½ÃÀÛ");
         StartCoroutine(AppearRoutine());
     }
 
@@ -109,12 +109,12 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         if (p != null)
         {
             player = p.transform;
-            Debug.Log("[Shaperkease] í”Œë ˆì´ì–´ íƒìƒ‰ ì™„ë£Œ, ì „íˆ¬ ë£¨í‹´ ëŒì…");
+            Debug.Log("[Shaperkease] ÇÃ·¹ÀÌ¾î Å½»ö ¿Ï·á, ÀüÅõ ·çÆ¾ µ¹ÀÔ");
             StartCombat();
         }
         else
         {
-            Debug.LogError("[Shaperkease] Playerë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
+            Debug.LogError("[Shaperkease] Player¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù!");
         }
     }
 
@@ -141,20 +141,20 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         {
             if (player == null) yield break;
 
-            Debug.Log("[Shaperkease] íŒ¨í„´ 1, 2, 3 ë™ì‹œ ì „ê°œ!");
+            Debug.Log("[Shaperkease] ÆĞÅÏ 1, 2, 3 µ¿½Ã Àü°³!");
 
             StartCoroutine(Pattern_BedimmedWall());
             StartCoroutine(Pattern_Ray());
             StartCoroutine(Pattern_MasqueIllusion());
 
-            Debug.Log($"[Shaperkease] ëª¨ë“  íŒ¨í„´ ë°œë™ ì™„ë£Œ. {patternInterval}ì´ˆ ëŒ€ê¸° í›„ ì¬ì‹œì‘í•©ë‹ˆë‹¤.");
+            Debug.Log($"[Shaperkease] ¸ğµç ÆĞÅÏ ¹ßµ¿ ¿Ï·á. {patternInterval}ÃÊ ´ë±â ÈÄ Àç½ÃÀÛÇÕ´Ï´Ù.");
             yield return new WaitForSeconds(patternInterval);
         }
     }
 
     IEnumerator Pattern_BedimmedWall()
     {
-        Debug.Log("íŒ¨í„´ 1: Bedimmed Wall");
+        Debug.Log("ÆĞÅÏ 1: Bedimmed Wall");
         if (!isFighting || bedimmedWallGroup == null) yield break;
 
         bedimmedWallGroup.gameObject.SetActive(true);
@@ -179,7 +179,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     IEnumerator Pattern_Ray()
     {
-        Debug.Log("íŒ¨í„´ 2: Ray (Radial)");
+        Debug.Log("ÆĞÅÏ 2: Ray (Radial)");
         if (!isFighting || rayPool == null || player == null) yield break;
 
         yield return new WaitForSeconds(0.5f);
@@ -206,7 +206,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     IEnumerator Pattern_MasqueIllusion()
     {
-        Debug.Log("íŒ¨í„´ 3: Masque Illusion ì‹œì „ ì¤€ë¹„!");
+        Debug.Log("ÆĞÅÏ 3: Masque Illusion ½ÃÀü ÁØºñ!");
         if (!isFighting || trapPool == null || player == null) yield break;
 
         Vector2 gazeDir = Vector2.right;
@@ -235,7 +235,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         }
         else
         {
-            Debug.LogError("[Masque Illusion] trapProjectilePrefabì— MasqueIllusionProjectile ìŠ¤í¬ë¦½íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤!");
+            Debug.LogError("[Masque Illusion] trapProjectilePrefab¿¡ MasqueIllusionProjectile ½ºÅ©¸³Æ®°¡ ¾ø½À´Ï´Ù!");
         }
     }
 }
