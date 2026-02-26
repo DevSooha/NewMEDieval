@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
@@ -73,7 +73,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     public override void StartBattle()
     {
-        Debug.Log("[Shaperkease] StartBattle() 호출됨! 등장 루틴 시작");
+        Debug.Log("[Shaperkease] StartBattle() ȣ���! ���� ��ƾ ����");
         StartCoroutine(AppearRoutine());
     }
 
@@ -99,7 +99,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         }
         else
         {
-            Debug.LogError("[Shaperkease] Player를 찾을 수 없습니다!");
+            Debug.LogError("[Shaperkease] Player�� ã�� �� �����ϴ�!");
         }
     }
 
@@ -126,20 +126,20 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         {
             if (player == null) yield break;
 
-            Debug.Log("[Shaperkease] 패턴 1, 2, 3 동시 전개!");
+            Debug.Log("[Shaperkease] ���� 1, 2, 3 ���� ����!");
 
             StartCoroutine(Pattern_BedimmedWall());
             StartCoroutine(Pattern_Ray());
             StartCoroutine(Pattern_MasqueIllusion());
 
-            Debug.Log($"[Shaperkease] 모든 패턴 발동 완료. {patternInterval}초 대기 후 재시작합니다.");
+            Debug.Log($"[Shaperkease] ��� ���� �ߵ� �Ϸ�. {patternInterval}�� ��� �� ������մϴ�.");
             yield return new WaitForSeconds(patternInterval);
         }
     }
 
     IEnumerator Pattern_BedimmedWall()
     {
-        Debug.Log("패턴 1: Bedimmed Wall");
+        Debug.Log("���� 1: Bedimmed Wall");
         if (!isFighting || bedimmedWallGroup == null) yield break;
 
         bedimmedWallGroup.gameObject.SetActive(true);
@@ -164,7 +164,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     IEnumerator Pattern_Ray()
     {
-        Debug.Log("패턴 2: Ray (Radial)");
+        Debug.Log("���� 2: Ray (Radial)");
         if (!isFighting || rayPool == null || player == null) yield break;
 
         yield return new WaitForSeconds(0.5f);
@@ -189,7 +189,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     IEnumerator Pattern_MasqueIllusion()
     {
-        Debug.Log("패턴 3: Masque Illusion 시전 준비!");
+        Debug.Log("���� 3: Masque Illusion ���� �غ�!");
         if (!isFighting || trapPool == null || player == null) yield break;
 
         Vector2 gazeDir = Vector2.right;
@@ -218,9 +218,9 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         }
         else
         {
-            Debug.LogError("[Masque Illusion] trapProjectilePrefab에 MasqueIllusionProjectile 스크립트가 없습니다!");
+            Debug.LogError("[Masque Illusion] trapProjectilePrefab�� MasqueIllusionProjectile ��ũ��Ʈ�� �����ϴ�!");
         }
     }
-}
-
-
+}
+
+

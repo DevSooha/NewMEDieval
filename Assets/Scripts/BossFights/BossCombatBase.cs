@@ -132,7 +132,7 @@ public interface IBossDamageModifier
 public interface IBossPhaseHandler
 {
     void OnBossHpChanged(int currentHp, int maxHp);
-}
+}
 
 public interface IBossBattleResetNotifier
 {
