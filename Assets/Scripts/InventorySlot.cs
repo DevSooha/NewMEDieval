@@ -1,33 +1,56 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-
-public class InventorySlot : MonoBehaviour
+public class InventorySlot : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI quantityText;
     [SerializeField] private Image slotBackground;
+    [SerializeField] private Button button;
+    [SerializeField] private Image clickArea;
     
     private InventoryUI inventoryUI;  
-    private ItemCategory category;     
     private Item currentItem;
     
     public int SlotIndex { get; set; }
 
+    private void Awake()
+    {
+        if (button == null)
+        {
+            button = GetComponent<Button>();
+        }
 
-    public void Init(InventoryUI ui, int index, ItemCategory cat)
+        if (button != null)
+        {
+            button.enabled = false;
+        }
+
+        EnsureClickArea();
+    }
+
+    public void Init(InventoryUI ui, int index)
     {
         inventoryUI = ui;
         SlotIndex = index;
-        category = cat; 
     }
 
     public void OnClick()
     {
-        // category와 함께 전달
-        inventoryUI.OnSlotClicked(category, SlotIndex);
+        inventoryUI.OnMaterialSlotClicked(SlotIndex);
     }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left)
+        {
+            return;
+        }
+        OnClick();
+    }
+
 
 
     public void SetItem(Item item)
@@ -50,12 +73,27 @@ public class InventorySlot : MonoBehaviour
             }
         }
     }
-
     public void Clear()
     {
         currentItem = null;
         itemIcon.enabled = false;
         quantityText.enabled = false;
+    }
+
+    private void EnsureClickArea()
+    {
+        if (clickArea == null)
+        {
+            clickArea = GetComponent<Image>();
+        }
+
+        if (clickArea == null)
+        {
+            clickArea = gameObject.AddComponent<Image>();
+        }
+
+        clickArea.color = new Color(1f, 1f, 1f, 0f);
+        clickArea.raycastTarget = true;
     }
     
 }

@@ -1,170 +1,229 @@
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 
 public class Inventory : Singleton<Inventory>
 {
     [SerializeField] private InventoryUI inventoryUI;
-    [SerializeField] private int slotPerMaterialPage = 6;
-    [SerializeField] private int slotPerPotionPage   = 5;
+    [SerializeField] public int slotPerMaterialPage = 6;
+    [SerializeField] public int slotPerPotionPage   = 5;
 
-    private List<Item> materialItems = new List<Item>();
-    private List<Item> potionItems   = new List<Item>();
+    private readonly List<Item> items = new();
+    private readonly List<Potion> potions   = new();
 
-    private int currentMaterialPage = 0;
-    private int currentPotionPage   = 0;
+    public int currentMaterialPage = 0;
+    public int currentPotionPage   = 0;
 
     public int CurrentMaterialPage => currentMaterialPage;
     public int CurrentPotionPage   => currentPotionPage;
 
-    public int MaxMaterialPage => Mathf.CeilToInt((float)materialItems.Count / slotPerMaterialPage);
-    public int MaxPotionPage   => Mathf.CeilToInt((float)potionItems.Count / slotPerPotionPage);
+    public int MaxMaterialPage => Mathf.CeilToInt((float)items.Count / slotPerMaterialPage);
+    public int MaxPotionPage   => Mathf.CeilToInt((float)potions.Count / slotPerPotionPage);
 
     public int SelectedIndex { get; private set; } = -1;
 
-    public List<Item> MaterialItems => materialItems;
-    public List<Item> PotionItems   => potionItems;
-
-    // ---------- 공통 헬퍼들 ----------
-
-    private List<Item> GetList(ItemCategory category)
-    {
-        return category switch
-        {
-            ItemCategory.Material => materialItems,
-            ItemCategory.Potion   => potionItems,
-            _                     => materialItems
-        };
-    }
-
-    private int GetSlotPerPage(ItemCategory category)
-    {
-        return category switch
-        {
-            ItemCategory.Material => slotPerMaterialPage,
-            ItemCategory.Potion   => slotPerPotionPage,
-            _                     => slotPerMaterialPage
-        };
-    }
-
-    private ref int GetCurrentPageRef(ItemCategory category)
-    {
-        if (category == ItemCategory.Material)
-            return ref currentMaterialPage;
-        else
-            return ref currentPotionPage;
-    }
-
+    public List<Item> MaterialItems => items;
+    public List<Potion> PotionItems   => potions;
 
     public bool AddItem(ItemData itemData, int quantity = 1)
     {
-        ItemCategory category = itemData.category;   // 무조건 ItemData 기준
+        return AddEntry(
+            items,
+            itemData,
+            quantity,
+            ref currentMaterialPage,
+            slotPerMaterialPage,
+            (item, data) => item.data == data,
+            item => item.quantity,
+            (item, value) => item.quantity = value,
+            data => data.isStackable,
+            data => data.maxStack,
+            (data, amount) => new Item(data, amount)
+        );
 
-        List<Item> list     = GetList(category);
-        int slotPerPage     = GetSlotPerPage(category);
-        ref int currentPage = ref GetCurrentPageRef(category);
+    }
 
+    public bool AddPotion(PotionData potionData, int quantity = 1)
+    {
+        return AddEntry(
+            potions,
+            potionData,
+            quantity,
+            ref currentPotionPage,
+            slotPerPotionPage,
+            (potion, data) => potion.data == data,
+            potion => potion.quantity,
+            (potion, value) => potion.quantity = value,
+            data => data.isStackable,
+            data => data.maxStack,
+            (data, amount) => new Potion(data, amount)
+        );
+
+    }
+
+    public List<Item> GetCurrentItems()
+    {
+        return GetCurrentPageSlice(items, currentMaterialPage, slotPerMaterialPage);
+    }
+
+    public List<Potion> GetCurrentPotions()
+    {
+        return GetCurrentPageSlice(potions, currentPotionPage, slotPerPotionPage);
+    }
+
+    public List<Potion> GetCurrentPotionss()
+    {
+        return GetCurrentPotions();
+    }
+
+    public void NextItemPage()
+    {
+        NextPage(ref currentMaterialPage, items.Count, slotPerMaterialPage);
+    }
+
+    public void NextPotionPage()
+    {
+        NextPage(ref currentPotionPage, potions.Count, slotPerPotionPage);
+    }
+
+    public void SetItemPage(int page)
+    {
+        SetPage(ref currentMaterialPage, page, items.Count, slotPerMaterialPage);
+    }
+
+    public void SetPotionPage(int page)
+    {
+        SetPage(ref currentPotionPage, page, potions.Count, slotPerPotionPage);
+    }
+
+    private bool AddEntry<TEntry, TData>(
+        List<TEntry> targetList,
+        TData data,
+        int quantity,
+        ref int currentPage,
+        int slotsPerPage,
+        System.Func<TEntry, TData, bool> isSameData,
+        System.Func<TEntry, int> getQuantity,
+        System.Action<TEntry, int> setQuantity,
+        System.Func<TData, bool> isStackable,
+        System.Func<TData, int> getMaxStack,
+        System.Func<TData, int, TEntry> createEntry)
+    {
         int remaining = quantity;
+        int maxStack = getMaxStack(data);
 
-        if (itemData.isStackable)
+        if (isStackable(data))
         {
-            foreach (Item item in list)
+            foreach (TEntry entry in targetList)
             {
-                if (item.data == itemData && item.quantity < itemData.maxStack)
+                if (!isSameData(entry, data) || getQuantity(entry) >= maxStack)
                 {
-                    int addAmount = Mathf.Min(quantity, itemData.maxStack - item.quantity);
-                    item.quantity += addAmount;
-                    remaining -= addAmount;
+                    continue;
+                }
 
-                    if (remaining <= 0)
-                    {
-                        inventoryUI.RefreshUI();
-                        return true;
-                    }
-                    
+                int addAmount = Mathf.Min(quantity, maxStack - getQuantity(entry));
+                setQuantity(entry, getQuantity(entry) + addAmount);
+                remaining -= addAmount;
+
+                if (remaining <= 0)
+                {
+                    RefreshInventoryUi();
+                    return true;
                 }
             }
         }
+
         while (remaining > 0)
-    {
-        int addNow = itemData.isStackable ? Mathf.Min(remaining, itemData.maxStack) : 1;
-        list.Add(new Item(itemData, addNow));
-        remaining -= addNow;
-    }
-
-        int newMaxPage = Mathf.CeilToInt((float)list.Count / slotPerPage);
-        if (newMaxPage <= 0) newMaxPage = 1;
-
-        if (currentPage >= newMaxPage)
         {
-            currentPage = newMaxPage - 1;
+            int addNow = isStackable(data) ? Mathf.Min(remaining, maxStack) : 1;
+            targetList.Add(createEntry(data, addNow));
+            remaining -= addNow;
         }
+
+        ClampPage(ref currentPage, targetList.Count, slotsPerPage);
         return true;
     }
-    public List<Item> GetCurrentItems(ItemCategory category)
-    {
-        List<Item> source   = GetList(category);
-        int slotPerPage     = GetSlotPerPage(category);
-        int currentPage     = GetCurrentPageRef(category);
 
-        List<Item> pageItems = new List<Item>();
-        int startIndex = currentPage * slotPerPage;
-        int endIndex   = Mathf.Min(startIndex + slotPerPage, source.Count);
+    private List<TEntry> GetCurrentPageSlice<TEntry>(List<TEntry> source, int currentPage, int slotsPerPage)
+    {
+        List<TEntry> pageEntries = new List<TEntry>();
+        int startIndex = currentPage * slotsPerPage;
+        int endIndex = Mathf.Min(startIndex + slotsPerPage, source.Count);
 
         for (int i = startIndex; i < endIndex; i++)
         {
-            pageItems.Add(source[i]);
+            pageEntries.Add(source[i]);
         }
 
-        return pageItems;
+        return pageEntries;
     }
 
-    public void NextPage(ItemCategory category)
+    private static int GetMaxPage(int totalCount, int slotsPerPage)
     {
-        List<Item> list      = GetList(category);
-        int slotPerPage      = GetSlotPerPage(category);
-        ref int currentPage  = ref GetCurrentPageRef(category);
+        return Mathf.Max(1, Mathf.CeilToInt((float)totalCount / slotsPerPage));
+    }
 
-        int maxPage = Mathf.Max(1, Mathf.CeilToInt((float)list.Count / slotPerPage));
+    private static void NextPage(ref int currentPage, int totalCount, int slotsPerPage)
+    {
+        int maxPage = GetMaxPage(totalCount, slotsPerPage);
         currentPage++;
-
         if (currentPage >= maxPage)
+        {
             currentPage = 0;
+        }
     }
 
-    public void SetPage(ItemCategory category, int page)
+    private static void SetPage(ref int currentPage, int page, int totalCount, int slotsPerPage)
     {
-        List<Item> list      = GetList(category);
-        int slotPerPage      = GetSlotPerPage(category);
-        ref int currentPage  = ref GetCurrentPageRef(category);
-
-        int maxPage = Mathf.Max(1, Mathf.CeilToInt((float)list.Count / slotPerPage));
+        int maxPage = GetMaxPage(totalCount, slotsPerPage);
         currentPage = Mathf.Clamp(page, 0, maxPage - 1);
     }
 
-    public bool RemoveItem(ItemCategory category, int index, int quantity = 1)
+    private static void ClampPage(ref int currentPage, int totalCount, int slotsPerPage)
     {
-        List<Item> list = GetList(category);
-        if (index < 0 || index >= list.Count) return false;
-
-        list[index].quantity -= quantity;
-        if (list[index].quantity <= 0)
+        int maxPage = GetMaxPage(totalCount, slotsPerPage);
+        if (currentPage >= maxPage)
         {
-            list.RemoveAt(index);
+            currentPage = maxPage - 1;
+        }
+    }
+
+    private void RefreshInventoryUi()
+    {
+        if (inventoryUI != null)
+        {
+            inventoryUI.RefreshUI();
+        }
+    }
+
+    public bool RemoveItem(int index, int quantity = 1)
+    {
+        items[index].quantity -= quantity;
+        if (items[index].quantity <= 0)
+        {
+            items.RemoveAt(index);
         }
         return true;
     }
-    public void SelectItem(ItemCategory category, int index)
-{
-    List<Item> list = GetList(category);
+    public bool RemovePotion(int index, int quantity = 1)
+    {
+        potions[index].quantity -= quantity;
+        if (potions[index].quantity <= 0)
+        {
+            potions.RemoveAt(index);
+        }
+        return true;
+    }
 
-    if (index < 0 || index >= list.Count)
+    public void SelectItem(int index)
     {
-        SelectedIndex = -1;
+
+        if (index < 0 || index >= items.Count)
+        {
+            SelectedIndex = -1;
+        }
+        else
+        {
+            SelectedIndex = index;
+        }
     }
-    else
-    {
-        SelectedIndex = index;
-    }
-}
 }

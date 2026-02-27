@@ -78,7 +78,7 @@ public class WorldItem : MonoBehaviour
 
         // --- 날아가는 연출 ---
         float time = 0f;
-        float duration = 0.3f;
+        float duration = 0.12f;
         Vector3 startPos = transform.position;
         Vector3 startScale = transform.localScale;
 

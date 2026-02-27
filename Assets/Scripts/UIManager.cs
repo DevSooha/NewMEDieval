@@ -1,8 +1,9 @@
-using System.Collections;
+﻿using System.Collections;
 using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -26,6 +27,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI dialogueText;
     [SerializeField] private Image npcIllustrationImage;
     [SerializeField] private GameObject dialogueDimmer;
+    private Image dialogueDimmerImage;
 
 
     [Header("Dialogue Typing Settings")]
@@ -44,21 +46,52 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI selectText;
     public Button btn1;
     public Button btn2;
+    private int selectedChoiceIndex = 0;
+    private GameObject selectBlocker;
+
+    [Header("Select UI Colors")]
+    [SerializeField] private Color selectNormalColor = Color.white;
+    [SerializeField] private Color selectHoverColor = new Color(0.75f, 0.75f, 0.75f, 1f);
+    [SerializeField] private Color selectTextNormalColor = Color.black;
+    [SerializeField] private Color selectTextHoverColor = Color.white;
+    [SerializeField] private float selectScale = 1.08f;
 
 
     void Awake()
     {
         Instance = this;
-        // �׻� �����ִ°� �ƴ� UI���� �ʱ�ȭ �� ��Ȱ��ȭ
         if (messagePanel != null) messagePanel.SetActive(false);
-        if (fadeImage != null) fadeImage.color = new Color(0, 0, 0, 0);
+        if (fadeImage != null)
+        {
+            StretchToParent(fadeImage.rectTransform);
+            fadeImage.color = new Color(0, 0, 0, 1f);
+            fadeImage.raycastTarget = false;
+            fadeImage.gameObject.SetActive(true);
+            fadeImage.transform.SetAsLastSibling();
+        }
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
         if (SelectPanel != null) SelectPanel.SetActive(false);
+        if (dialogueDimmer != null)
+        {
+            RectTransform dimmerRect = dialogueDimmer.GetComponent<RectTransform>();
+            StretchToParent(dimmerRect);
+            dialogueDimmerImage = dialogueDimmer.GetComponent<Image>();
+            if (dialogueDimmerImage != null) dialogueDimmerImage.raycastTarget = false;
+            dialogueDimmer.SetActive(false);
+            dialogueDimmer.transform.SetAsLastSibling();
+        }
     }
 
-    #region FadeImage ���� - FadeIn, FadeOut, LoadSceneWithFade
+    void Update()
+    {
+        HandleSelectPanelInput();
+    }
+
+    #region FadeImage - FadeIn, FadeOut, LoadSceneWithFade
     public IEnumerator FadeIn(float duration)
     {
+        if (fadeImage == null) yield break;
+        fadeImage.transform.SetAsLastSibling();
         float t = 0;
         while (t < duration)
         {
@@ -71,6 +104,8 @@ public class UIManager : MonoBehaviour
 
     public IEnumerator FadeOut(float duration)
     {
+        if (fadeImage == null) yield break;
+        fadeImage.transform.SetAsLastSibling();
         float t = 0;
         while (t < duration)
         {
@@ -89,29 +124,28 @@ public class UIManager : MonoBehaviour
     }
     #endregion
 
-    #region MessagePanel ���� - ShowWarning, ShowEnding, HideMessage
+    #region MessagePanel - ShowWarning, ShowEnding, HideMessage
 
-    // [Warning] 2�� �ڿ� �ڵ����� �����
     public void ShowWarning(string message)
     {
         if (messageRoutine != null) StopCoroutine(messageRoutine);
 
         messagePanel.SetActive(true);
         messageText.text = message;
+        messagePanel.transform.SetAsLastSibling();
 
         messageRoutine = StartCoroutine(HideMessageRoutine());
     }
 
-    // [Ending] �ڵ����� ������� ���� (EndingEvent���� ���)
     public void ShowEnding(string message)
     {
         if (messageRoutine != null) StopCoroutine(messageRoutine);
 
         messagePanel.SetActive(true);
         messageText.text = message;
+        messagePanel.transform.SetAsLastSibling();
     }
 
-    // UI�� �������� �ݰ� ���� �� ȣ��
     public void HideMessage()
     {
         if (messageRoutine != null) StopCoroutine(messageRoutine);
@@ -125,7 +159,7 @@ public class UIManager : MonoBehaviour
     }
     #endregion
 
-    #region DialoguePanel ���� - StartDialogue, DisplayLine, AdvanceDialogue, EndDialogue, IsDialogueActive
+    #region DialoguePanel - StartDialogue, DisplayLine, AdvanceDialogue, EndDialogue, IsDialogueActive
 
     public void StartDialogue(DialogueData dialogue, Action onEnd = null)
     {
@@ -140,10 +174,8 @@ public class UIManager : MonoBehaviour
         dialogueActive = true;
 
         onDialogueEndedCallback = onEnd;
-        dialogueDimmer.SetActive(true);
-        dialoguePanel.SetActive(true);
-
-        
+        SetDimmerActive(true);
+        if (dialoguePanel != null) dialoguePanel.SetActive(true);
 
         if (nameText != null)
         {
@@ -154,6 +186,16 @@ public class UIManager : MonoBehaviour
         {
             npcIllustrationImage.sprite = dialogue.npcIllustration;
             npcIllustrationImage.enabled = true;
+        }
+
+        if (dialoguePanel != null)
+        {
+            dialoguePanel.transform.SetAsLastSibling();
+        }
+        if (dialogueDimmer != null)
+        {
+            dialogueDimmer.transform.SetAsLastSibling();
+            dialoguePanel.transform.SetAsLastSibling();
         }
         DisplayLine();
     }
@@ -218,16 +260,15 @@ public class UIManager : MonoBehaviour
     void EndDialogue()
     {
         dialogueActive = false;
-        dialoguePanel.SetActive(false);
-        dialogueDimmer.SetActive(false);
+        if (dialoguePanel != null) dialoguePanel.SetActive(false);
+        SetDimmerActive(false);
         currentDialogue = null;
         currentLineIndex = 0;
 
-        // 저장해둔 행동(상태 복귀) 실행
         if (onDialogueEndedCallback != null)
         {
             onDialogueEndedCallback?.Invoke();
-            onDialogueEndedCallback = null; // 초기화
+            onDialogueEndedCallback = null;
         }
 
         if (npcIllustrationImage != null)
@@ -249,13 +290,16 @@ public class UIManager : MonoBehaviour
 
     #endregion
 
-    #region SelectPanel ����- ShowSelectPanel, HideSelectPanel
+    #region SelectPanel - ShowSelectPanel, HideSelectPanel
 
     public void ShowSelectPanel(string selectLabel, string btn1Text, UnityAction action1, string btn2Text, UnityAction action2)
     {
 
         if (SelectPanel == null) return;
+        EnsureSelectBlocker();
+        SetSelectBlockerActive(true);
         SelectPanel.SetActive(true);
+        SelectPanel.transform.SetAsLastSibling();
 
         if (selectText != null)
         {
@@ -285,6 +329,9 @@ public class UIManager : MonoBehaviour
                 HideSelectPanel();
             });
         }
+
+        selectedChoiceIndex = 0;
+        FocusSelectedChoice();
     }
 
 
@@ -292,16 +339,129 @@ public class UIManager : MonoBehaviour
     {
         if (SelectPanel == null) return;
         SelectPanel.SetActive(false);
+        SetSelectBlockerActive(false);
+        UpdateSelectButtonVisuals();
+
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
-    // 1. 객체가 활성화될 때 이벤트 연결 (구독)
+    private void HandleSelectPanelInput()
+    {
+        if (SelectPanel == null || !SelectPanel.activeSelf) return;
+
+        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            selectedChoiceIndex = 0;
+            FocusSelectedChoice();
+        }
+        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            selectedChoiceIndex = 1;
+            FocusSelectedChoice();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.Space))
+        {
+            if (selectedChoiceIndex == 0 && btn1 != null)
+            {
+                btn1.onClick.Invoke();
+            }
+            else if (selectedChoiceIndex == 1 && btn2 != null)
+            {
+                btn2.onClick.Invoke();
+            }
+        }
+    }
+
+    private void FocusSelectedChoice()
+    {
+        if (EventSystem.current == null) return;
+
+        if (selectedChoiceIndex == 0 && btn1 != null)
+        {
+            EventSystem.current.SetSelectedGameObject(btn1.gameObject);
+            btn1.Select();
+        }
+        else if (selectedChoiceIndex == 1 && btn2 != null)
+        {
+            EventSystem.current.SetSelectedGameObject(btn2.gameObject);
+            btn2.Select();
+        }
+
+        UpdateSelectButtonVisuals();
+    }
+
+    private void UpdateSelectButtonVisuals()
+    {
+        ApplyButtonVisual(btn1, selectedChoiceIndex == 0);
+        ApplyButtonVisual(btn2, selectedChoiceIndex == 1);
+    }
+
+    private void ApplyButtonVisual(Button button, bool selected)
+    {
+        if (button == null) return;
+        Graphic graphic = button.targetGraphic;
+        if (graphic != null)
+        {
+            graphic.color = selected ? selectHoverColor : selectNormalColor;
+        }
+
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (label != null)
+        {
+            label.color = selected ? selectTextHoverColor : selectTextNormalColor;
+            label.fontStyle = selected ? FontStyles.Bold : FontStyles.Normal;
+        }
+
+        Vector3 targetScale = selected ? Vector3.one * selectScale : Vector3.one;
+        button.transform.localScale = targetScale;
+    }
+
+    private void EnsureSelectBlocker()
+    {
+        if (selectBlocker != null) return;
+
+        Transform parent = SelectPanel != null ? SelectPanel.transform.parent : null;
+        if (parent == null) parent = transform;
+
+        selectBlocker = new GameObject("SelectBlocker", typeof(RectTransform), typeof(Image));
+        selectBlocker.transform.SetParent(parent, false);
+
+        Image blockerImage = selectBlocker.GetComponent<Image>();
+        blockerImage.color = new Color(0f, 0f, 0f, 0f);
+        blockerImage.raycastTarget = true;
+
+        RectTransform rect = selectBlocker.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        selectBlocker.SetActive(false);
+    }
+
+    private void SetSelectBlockerActive(bool active)
+    {
+        if (selectBlocker == null) return;
+        selectBlocker.SetActive(active);
+        if (active)
+        {
+            selectBlocker.transform.SetAsLastSibling();
+            if (SelectPanel != null)
+            {
+                SelectPanel.transform.SetAsLastSibling();
+            }
+        }
+    }
+
     void OnEnable()
     {
-        // PlayerHealth의 OnPlayerDeath 이벤트가 발생하면 HandleGameOver를 실행하라고 '등록'
         PlayerHealth.OnPlayerDeath += HandleGameOver;
     }
 
-    // 2. 객체가 비활성화되거나 삭제될 때 이벤트 끊기 (구독 해제)
     void OnDisable()
     {
         PlayerHealth.OnPlayerDeath -= HandleGameOver;
@@ -310,42 +470,54 @@ public class UIManager : MonoBehaviour
     void HandleGameOver()
     {
         ShowSelectPanel(
-            "YOU DIED ...", // 메세지
-            "Restart",             // 버튼 1 텍스트
-            RestartGame,           // 버튼 1 기능 (씬 재시작)
-            "Quit",             // 버튼 2 텍스트
-            QuitGame               // 버튼 2 기능 (게임 끄기)
+            "YOU DIED ...",
+            "Restart",
+            RestartGame,
+            "Quit",
+            QuitGame
         );
     }
 
-    // [수정] 기능 1: 게임 재시작 (Field 씬 새로고침)
     void RestartGame()
     {
-        // 1. RoomManager에게 재시작 위치 저장 요청
+        HideSelectPanel();
+        StartCoroutine(RestartGameRoutine());
+    }
+
+    IEnumerator RestartGameRoutine()
+    {
+        if (fadeImage != null)
+        {
+            yield return StartCoroutine(FadeOut(0.5f));
+        }
+
+        if (Player.Instance != null)
+        {
+            PlayerInteraction interaction = Player.Instance.GetComponentInChildren<PlayerInteraction>(true);
+            if (interaction != null)
+            {
+                interaction.ForceCloseCraftingUI();
+            }
+        }
+
         if (RoomManager.Instance != null)
         {
             RoomManager.Instance.SetRestartPositionToCurrentDoor();
         }
 
-        // 2. ★ [핵심] 플레이어 강제 부활 및 활성화
         if (Player.Instance != null)
         {
-            // 죽으면서 비활성화(SetActive(false))되었다면 다시 켜야 함
             Player.Instance.gameObject.SetActive(true);
 
-            // (선택) 체력 초기화 로직이 있다면 호출
             var health = Player.Instance.GetComponent<PlayerHealth>();
             if (health != null) health.Resurrect();
         }
 
-        // 3. 씬 다시 로드
-        StartCoroutine(LoadSceneWithFade("Field"));
+        SceneManager.LoadScene("Field");
     }
 
-    // [수정] 기능 2: 게임 종료
     void QuitGame()
     {
-        // 에디터에서는 플레이 모드를 끄고, 빌드된 게임에서는 창을 닫습니다.
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -353,8 +525,28 @@ public class UIManager : MonoBehaviour
 #endif
     }
 
-        #endregion  
+    private void SetDimmerActive(bool active)
+    {
+        if (dialogueDimmer == null) return;
+        dialogueDimmer.SetActive(active);
+        if (dialogueDimmerImage != null)
+        {
+            dialogueDimmerImage.raycastTarget = active;
+        }
+        if (active)
+        {
+            dialogueDimmer.transform.SetAsLastSibling();
+        }
+    }
 
-    
+    private void StretchToParent(RectTransform rectTransform)
+    {
+        if (rectTransform == null) return;
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+    }
 
+    #endregion
 }

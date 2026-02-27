@@ -1,16 +1,12 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/Sprites/인벤설명창.png.meta
 guid: 777279e48db72994ca6ebeb7ce366e9b
-========
-guid: 15ff2b1f4de9e7145905e2d5d8587c48
->>>>>>>> origin/main:Assets/Sprites/대기모션 8fps/IDLE_남동.png.meta
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
     mipMapMode: 0
-    enableMipMap: 1
+    enableMipMap: 0
     sRGBTexture: 1
     linearTexture: 0
     fadeOut: 0
@@ -41,34 +37,24 @@ TextureImporter:
     filterMode: 1
     aniso: 1
     mipBias: 0
-<<<<<<<< HEAD:Assets/Sprites/인벤설명창.png.meta
     wrapU: 1
     wrapV: 1
     wrapW: 0
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
-========
-    wrapU: 0
-    wrapV: 0
-    wrapW: 0
-  nPOTScale: 1
-  lightmap: 0
-  compressionQuality: 50
-  spriteMode: 0
->>>>>>>> origin/main:Assets/Sprites/대기모션 8fps/IDLE_남동.png.meta
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 32
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
-  alphaIsTransparency: 0
+  alphaIsTransparency: 1
   spriteTessellationDetail: -1
-  textureType: 0
+  textureType: 8
   textureShape: 1
   singleChannelComponent: 0
   flipbookRows: 1
@@ -77,16 +63,16 @@ TextureImporter:
   compressionQualitySet: 0
   textureFormatSet: 0
   ignorePngGamma: 0
-  applyGammaDecoding: 0
+  applyGammaDecoding: 1
   swizzle: 50462976
-  cookieLightType: 0
+  cookieLightType: 2
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -99,7 +85,20 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -109,7 +108,6 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-<<<<<<<< HEAD:Assets/Sprites/인벤설명창.png.meta
     sprites:
     - serializedVersion: 2
       name: "\uC778\uBCA4\uC124\uBA85\uCC3D_0"
@@ -127,24 +125,17 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: d37619b558f8bcd4c9cfb5103cf89a38
-      internalID: -2138756365
+      spriteID: 59d15431d256e214d94128269d0f0fda
+      internalID: -96333308
       vertices: []
       indices: 
       edges: []
       weights: []
-========
-    sprites: []
->>>>>>>> origin/main:Assets/Sprites/대기모션 8fps/IDLE_남동.png.meta
     outline: []
     customData: 
     physicsShape: []
     bones: []
-<<<<<<<< HEAD:Assets/Sprites/인벤설명창.png.meta
-    spriteID: 152f27e40e1d60f46827f1c8317e6880
-========
-    spriteID: 
->>>>>>>> origin/main:Assets/Sprites/대기모션 8fps/IDLE_남동.png.meta
+    spriteID: e4948d72a5b2bc840800a8cf60b821d5
     internalID: 0
     vertices: []
     indices: 
@@ -152,16 +143,11 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-<<<<<<<< HEAD:Assets/Sprites/인벤설명창.png.meta
       entries:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      "\uC778\uBCA4\uC124\uBA85\uCC3D_0": -2138756365
-========
-      entries: []
-    nameFileIdTable: {}
->>>>>>>> origin/main:Assets/Sprites/대기모션 8fps/IDLE_남동.png.meta
+      "\uC778\uBCA4\uC124\uBA85\uCC3D_0": -96333308
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

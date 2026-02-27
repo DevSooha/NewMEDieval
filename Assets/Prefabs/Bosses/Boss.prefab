@@ -63,16 +63,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e46f5e121f396f042b13764e13322384, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThreeWitchCombat
+  tileSize: 1
+  playerKnockbackTiles: 2
+  knockbackDuration: 0.2
+  playerInvulnerableDuration: 0.8
+  playerBlinkInterval: 0.16
   currentState: 0
   phase: 1
   playerTF: {fileID: 0}
   keepCloseTimer: 0
   moveSpeed: 2
+  phase2HpThreshold: 8000
+  phase3HpThreshold: 4000
+  threeWitchAnimator: {fileID: 0}
+  animatorLayerIndex: 0
+  directionEpsilon: 0.05
   fireStartEffect: {fileID: 6774275237132645172, guid: cc9ec87488a24b748951939635880b64, type: 3}
   fireWallPrefab: {fileID: 5762954718026793789, guid: 7170702f1fe709b478faf49db476777e, type: 3}
-  aquaRayPrefab: {fileID: 6541616442294331018, guid: d3462529ea560d24d9e3e74649eaa13b, type: 3}
-  electricWallPrefab: {fileID: 5762954718026793789, guid: 7170702f1fe709b478faf49db476777e, type: 3}
-  electricRayPrefab: {fileID: 6541616442294331018, guid: d3462529ea560d24d9e3e74649eaa13b, type: 3}
+  aquaRayPrefab: {fileID: 1923558505251598138, guid: 9cf16bd79f37cfd4996905cc23ce9122, type: 3}
+  electricWallPrefab: {fileID: 6385034172263839984, guid: 6b7542faeae28584aa62b30101bd4609, type: 3}
+  electricRayPrefab: {fileID: 1923558505251598138, guid: 9cf16bd79f37cfd4996905cc23ce9122, type: 3}
 --- !u!61 &6600475405553238365
 BoxCollider2D:
   m_ObjectHideFlags: 0

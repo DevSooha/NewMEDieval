@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
@@ -89,26 +89,11 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     IEnumerator AppearRoutine()
     {
-        float timer = 0f;
         float appearTime = 1.0f;
+        yield return FadeSpriteAlpha(spriteRenderer, appearTime, 0f, 1f);
 
-        while (timer < appearTime)
+        if (TryResolvePlayerTransform(ref player))
         {
-            timer += Time.deltaTime;
-            float alpha = Mathf.Lerp(0f, 1f, timer / appearTime);
-            if (spriteRenderer != null)
-            {
-                Color c = spriteRenderer.color;
-                c.a = alpha;
-                spriteRenderer.color = c;
-            }
-            yield return null;
-        }
-
-        GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p != null)
-        {
-            player = p.transform;
             Debug.Log("[Shaperkease] 플레이어 탐색 완료, 전투 루틴 돌입");
             StartCombat();
         }
@@ -183,15 +168,13 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         if (!isFighting || rayPool == null || player == null) yield break;
 
         yield return new WaitForSeconds(0.5f);
+        float[] fixedAngles = { 0f, 60f, 120f, 180f, 240f, 300f };
 
-        Vector3 dir = player.position - transform.position;
-        float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < fixedAngles.Length; i++)
         {
-            float finalAngle = baseAngle + (i * 60f);
-            Quaternion rotation = Quaternion.Euler(0, 0, finalAngle);
-            Vector3 spawnPos = transform.position + (rotation * Vector3.right * 2.5f);
+            Vector3 fireDir = Quaternion.Euler(0f, 0f, fixedAngles[i]) * Vector3.right;
+            Vector3 spawnPos = transform.position + (fireDir * 2.5f);
+            Quaternion rotation = Quaternion.FromToRotation(Vector3.down, fireDir);
 
             BossProjectile bp = rayPool.Rent();
             if (bp == null) continue;
@@ -239,4 +222,5 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         }
     }
 }
+
 

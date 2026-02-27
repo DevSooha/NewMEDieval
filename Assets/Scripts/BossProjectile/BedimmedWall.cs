@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class BedimmedWall : MonoBehaviour
 {
+    [Header("Hit Settings")]
+    [SerializeField] private int damage = 1;
+    [SerializeField] private float knockbackDistance = 1f;
+    [SerializeField] private float knockbackDuration = 0.2f;
+
     private Transform targetTransform; // Vector3 대신 Transform 저장
     private float moveSpeed = 0f;
     private float boxHalfSize = 0f;
@@ -52,7 +57,13 @@ public class BedimmedWall : MonoBehaviour
     {
         if (isActive && collision.CompareTag("Player"))
         {
-            Debug.Log($"[BedimmedWall] Hit Player: {gameObject.name}");
+            BossHitResolver.TryApplyBossHit(
+                collision,
+                damage,
+                transform.position,
+                knockbackDistance,
+                knockbackDuration
+            );
         }
     }
 

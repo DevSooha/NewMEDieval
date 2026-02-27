@@ -2,47 +2,47 @@ using UnityEngine;
 
 public class PotionCraft: MonoBehaviour
 {
-    public enum PotionType { Failure, LowTemp, MidTemp, HighTemp }
+    public enum PotionTemp { Failure, LowTemp, MidTemp, HighTemp }
 
-    public static PotionType DeterminePotionType(float gaugeValue)
+    public static PotionTemp DeterminePotionType(float gaugeValue)
     {
         if (gaugeValue < 25f)
-            return PotionType.Failure;
+            return PotionTemp.Failure;
         else if (gaugeValue < 50f)
-            return PotionType.LowTemp;
+            return PotionTemp.LowTemp;
         else if (gaugeValue < 75f)
-            return PotionType.MidTemp;
+            return PotionTemp.MidTemp;
         else
-            return PotionType.HighTemp;
+            return PotionTemp.HighTemp;
     }
 
-    public static void CreatePotion(PotionType type)
+    public static void CreatePotion(PotionTemp temp)
     {
-        switch(type)
+        switch(temp)
         {
-            case PotionType.Failure:
+            case PotionTemp.Failure:
                 Debug.Log("포션 제작 실패!");
                 break;
-            case PotionType.LowTemp:
+            case PotionTemp.LowTemp:
                 Debug.Log("저온 포션 생성!");
                 break;
-            case PotionType.MidTemp:
+            case PotionTemp.MidTemp:
                 Debug.Log("중온 포션 생성!");
                 break;
-            case PotionType.HighTemp:
+            case PotionTemp.HighTemp:
                 Debug.Log("고온 포션 생성!");
                 break;
         }
     }
 
-    public static string GetPotionName(PotionType type)
+    public static string GetPotionName(PotionTemp type)
 {
     return type switch
     {
-        PotionType.Failure => "FAILED",
-        PotionType.LowTemp => "LOW TEMP POTION",
-        PotionType.MidTemp => "MID TEMP POTION",
-        PotionType.HighTemp => "HIGH TEMP POTION",
+        PotionTemp.Failure => "FAILED",
+        PotionTemp.LowTemp => "LOW TEMP POTION",
+        PotionTemp.MidTemp => "MID TEMP POTION",
+        PotionTemp.HighTemp => "HIGH TEMP POTION",
         _ => "Unknown"
     };
 }
