@@ -17,8 +17,8 @@ MonoBehaviour:
   topDamage: 0
   bottomDamage: 0
   element: 0
-  topSprite: {fileID: -6362602851834190104, guid: 85f1c98ee68df7442b06a8a4a1e22512, type: 3}
-  bottomSprite: {fileID: 719445224, guid: 49e0c9e946ae04148bb0af14472096ef, type: 3}
+  topSprite: {fileID: -6362602851834190104, guid: e01873f2313fbd7419bd18495ddfdbc9, type: 3}
+  bottomSprite: {fileID: 7329471390907011160, guid: f2edc2b841bfc3a4b99bdbd997473c02, type: 3}
   description: "\uB354\uC2A4\uD2B8\uD50C\uB808\uC5B4 \uAF43"
   icon: {fileID: 4715776712294255836, guid: 7b3abdac177e05343a3c600f16410214, type: 3}
   specificPrefab: {fileID: 0}

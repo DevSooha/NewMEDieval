@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
@@ -9,7 +10,7 @@ public class PlayerInteraction : MonoBehaviour
     private CircleCollider2D interactionCollider;
     private NPC currentNPC;
     private WorldItem currentItem;
-    public CraftUI craftUI;
+    public GameObject craftingMenu;
 
     private bool canInteract = false;
     private bool isCampfire = false;
@@ -29,9 +30,9 @@ public class PlayerInteraction : MonoBehaviour
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
 
-        if (craftUI != null)
+        if (craftingMenu != null)
         {
-            craftUI.gameObject.SetActive(false);
+            craftingMenu.SetActive(false);
         }
         else
         {
@@ -40,14 +41,10 @@ public class PlayerInteraction : MonoBehaviour
     }
     void Update()
     {
-        if (craftUI != null && craftUI.gameObject.activeSelf && Input.GetKeyDown(KeyCode.X))
+        if (isCampfire == true && Input.GetKeyDown(KeyCode.Escape))
         {
-            craftUI.RequestCloseConfirm();
-        }
-
-        if (UIManager.Instance != null && UIManager.Instance.IsSelectPanelActive() && Input.GetKeyDown(KeyCode.X))
-        {
-            UIManager.Instance.HideSelectPanel();
+            isCampfire = false;
+            craftingMenu.SetActive(false);
         }
     }
 
@@ -144,20 +141,7 @@ public class PlayerInteraction : MonoBehaviour
     }
     public void EnterCrafting()
     {
-        if (craftUI != null)
-        {
-            craftUI.gameObject.SetActive(true);
-        }
-    }
-
-    public void ForceCloseCraftingUI()
-    {
-        isCampfire = false;
-
-        if (craftUI != null)
-        {
-            craftUI.ForceCloseImmediate();
-        }
+        craftingMenu?.SetActive(true);
     }
 
     void OnTriggerExit2D(Collider2D other)
