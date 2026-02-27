@@ -819,22 +819,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3995192780879610803, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: shaperkeaseCombat
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 3995192780879610803, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: roomBosses.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3995192780879610803, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: roomBosses.Array.data[0].type
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3995192780879610803, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: roomBosses.Array.data[0].roomID
-      value: spr_7
-      objectReference: {fileID: 0}
     - target: {fileID: 5741240255520915114, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: m_Name
       value: GameManager
@@ -843,10 +827,6 @@ PrefabInstance:
       propertyPath: player
       value: 
       objectReference: {fileID: 1131746248}
-    - target: {fileID: 6755694373369558612, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: startingRoom
-      value: 
-      objectReference: {fileID: 11400000, guid: 860e1fed1cf0e2d49b72be1781f1d9b6, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: player
       value: 
@@ -856,33 +836,9 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 811943552}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: autumnSkybox
+      propertyPath: 'allMapRooms.Array.data[5]'
       value: 
-      objectReference: {fileID: 2100000, guid: db8e4f6eb456c0d4e893e5472233170a, type: 2}
-    - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: springSkybox
-      value: 
-      objectReference: {fileID: 2100000, guid: e953d7e41bcd8724682f247ea6b67d21, type: 2}
-    - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: summerSkybox
-      value: 
-      objectReference: {fileID: 2100000, guid: ee9bc293da9b14742b995a55b1dde542, type: 2}
-    - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: winterSkybox
-      value: 
-      objectReference: {fileID: 2100000, guid: e4d6f2f5a02d33e45a180b960dd9c60c, type: 2}
-    - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: startRoomData
-      value: 
-      objectReference: {fileID: 11400000, guid: 860e1fed1cf0e2d49b72be1781f1d9b6, type: 2}
-    - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: allMapRooms.Array.size
-      value: 9
       objectReference: {fileID: 0}
-    - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
-      propertyPath: 'allMapRooms.Array.data[8]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 860e1fed1cf0e2d49b72be1781f1d9b6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

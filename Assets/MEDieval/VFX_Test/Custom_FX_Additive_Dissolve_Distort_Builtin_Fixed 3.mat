@@ -42,6 +42,6 @@ Material:
     - _NoiseScale: 4
     m_Colors:
     - _EdgeColor: {r: 1, g: 0.6, b: 0, a: 1}
-    - _Tint: {r: 0.6556604, g: 1, b: 0.75554514, a: 1}
+    - _Tint: {r: 0.6681648, g: 0.990566, b: 0.76144177, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

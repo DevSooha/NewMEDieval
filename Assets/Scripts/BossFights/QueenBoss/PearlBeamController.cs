@@ -246,7 +246,9 @@ public class PearlBeamController : MonoBehaviour
         loopVisualRoot.localRotation = Quaternion.Euler(0f, 0f, 90f);
 
         Vector3 s = loopVisualRoot.localScale;
-        loopVisualRoot.localScale = new Vector3(heightWorld, s.y, s.z);
+        loopVisualRoot.localScale = loopLengthOnX
+            ? new Vector3(heightWorld, s.y, s.z)
+            : new Vector3(s.x, heightWorld, s.z);
 
         vfxLoop.SetActive(false);
         vfxLoop.SetActive(true);

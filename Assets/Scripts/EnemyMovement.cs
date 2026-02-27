@@ -1,6 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class EnemyMovement : MonoBehaviour
 {
@@ -9,7 +7,7 @@ public class EnemyMovement : MonoBehaviour
     private Transform player;
     private EnemyState enemyState;
     private float facingDirection = -1;
-    
+
     [SerializeField] private Transform detectionPoint;
     public float movespeed = 2f;
     public float attackRange = 1f;
@@ -22,38 +20,31 @@ public class EnemyMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         enemyCombat = GetComponent<EnemyCombat>();
-        
+
         if (detectionPoint == null)
         {
             detectionPoint = transform.Find("DetectionPoint");
         }
-        
+
+        if (enemyCombat != null)
+        {
+            enemyCombat.SetAttackDirection(new Vector2(facingDirection, 0f));
+        }
+
         ChangeState(EnemyState.Idle);
-        
+
         Debug.Log($"EnemyMovement initialized. Player layer mask: {playerLayer.value}");
     }
 
     void Update()
     {
-        // 1. 쿨타임 감소
-        if (attackCooldownTimer > 0)
+        if (enemyCombat != null && enemyCombat.IsAttacking)
         {
-            attackCooldownTimer -= Time.deltaTime;
+            ChangeState(EnemyState.Attacking);
+            Stop();
+            return;
         }
 
-        // 2. 공격 중이라면 아무것도 하지 않고 리턴 (매우 중요)
-        // 공격 상태 탈출은 애니메이션 이벤트나 타이머로만 처리
-        if (enemyState == EnemyState.Attacking)
-        {
-            // 공격 애니메이션 시간 체크 로직 (작성하신 부분)
-            if (attackCooldownTimer < attackCooldown - 0.5f) // 0.1f는 너무 짧을 수 있음, 애니메이션 길이에 맞춰 조정 필요
-            {
-                ChangeState(EnemyState.Idle);
-            }
-            return; // <--- 여기서 Update를 끊어주어야 아래 로직(거리재기 등)이 실행되지 않음
-        }
-
-        // 3. 공격 중이 아닐 때만 플레이어 감지 및 이동
         CheckForPlayer();
 
         switch (enemyState)
@@ -87,7 +78,6 @@ public class EnemyMovement : MonoBehaviour
         {
             Transform targetTransform = hits[0].transform;
 
-            // 플레이어가 죽어서 비활성화 되었다면 추적하지 않음
             if (!targetTransform.gameObject.activeInHierarchy)
             {
                 player = null;
@@ -98,11 +88,24 @@ public class EnemyMovement : MonoBehaviour
             player = targetTransform;
 
             float distance = Vector2.Distance(detectionPoint.position, player.position);
+            Vector2 dirToPlayer = (player.position - transform.position);
 
-            if (distance <= attackRange && attackCooldownTimer <= 0)
+            if (enemyCombat != null)
             {
-                attackCooldownTimer = attackCooldown;
-                ChangeState(EnemyState.Attacking);
+                enemyCombat.SetAttackDirection(dirToPlayer);
+            }
+
+            if (distance <= attackRange)
+            {
+                bool started = enemyCombat != null && enemyCombat.TryAttack();
+                if (started || (enemyCombat != null && enemyCombat.IsAttacking))
+                {
+                    ChangeState(EnemyState.Attacking);
+                }
+                else
+                {
+                    ChangeState(EnemyState.Idle);
+                }
             }
             else if (distance <= detectRange && distance > attackRange)
             {
@@ -115,7 +118,6 @@ public class EnemyMovement : MonoBehaviour
         }
         else
         {
-            // 감지된 게 없으면 타겟을 잃어버린 것임
             player = null;
             ChangeState(EnemyState.Idle);
         }
@@ -123,7 +125,7 @@ public class EnemyMovement : MonoBehaviour
 
     private void Chase()
     {
-        if(player == null)
+        if (player == null)
         {
             ChangeState(EnemyState.Idle);
             return;
@@ -131,15 +133,19 @@ public class EnemyMovement : MonoBehaviour
 
         float distance = Vector2.Distance(transform.position, player.position);
 
-        // 감지 범위를 벗어남
         if (distance > detectRange)
         {
             ChangeState(EnemyState.Idle);
             Stop();
             return;
         }
-        
+
         Vector2 direction = (player.position - transform.position).normalized;
+
+        if (enemyCombat != null)
+        {
+            enemyCombat.SetAttackDirection(direction);
+        }
 
         if (Mathf.Abs(direction.x) > 0.1f)
         {
@@ -179,7 +185,6 @@ public class EnemyMovement : MonoBehaviour
     {
         if (detectionPoint != null)
         {
-            // 감지 범위 (노란색)
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(detectionPoint.position, detectRange);
         }

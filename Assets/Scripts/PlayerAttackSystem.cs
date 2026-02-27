@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.UI;
 
 public enum WeaponType { None, Melee, PotionBomb }
 
@@ -9,11 +11,9 @@ public enum WeaponType { None, Melee, PotionBomb }
 public class WeaponSlot
 {
     public WeaponType type;
-    //public ItemData itemData; // 연동을 위해 데이터 추가
-    public GameObject specificPrefab; // 던질 물체 프리팹
-
-    // -1이면 무제한 (근접무기), 양수면 소모품
+    public GameObject specificPrefab;
     public int count = -1;
+    public Potion equippedPotion;
 }
 
 public class PlayerAttackSystem : MonoBehaviour
@@ -21,37 +21,39 @@ public class PlayerAttackSystem : MonoBehaviour
     [Header("Settings")]
     public float tileSize = 1.0f;
     public LayerMask enemyLayer;
+    [SerializeField] private float meleeForwardOffset = -0.5f;
+    [SerializeField] private bool debugDrawMeleeGizmo = true;
 
     [Header("Tilemaps")]
     public Tilemap floorTilemap;
 
     [Header("Prefabs")]
-    //public GameObject defaultBombPrefab; // 기본 폭탄 프리팹
+    public GameObject defaultBombPrefab;
     public GameObject stackMarkerPrefab;
 
     [Header("Weapon Slots")]
     public List<WeaponSlot> slots = new();
 
-    // 컴포넌트 캐싱
+
     private Player playerMovement;
+    private PlayerInteraction interactionSensor;
+    private InventoryUI inventoryUI;
 
     private Vector2 aimDirection = Vector2.down;
-
-    // 상태 변수
     private bool isAttack = false;
     private bool isCharging = false;
 
     private float chargeStartTime;
     private int currentStack = 0;
-    private List<GameObject> activeMarkers = new();
+    private readonly List<GameObject> activeMarkers = new();
 
-    private PlayerInteraction interactionSensor;
 
     void Start()
     {
         playerMovement = GetComponent<Player>();
+        interactionSensor = GetComponentInChildren<PlayerInteraction>();
+        inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
 
-        // 타일맵 자동 찾기
         if (floorTilemap == null)
         {
             GameObject groundObj = GameObject.FindGameObjectWithTag("Ground");
@@ -63,32 +65,27 @@ public class PlayerAttackSystem : MonoBehaviour
             }
         }
 
-        // 초기 슬롯이 비어있으면 기본값 세팅 (테스트용)
-        if (slots.Count == 0)
-        {
-            slots.Add(new WeaponSlot { type = WeaponType.Melee, count = -1 });
-        }
+        EnsureCoreSlots();
 
-        interactionSensor = GetComponentInChildren<PlayerInteraction>();
+        // Weapon status UI removed.
     }
 
     void Update()
     {
         UpdateAimDirection();
+        EnsureCoreSlots();
+        SyncPotionSlotCounts();
 
-        // NPC 대화 중이면 공격 불가
-        if (interactionSensor != null && interactionSensor.IsInteractable)
-        {
-            return;
-        }
-
-        // 무기 교체 (C키)
         if (!isAttack && !isCharging && Input.GetKeyDown(KeyCode.C))
         {
             RotateWeaponSlots();
         }
 
-        // 현재 슬롯의 무기 사용
+        if (interactionSensor != null && interactionSensor.IsInteractable)
+        {
+            return;
+        }
+
         if (slots.Count > 0 && slots[0].type != WeaponType.None)
         {
             if (slots[0].type == WeaponType.Melee)
@@ -102,34 +99,23 @@ public class PlayerAttackSystem : MonoBehaviour
         }
     }
 
-    // [추가] 인벤토리에서 포션을 장착하는 함수
-    //public void EquipPotionFromInventory(Item item)
-    //{
-    //    if (item == null || item.data == null) return;
+    public void EquipPotionFromInventory(Potion potion)
+    {
+        if (potion == null || potion.data == null)
+            return;
 
-    //    // 1. 새 무기 슬롯 생성
-    //    WeaponSlot newSlot = new WeaponSlot();
-    //    newSlot.type = WeaponType.PotionBomb;
-    //    newSlot.itemData = item.data;
-    //    newSlot.count = item.quantity; // 현재 개수 반영
+        EnsureCoreSlots();
+        int potionSlotIndex = 1;
 
-    //    // 프리팹 설정 (ItemData에 프리팹이 있다고 가정하거나 기본값 사용)
-    //    // 만약 ItemData에 던지는 프리팹이 없다면 defaultBombPrefab 사용
-    //    newSlot.specificPrefab = defaultBombPrefab;
+        WeaponSlot slot = slots[potionSlotIndex];
+        slot.type = WeaponType.PotionBomb;
+        slot.equippedPotion = potion;
+        slot.count = potion.quantity;
+        slot.specificPrefab = null;
 
-    //    // 2. 현재 슬롯(0번)을 교체 (또는 목록에 추가)
-    //    // 여기서는 "0번 슬롯을 덮어씌우는 방식"으로 구현
-    //    if (slots.Count > 0)
-    //    {
-    //        slots[0] = newSlot;
-    //    }
-    //    else
-    //    {
-    //        slots.Add(newSlot);
-    //    }
+        slots[potionSlotIndex] = slot;
 
-    //    Debug.Log($"무기 장착: {item.data.name} ({item.quantity}개)");
-    //}
+    }
 
     void UpdateAimDirection()
     {
@@ -138,14 +124,13 @@ public class PlayerAttackSystem : MonoBehaviour
 
         if (x != 0 || y != 0)
         {
-            // .normalized를 붙여 대각선일 때 길이가 1보다 커지는 것을 방지
             aimDirection = new Vector2(x, y).normalized;
         }
     }
 
     void HandleMeleeInput()
     {
-        if (Input.GetKeyDown(KeyCode.Z))
+        if (IsAttackPressed())
         {
             StartCoroutine(MeleeAttackRoutine());
         }
@@ -155,13 +140,13 @@ public class PlayerAttackSystem : MonoBehaviour
     {
         isAttack = true;
 
-        Vector2 attackPos = (Vector2)transform.position + (aimDirection * tileSize);
-
-        Collider2D[] hits = Physics2D.OverlapCircleAll(attackPos, tileSize * 0.7f, enemyLayer);
+        Vector2 forward = aimDirection.sqrMagnitude > 0.001f ? aimDirection.normalized : Vector2.down;
+        Vector2 attackPos = (Vector2)transform.position + (forward * (tileSize + meleeForwardOffset));
+        Vector2 attackBoxSize = new Vector2(tileSize * 2f, tileSize * 2f);
+        Collider2D[] hits = Physics2D.OverlapBoxAll(attackPos, attackBoxSize, 0f, enemyLayer);
 
         foreach (Collider2D hit in hits)
         {
-            // 적 피격 처리
             EnemyCombat enemy = hit.GetComponent<EnemyCombat>();
             if (enemy != null)
             {
@@ -172,7 +157,7 @@ public class PlayerAttackSystem : MonoBehaviour
             BossHealth boss = hit.GetComponent<BossHealth>();
             if (boss != null)
             {
-                boss.TakeDamage(3000, ElementType.None);
+                boss.TakeDamage(50, ElementType.None);
             }
         }
 
@@ -182,14 +167,12 @@ public class PlayerAttackSystem : MonoBehaviour
 
     void HandleBombInput()
     {
-        // 소지 개수 체크
         if (slots[0].count == 0)
         {
-            Debug.Log("포션이 다 떨어졌습니다!");
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Z))
+        if (IsAttackPressed())
         {
             isCharging = true;
             chargeStartTime = Time.time;
@@ -198,15 +181,13 @@ public class PlayerAttackSystem : MonoBehaviour
             StartCoroutine(ChargeRoutine());
         }
 
-        if (Input.GetKeyUp(KeyCode.Z))
+        if (IsAttackReleased())
         {
             isCharging = false;
             StopAllCoroutines();
             if (playerMovement != null) playerMovement.SetCanMove(true);
 
             float duration = Time.time - chargeStartTime;
-
-            // 짧게 누르면 1칸, 길게 누르면 스택만큼
             if (duration < 0.5f) SpawnBombAt(1);
             else SpawnBombsByStack();
 
@@ -224,7 +205,6 @@ public class PlayerAttackSystem : MonoBehaviour
             else if (t >= 1.0f) targetStack = 2;
             else if (t >= 0.5f) targetStack = 1;
 
-            // 소지 개수보다 많이 던질 순 없음
             if (slots[0].count != -1 && targetStack > slots[0].count)
             {
                 targetStack = slots[0].count;
@@ -250,7 +230,6 @@ public class PlayerAttackSystem : MonoBehaviour
         if (floorTilemap != null)
         {
             Vector3Int cellPos = floorTilemap.WorldToCell(pos);
-            // 타일이 존재해야 던질 수 있음 (벽이나 허공 방지)
             return floorTilemap.HasTile(cellPos);
         }
         return true;
@@ -279,35 +258,21 @@ public class PlayerAttackSystem : MonoBehaviour
         if (slots.Count == 0) return;
 
         Vector2 spawnPos = (Vector2)transform.position + (distance * tileSize * aimDirection);
-
         if (!IsValidTile(spawnPos)) return;
 
-        // 1. 프리팹 생성 (인스펙터에 등록된 defaultBombPrefab 혹은 슬롯별 프리팹)
-        //GameObject prefabToUse = slots[0].specificPrefab != null ? slots[0].specificPrefab : defaultBombPrefab;
+        WeaponSlot slot = slots[0];
+        GameObject prefabToUse = slot.specificPrefab != null ? slot.specificPrefab : defaultBombPrefab;
+        if (prefabToUse == null) return;
 
-        //if (prefabToUse != null)
-        //{
-            //GameObject bombObj = Instantiate(prefabToUse, spawnPos, Quaternion.identity);
+        GameObject bombObj = Instantiate(prefabToUse, spawnPos, Quaternion.identity);
+        Bomb bomb = bombObj.GetComponent<Bomb>();
+        if (bomb != null && slot.equippedPotion != null && slot.equippedPotion.data != null)
+        {
+            bomb.baseDamage = slot.equippedPotion.data.damage1 + slot.equippedPotion.data.damage2;
+            bomb.bombElement = ConvertElement(slot.equippedPotion.data.element1);
+        }
 
-            // 2. 생성된 오브젝트에서 Bomb 컴포넌트 가져오기
-            //Bomb bombScript = bombObj.GetComponent<Bomb>();
-
-            // 3. ★ 핵심: PotionData 주입 (이 부분이 있어야 새로운 로직이 작동합니다)
-            //if (bombScript != null)
-            //{
-            //// 현재 슬롯의 itemData를 PotionData로 형변환하여 주입
-            //if (slots[0].itemData is PotionData pData)
-            //{
-            //    bombScript.Initialize(pData);
-            //}
-            //else
-            //{
-            //    Debug.LogError("현재 슬롯의 아이템이 PotionData 형식이 아닙니다!");
-            //}
-            //}
-
-        //    UseAmmo(1);
-        //}
+        UseAmmo(1);
     }
 
     void SpawnBombsByStack()
@@ -318,44 +283,226 @@ public class PlayerAttackSystem : MonoBehaviour
             return;
         }
 
-        // 스택 1, 2, 3 위치에 순차적으로 생성
         for (int i = 1; i <= currentStack; i++)
         {
             SpawnBombAt(i);
         }
     }
 
-    // 탄약 소모 처리
     void UseAmmo(int amount)
     {
-        if (slots[0].count == -1) return; // 무한 탄창
+        if (slots.Count == 0) return;
 
-        slots[0].count -= amount;
+        WeaponSlot slot = slots[0];
+        if (slot.type != WeaponType.PotionBomb) return;
 
-        // 인벤토리 데이터와 동기화 (선택 사항)
-        //if (Inventory.Instance != null && slots[0].itemData != null)
-        //{
-        //    // 인벤토리에서도 개수를 줄이려면 Inventory에 RemoveItem 로직이 필요함
-        //    // 현재는 PlayerAttackSystem 슬롯 상에서만 줄어듬
-        //}
-
-        if (slots[0].count <= 0)
+        if (slot.equippedPotion != null)
         {
-            slots[0].count = 0;
-            //다 쓰면 맨손(Melee)으로 전환할지 여부 결정
-            slots[0].type = WeaponType.Melee;
+            slot.equippedPotion.quantity -= amount;
+            if (slot.equippedPotion.quantity <= 0)
+            {
+                RemovePotionFromInventory(slot.equippedPotion);
+                slot.equippedPotion = null;
+                slot.type = WeaponType.Melee;
+                slot.count = -1;
+            }
+            else
+            {
+                slot.count = slot.equippedPotion.quantity;
+            }
         }
+        else
+        {
+            if (slot.count != -1)
+            {
+                slot.count -= amount;
+            }
+
+            if (slot.count <= 0)
+            {
+                slot.type = WeaponType.Melee;
+                slot.count = -1;
+            }
+        }
+
     }
 
     void RotateWeaponSlots()
     {
         if (slots.Count <= 1) return;
 
-        WeaponSlot first = slots[0];
-        slots.RemoveAt(0);
-        slots.Add(first);
-        Debug.Log($"무기 교체됨: {slots[0].type}");
+        CompactSlots();
+
+        int currentIndex = 0;
+        int nextIndex = FindNextNonEmptyIndex(currentIndex);
+        if (nextIndex <= 0) return;
+        RotateListToIndex(nextIndex);
+    }
+
+    int FindNextNonEmptyIndex(int startIndex)
+    {
+        int count = slots.Count;
+        for (int i = 1; i < count; i++)
+        {
+            int idx = (startIndex + i) % count;
+            if (slots[idx].type != WeaponType.None)
+            {
+                return idx;
+            }
+        }
+        return -1;
+    }
+
+    void RotateListToIndex(int targetIndex)
+    {
+        if (targetIndex <= 0) return;
+        for (int i = 0; i < targetIndex; i++)
+        {
+            WeaponSlot first = slots[0];
+            slots.RemoveAt(0);
+            slots.Add(first);
+        }
+    }
+
+    void CompactSlots()
+    {
+        if (slots.Count <= 1) return;
+
+        List<WeaponSlot> compacted = new List<WeaponSlot>(slots.Count);
+
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i].type != WeaponType.None)
+            {
+                compacted.Add(slots[i]);
+            }
+        }
+
+        int emptyCount = slots.Count - compacted.Count;
+        for (int i = 0; i < emptyCount; i++)
+        {
+            compacted.Add(new WeaponSlot { type = WeaponType.None, count = -1 });
+        }
+
+        slots.Clear();
+        slots.AddRange(compacted);
+    }
+
+    bool IsAttackPressed()
+    {
+        return CombatInputHelper.IsAttackPressed();
+    }
+
+    bool IsAttackReleased()
+    {
+        return CombatInputHelper.IsAttackReleased();
+    }
+
+    void SyncPotionSlotCounts()
+    {
+        EnsureCoreSlots();
+        for (int i = 0; i < slots.Count; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot.type != WeaponType.PotionBomb || slot.equippedPotion == null)
+                continue;
+
+            int qty = Mathf.Max(0, slot.equippedPotion.quantity);
+            if (slot.count != qty)
+            {
+                slot.count = qty;
+            }
+
+            if (qty == 0)
+            {
+                slot.type = WeaponType.None;
+                slot.count = -1;
+                slot.equippedPotion = null;
+            }
+        }
+
+        // Weapon status UI removed.
+    }
+
+    ElementType ConvertElement(Element element)
+    {
+        switch (element)
+        {
+            case Element.Fire:
+                return ElementType.Fire;
+            case Element.Lightning:
+                return ElementType.Electric;
+            default:
+                return ElementType.Water;
+        }
+    }
+
+    void RemovePotionFromInventory(Potion potion)
+    {
+        Inventory inv = Inventory.Instance;
+        if (inv == null || potion == null) return;
+
+        List<Potion> list = inv.PotionItems;
+        int idx = list.IndexOf(potion);
+        if (idx >= 0)
+        {
+            list.RemoveAt(idx);
+        }
+    }
+
+    void EnsureCoreSlots()
+    {
+        if (slots.Count == 0)
+        {
+            slots.Add(new WeaponSlot { type = WeaponType.Melee, count = -1 });
+        }
+
+        if (slots[0].type != WeaponType.Melee && slots[0].type != WeaponType.PotionBomb)
+        {
+            slots[0].type = WeaponType.Melee;
+            slots[0].count = -1;
+            slots[0].equippedPotion = null;
+        }
+
+        while (slots.Count < 4)
+        {
+            slots.Add(new WeaponSlot { type = WeaponType.None, count = -1 });
+        }
+    }
+
+
+    private void OnDrawGizmosSelected()
+    {
+        if (!debugDrawMeleeGizmo) return;
+        if (tileSize <= 0f) return;
+
+        Vector2 dir = aimDirection;
+        if (dir == Vector2.zero)
+        {
+            dir = Vector2.down;
+        }
+
+        Vector2 forward = dir.normalized;
+        Vector3 attackPos = transform.position + (Vector3)(forward * (tileSize + meleeForwardOffset));
+        Vector3 attackBoxSize = new Vector3(tileSize * 2f, tileSize * 2f, 0f);
+
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireCube(attackPos, attackBoxSize);
     }
 }
 
+internal static class CombatInputHelper
+{
+    private const KeyCode AttackKey = KeyCode.Z;
+    private const int AttackMouseButton = 1;
 
+    internal static bool IsAttackPressed()
+    {
+        return Input.GetKeyDown(AttackKey) || Input.GetMouseButtonDown(AttackMouseButton);
+    }
+
+    internal static bool IsAttackReleased()
+    {
+        return Input.GetKeyUp(AttackKey) || Input.GetMouseButtonUp(AttackMouseButton);
+    }
+}

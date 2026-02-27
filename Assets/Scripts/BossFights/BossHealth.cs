@@ -10,6 +10,7 @@ public class BossHealth : MonoBehaviour
     public ElementType currentElement = ElementType.Fire;
 
     private bool isDead = false;
+    private bool isInvulnerable = false;
 
     private IBossDamageModifier damageModifier;
     private IBossPhaseHandler phaseHandler;
@@ -32,7 +33,7 @@ public class BossHealth : MonoBehaviour
 
     public void TakeDamage(int damage, ElementType attackType)
     {
-        if (isDead) return;
+        if (isDead || isInvulnerable) return;
 
         float multiplier = ElementManager.GetDamageMultiplier(attackType, currentElement);
 
@@ -50,10 +51,15 @@ public class BossHealth : MonoBehaviour
 
         if (currentHP <= 0) Die();
     }
+    public bool IsInvulnerable => isInvulnerable;
 
+    public void SetInvulnerable(bool value)
+    {
+        isInvulnerable = value;
+    }
     void Die()
     {
-        if (isDead) return;
+        if (isDead || isInvulnerable) return;
         isDead = true;
         currentHP = 0;
 

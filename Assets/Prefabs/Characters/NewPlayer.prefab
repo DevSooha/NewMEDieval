@@ -81,7 +81,7 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0.5}
+  m_Offset: {x: 0, y: 0.25}
   m_Radius: 0.5
 --- !u!1 &8131824563140431785
 GameObject:
@@ -218,7 +218,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 1
-  m_Mass: 0.86988014
+  m_Mass: 0.39634955
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 0
@@ -245,8 +245,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd3eb5d3593af1e4aab08ed8bf5fa161, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
-  moveSpeed: 5
-  baseSpeed: 5
+  moveSpeed: 12
+  knockbackObstacleLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  baseSpeed: 12
   animator: {fileID: 8413767024519287874}
 --- !u!114 &4395408561452145397
 MonoBehaviour:
@@ -264,9 +267,15 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
+  meleeForwardOffset: 0
+  meleeSideOffset: -0.5
+  debugDrawMeleeGizmo: 1
   floorTilemap: {fileID: 0}
+  defaultBombPrefab: {fileID: 0}
   stackMarkerPrefab: {fileID: 6652526710824270206, guid: 4442b947abc6a644a82dacfb70dbb613, type: 3}
   slots: []
+  bottomPadding: 12
+  rightPadding: 100
 --- !u!70 &477969116217681799
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -301,9 +310,9 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0.542241}
-  m_Size: {x: 1, y: 1.084482}
-  m_Direction: 0
+  m_Offset: {x: 0, y: 0.25}
+  m_Size: {x: 0.9, y: 0.5}
+  m_Direction: 1
 --- !u!114 &186804572997891859
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -317,3 +326,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHP: 6
+  hitInvulnerableDuration: 0.8
+  hitBlinkInterval: 0.1
