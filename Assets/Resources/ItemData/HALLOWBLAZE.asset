@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d59bd60959b40674d815b75ed82e6639, type: 3}
-  m_Name: Heliospark
+  m_Name: HALLOWBLAZE
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  ingredientId: HelioSpark
-  topName: Helio
-  bottomName: spark
-  shapeType: 1
+  ingredientId: HALLOWBLAZE
+  topName: Hallow
+  bottomName: Blaze
+  shapeType: 3
   topDamage: 0
   bottomDamage: 0
-  element: 2
-  topSprite: {fileID: 6788137293341871403, guid: 13d44f336e011cd43beada62396c7b16, type: 3}
-  bottomSprite: {fileID: 3682049515164638985, guid: 0a98dc091ed7ff244950a59b05316bfb, type: 3}
-  description: "\uD5EC\uB9AC\uC624\uC2A4\uD30C\uD06C \uAF43"
-  icon: {fileID: 7044243594926154384, guid: 54c2814fd8f55934399ed1f9e2006365, type: 3}
+  element: 1
+  topSprite: {fileID: 1188354737149023149, guid: 7b374d2e586a4d54591abdf3d6599eae, type: 3}
+  bottomSprite: {fileID: -6285966100586756203, guid: 19632955218b7004dbfdefed8994f0f1, type: 3}
+  description: HallowBlaze ingredient
+  icon: {fileID: 5459099342745943989, guid: ce008265d00526f4582e7e874ef0acea, type: 3}
   specificPrefab: {fileID: 0}
   maxStack: 99
   isStackable: 1
