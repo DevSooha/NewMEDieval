@@ -97,6 +97,15 @@ public class PlayerHealth : MonoBehaviour
         NotifyHealthChanged();
     }
 
+    public void HealWithOvercap(int amount, int overcapMaxHP)
+    {
+        if (amount <= 0) return;
+
+        int hardCap = Mathf.Max(maxHP, overcapMaxHP);
+        currentHP = Mathf.Clamp(currentHP + amount, 0, hardCap);
+        NotifyHealthChanged();
+    }
+
     private IEnumerator InvulnerableRoutine(float duration)
     {
         isInvulnerable = true;

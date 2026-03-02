@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 public class Bomb : MonoBehaviour
@@ -10,6 +10,19 @@ public class Bomb : MonoBehaviour
     public float explosionRadius = 1.5f;
     public GameObject explosionEffect;
 
+    public void ConfigureFromPotionData(PotionData potionData)
+    {
+        if (potionData == null) return;
+
+        baseDamage = Mathf.Max(1, potionData.damage1 + potionData.damage2);
+        bombElement = potionData.element1 switch
+        {
+            Element.Fire => ElementType.Fire,
+            Element.Lightning => ElementType.Electric,
+            _ => ElementType.Water
+        };
+    }
+
     void Start() { StartCoroutine(ExplodeSequence()); }
 
     IEnumerator ExplodeSequence()
@@ -20,14 +33,14 @@ public class Bomb : MonoBehaviour
 
     void Explode()
     {
-        // Æø¹ß ÀÌÆåÆ® »ı¼º
+        // í­ë°œ ì´í™íŠ¸ ìƒì„±
         if (explosionEffect != null) Instantiate(explosionEffect, transform.position, Quaternion.identity);
 
-        // Æø¹ß ¹üÀ§ °¨Áö
+        // í­ë°œ ë²”ìœ„ ê°ì§€
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
         foreach (var hit in hits)
         {
-            // 1. º¸½º Å¸°İ
+            // 1. ë³´ìŠ¤ íƒ€ê²©
             BossHealth boss = hit.GetComponent<BossHealth>();
             if (boss != null) boss.TakeDamage(baseDamage, bombElement);
 
@@ -37,7 +50,7 @@ public class Bomb : MonoBehaviour
             }
         }
 
-        // ÆøÅº ÀÚÃ¼ »èÁ¦
+        // í­íƒ„ ìì²´ ì‚­ì œ
         Destroy(gameObject);
     }
 }

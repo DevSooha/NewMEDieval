@@ -38,6 +38,9 @@ public class EnemyCombat : MonoBehaviour
 
     private Vector2 attackDirection = Vector2.left;
 
+    public bool IsDead => isDead;
+    public int CurrentHealth => currentHealth;
+
     void Start()
     {
         playerLayer = LayerMask.GetMask("Player");
@@ -182,6 +185,14 @@ public class EnemyCombat : MonoBehaviour
         {
             Die();
         }
+    }
+
+    public void Heal(int amount)
+    {
+        if (isDead) return;
+        if (amount <= 0) return;
+
+        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
     }
 
     private void Die()

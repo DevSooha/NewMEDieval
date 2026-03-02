@@ -331,6 +331,11 @@ public class InventoryUI : MonoBehaviour
         RefreshUI();
     }
 
+    public void OnWeaponSlotClicked(int slotIndex, UnityEngine.EventSystems.PointerEventData.InputButton button)
+    {
+        OnWeaponSlotClicked(slotIndex);
+    }
+
     private void EnsureWeaponSlotDimmer()
     {
         if (weaponSlotDimmer != null) return;

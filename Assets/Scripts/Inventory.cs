@@ -214,6 +214,12 @@ public class Inventory : Singleton<Inventory>
         return true;
     }
 
+    public bool RemovePotionCompletely(Potion potion)
+    {
+        if (potion == null) return false;
+        return potions.Remove(potion);
+    }
+
     public void SelectItem(int index)
     {
 
