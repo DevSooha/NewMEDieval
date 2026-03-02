@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7510a16807c40b440af27b1d0c25ec34, type: 3}
+  m_Name: spr_1 BOSS
+  m_EditorClassIdentifier: Assembly-CSharp::RoomData
+  roomID: spr_1 BOSS
+  roomPrefab: {fileID: 5091463693180939243, guid: 5d2420cf1821a874da8b95a80a8186fe, type: 3}
+  north: {fileID: 0}
+  south: {fileID: 11400000, guid: 281cb2b1b56741b4aae9d14976f38bb2, type: 2}
+  east: {fileID: 0}
+  west: {fileID: 0}
+  roomCoord: {x: 0, y: 1}
