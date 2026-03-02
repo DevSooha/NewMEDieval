@@ -26,6 +26,12 @@ public class JulmeoCombat : BossCombatBase
         Debug.Log("Julmeo spawned & attacking!");
     }
 
+    private void OnDisable()
+    {
+        StopAllCoroutines();
+        CleanupOffensivesOnDisable();
+    }
+
     IEnumerator BattleRoutine()
     {
         while (canMove)
@@ -78,6 +84,7 @@ public class JulmeoCombat : BossCombatBase
                 Vector3 bulletPos = transform.position + (rot * Vector3.right * 0.5f);
 
                 GameObject projectile = Instantiate(fireBallPrefab, bulletPos, rot);
+                RegisterBossOffensive(projectile);
                 projectile.GetComponent<BossProjectile>()?.Setup(ElementType.Water);                
                 }
                 yield return new WaitForSeconds(0.1f);

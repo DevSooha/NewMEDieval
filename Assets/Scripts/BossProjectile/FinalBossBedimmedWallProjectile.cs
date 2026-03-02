@@ -62,6 +62,13 @@ public class FinalBossBedimmedWallProjectile : BossProjectile
         Destroy(gameObject);
     }
 
+    public override void DespawnImmediate()
+    {
+        isLaunched = false;
+        CancelInvoke(nameof(DestroyProjectile));
+        Destroy(gameObject);
+    }
+
     protected override void OnTriggerEnter2D(Collider2D other)
     {
         if (!isLaunched) return;

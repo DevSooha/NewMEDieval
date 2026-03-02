@@ -15,6 +15,7 @@ public class StainedSwordProjectile : MonoBehaviour
     private Action<StainedSwordProjectile> onDestroyed;
     private bool isFading;
     private bool canCollide;
+    private bool isDestroyed;
     private Collider2D projectileCollider;
     private SpriteRenderer[] spriteRenderers;
 
@@ -33,6 +34,7 @@ public class StainedSwordProjectile : MonoBehaviour
         projectileCollider.enabled = false;
         isFading = false;
         canCollide = false;
+        isDestroyed = false;
 
         StopAllCoroutines();
         StartCoroutine(HomingRoutine());
@@ -125,7 +127,28 @@ public class StainedSwordProjectile : MonoBehaviour
 
     private void DestroyProjectile()
     {
+        if (isDestroyed)
+        {
+            return;
+        }
+
+        isDestroyed = true;
         onDestroyed?.Invoke(this);
+        onDestroyed = null;
         Destroy(gameObject);
+    }
+
+    public void DespawnImmediate()
+    {
+        StopAllCoroutines();
+        isFading = true;
+        canCollide = false;
+
+        if (projectileCollider != null)
+        {
+            projectileCollider.enabled = false;
+        }
+
+        DestroyProjectile();
     }
 }

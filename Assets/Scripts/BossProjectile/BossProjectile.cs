@@ -16,6 +16,7 @@ public class BossProjectile : MonoBehaviour
     private Action<BossProjectile> returnToPool;
     private bool useCustomDirection;
     private Vector2 customDirection = Vector2.right;
+    private bool isDespawning;
 
     public void SetPoolCallback(Action<BossProjectile> callback)
     {
@@ -24,6 +25,7 @@ public class BossProjectile : MonoBehaviour
 
     public virtual void Setup(ElementType element)
     {
+        isDespawning = false;
         useCustomDirection = false;
         customDirection = Vector2.right;
         projectileElement = element;
@@ -52,6 +54,12 @@ public class BossProjectile : MonoBehaviour
 
     protected virtual void DestroyProjectile()
     {
+        if (isDespawning)
+        {
+            return;
+        }
+
+        isDespawning = true;
         CancelInvoke(nameof(DestroyProjectile));
 
         if (returnToPool != null)
@@ -63,6 +71,22 @@ public class BossProjectile : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    public virtual void DespawnImmediate()
+    {
+        // Already inactive pooled objects are already returned and should not be re-enqueued.
+        if (!gameObject.activeInHierarchy && returnToPool != null)
+        {
+            return;
+        }
+
+        DestroyProjectile();
+    }
+
+    protected virtual void OnDisable()
+    {
+        CancelInvoke(nameof(DestroyProjectile));
     }
 
     protected virtual void OnTriggerEnter2D(Collider2D other)

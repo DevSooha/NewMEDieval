@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class BossHealth : MonoBehaviour
 {
@@ -14,6 +14,10 @@ public class BossHealth : MonoBehaviour
 
     private IBossDamageModifier damageModifier;
     private IBossPhaseHandler phaseHandler;
+
+    public bool IsInvulnerable => isInvulnerable;
+    public int CurrentHP => currentHP;
+    public int MaxHP => maxHP;
 
     void Awake()
     {
@@ -51,19 +55,35 @@ public class BossHealth : MonoBehaviour
 
         if (currentHP <= 0) Die();
     }
-    public bool IsInvulnerable => isInvulnerable;
 
     public void SetInvulnerable(bool value)
     {
         isInvulnerable = value;
     }
+
+    public void Heal(int amount)
+    {
+        if (amount <= 0 || isDead) return;
+
+        currentHP = Mathf.Clamp(currentHP + amount, 0, maxHP);
+        phaseHandler?.OnBossHpChanged(currentHP, maxHP);
+    }
+
     void Die()
     {
         if (isDead || isInvulnerable) return;
         isDead = true;
         currentHP = 0;
 
-        Debug.Log($"[BOSS] {bossName} óġ��.");
+        BossCombatBase combat = GetComponent<BossCombatBase>();
+        if (combat == null)
+        {
+            combat = GetComponentInParent<BossCombatBase>();
+        }
+
+        combat?.NotifyBossDefeatedCleanup();
+
+        Debug.Log($"[BOSS] {bossName} 처치됨.");
 
         if (BossManager.Instance != null)
         {

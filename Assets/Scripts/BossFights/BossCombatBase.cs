@@ -1,12 +1,22 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 // 이 스크립트는 아무데도 붙이지 마세요. 파일만 존재하면 됩니다.
 public abstract class BossCombatBase : MonoBehaviour
 {
+    protected enum BossOffensiveCleanupReason
+    {
+        BossDead,
+        BossDisabled,
+        BattleReset
+    }
+
     [SerializeField, Min(0)] private int collisionContactDamage = 0;
     private const string PlayerTag = "Player";
+    private readonly HashSet<GameObject> trackedOffensives = new();
+    private bool isCleaningUpOffensives;
 
     [Header("Default Knockback Settings")]
     [SerializeField] protected float defaultKnockbackForce = 8f;
@@ -17,6 +27,84 @@ public abstract class BossCombatBase : MonoBehaviour
     protected virtual bool UseCollisionInvulnerability => true;
 
     public abstract void StartBattle();
+
+    private void OnDisable()
+    {
+        CleanupOffensivesOnDisable();
+    }
+
+    public void NotifyBossDefeatedCleanup()
+    {
+        CleanupBossOffensives(BossOffensiveCleanupReason.BossDead);
+    }
+
+    protected void CleanupOffensivesOnDisable()
+    {
+        CleanupBossOffensives(BossOffensiveCleanupReason.BossDisabled);
+    }
+
+    protected void CleanupOffensivesOnBattleReset()
+    {
+        CleanupBossOffensives(BossOffensiveCleanupReason.BattleReset);
+    }
+
+    protected void RegisterBossOffensive(GameObject offensive, bool isVisualOnly = false)
+    {
+        _ = isVisualOnly;
+
+        if (offensive == null || offensive == gameObject)
+        {
+            return;
+        }
+
+        if (trackedOffensives.Count >= 32 && trackedOffensives.Count % 16 == 0)
+        {
+            trackedOffensives.RemoveWhere(item => item == null);
+        }
+
+        trackedOffensives.Add(offensive);
+    }
+
+    protected void UnregisterBossOffensive(GameObject offensive)
+    {
+        if (offensive == null)
+        {
+            return;
+        }
+
+        trackedOffensives.Remove(offensive);
+    }
+
+    protected void CleanupBossOffensives(BossOffensiveCleanupReason reason)
+    {
+        _ = reason;
+
+        if (isCleaningUpOffensives || trackedOffensives.Count == 0)
+        {
+            return;
+        }
+
+        isCleaningUpOffensives = true;
+
+        try
+        {
+            List<GameObject> snapshot = new(trackedOffensives);
+            foreach (GameObject offensive in snapshot)
+            {
+                if (offensive == null)
+                {
+                    continue;
+                }
+
+                CleanupTrackedOffensive(offensive);
+            }
+        }
+        finally
+        {
+            trackedOffensives.RemoveWhere(item => item == null);
+            isCleaningUpOffensives = false;
+        }
+    }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
@@ -42,9 +130,54 @@ public abstract class BossCombatBase : MonoBehaviour
         );
     }
 
+    private static void CleanupTrackedOffensive(GameObject offensive)
+    {
+        if (offensive == null)
+        {
+            return;
+        }
+
+        BossProjectile projectile = offensive.GetComponent<BossProjectile>();
+        if (projectile != null)
+        {
+            if (projectile.gameObject.activeInHierarchy)
+            {
+                projectile.DespawnImmediate();
+            }
+
+            return;
+        }
+
+        StainedSwordProjectile stainedSword = offensive.GetComponent<StainedSwordProjectile>();
+        if (stainedSword != null)
+        {
+            if (stainedSword.gameObject.activeInHierarchy)
+            {
+                stainedSword.DespawnImmediate();
+            }
+
+            return;
+        }
+
+        LatentThornHitbox thorn = offensive.GetComponent<LatentThornHitbox>();
+        if (thorn != null)
+        {
+            thorn.DespawnImmediate();
+            return;
+        }
+
+        if (offensive.scene.IsValid())
+        {
+            UnityEngine.Object.Destroy(offensive);
+        }
+    }
+
     protected void Knockback(Player player, Transform sender, float? forceOverride = null, float? stunOverride = null)
     {
         if (player == null || sender == null) return;
+
+        PlayerStatusController status = player.GetComponent<PlayerStatusController>();
+        if (status != null && status.IsKnockbackImmune) return;
 
         float force = forceOverride ?? defaultKnockbackForce;
         float stun = stunOverride ?? defaultKnockbackStunTime;

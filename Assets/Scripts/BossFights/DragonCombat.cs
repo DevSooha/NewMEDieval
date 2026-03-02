@@ -93,6 +93,7 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
     {
         PlayerHealth.OnPlayerDeath -= HandlePlayerDeath;
         SetFlyingRestrictionZoneActive(false);
+        CleanupOffensivesOnDisable();
 
         if (ActiveInstance == this)
         {
@@ -271,6 +272,7 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
             Vector3 spawnPos = pivotPosition + (fireDirection * wallSpawnRadius);
 
             GameObject wallObj = Instantiate(eternalNightWallPrefab, spawnPos, projectileRotation);
+            RegisterBossOffensive(wallObj);
             wallObj.transform.localScale *= wallScaleMultiplier;
 
             BossProjectile projectile = wallObj.GetComponent<BossProjectile>();
@@ -391,6 +393,7 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
     {
         isBattleActive = false;
         battleResultHandled = false;
+        CleanupOffensivesOnBattleReset();
 
         if (battleLoopRoutine != null)
         {
