@@ -134,6 +134,7 @@ public class PotionData : ScriptableObject
     public Element element2;
     public Sprite topIMG;
     public Sprite bottomIMG;
+    public Sprite frameIMG;
 
     [Header("Legacy Asset Compatibility")]
     public string itemName;

@@ -40,6 +40,11 @@ public static class PotionDesignCatalog
         crafted.temperature = temperature;
         crafted.topIMG = first.topSprite != null ? first.topSprite : first.icon;
         crafted.bottomIMG = second.bottomSprite != null ? second.bottomSprite : second.icon;
+        crafted.frameIMG = PotionVisualResolver.ResolveCraftFrame(
+            first,
+            second,
+            firstDesign.primary,
+            secondDesign.primary);
         crafted.icon = crafted.topIMG != null ? crafted.topIMG : crafted.bottomIMG;
 
         string tempText = temperature switch

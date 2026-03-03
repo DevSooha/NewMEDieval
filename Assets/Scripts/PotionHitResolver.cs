@@ -9,7 +9,7 @@ public static class PotionHitResolver
     private const string NpcTag = "NPC";
     private const string CampfireTag = "Campfire";
 
-    private static readonly Dictionary<int, int> LastHitFrameByTarget = new Dictionary<int, int>();
+    private static readonly Dictionary<ulong, int> LastHitFrameByPair = new Dictionary<ulong, int>();
 
     public static bool TryResolveHit(PotionProjectileController projectile, Collider2D other)
     {
@@ -18,13 +18,23 @@ public static class PotionHitResolver
         PotionPhaseSpec spec = projectile.PhaseSpec;
         if (spec == null) return false;
 
-        return TryResolveHitWithFrameGate(spec, other);
+        return TryResolveHitWithFrameGate(
+            spec,
+            other,
+            projectile.Owner,
+            projectile.GetInstanceID(),
+            allowSelfHitRules: true);
     }
 
-    public static bool TryResolveAreaHit(PotionPhaseSpec spec, Collider2D other)
+    public static bool TryResolveAreaHit(PotionPhaseSpec spec, Collider2D other, int sourceInstanceId = 0)
     {
         if (spec == null || other == null) return false;
-        return TryResolveHitWithFrameGate(spec, other);
+        return TryResolveHitWithFrameGate(
+            spec,
+            other,
+            null,
+            sourceInstanceId,
+            allowSelfHitRules: false);
     }
 
     public static bool TryResolveEnvironmentHit(PotionProjectileController projectile, Collider2D other)
@@ -75,7 +85,7 @@ public static class PotionHitResolver
     public static void ApplySpecToPlayer(PotionPhaseSpec spec, PlayerHealth health)
     {
         if (spec == null || health == null) return;
-        ApplyPlayerHit(spec, health);
+        ApplyPlayerHit(spec, health, isSelfHit: false);
     }
 
     public static void ApplySpecToEnemy(PotionPhaseSpec spec, EnemyCombat enemy)
@@ -90,15 +100,26 @@ public static class PotionHitResolver
         ApplyBossHit(spec, boss);
     }
 
-    private static bool TryResolveHitWithFrameGate(PotionPhaseSpec spec, Collider2D other)
+    private static bool TryResolveHitWithFrameGate(
+        PotionPhaseSpec spec,
+        Collider2D other,
+        Transform owner,
+        int sourceInstanceId,
+        bool allowSelfHitRules)
     {
         PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
         if (playerHealth == null) playerHealth = other.GetComponentInParent<PlayerHealth>();
 
         if (playerHealth != null)
         {
-            if (!ReserveFrameHit(playerHealth)) return false;
-            ApplyPlayerHit(spec, playerHealth);
+            bool isSelfHit = allowSelfHitRules && IsOwnerTarget(owner, playerHealth.transform);
+            if (!isSelfHit && spec.damageTarget == DamageTargetType.EnemyOnly)
+            {
+                return false;
+            }
+
+            if (!ReserveFrameHit(sourceInstanceId, playerHealth)) return false;
+            ApplyPlayerHit(spec, playerHealth, isSelfHit);
             return true;
         }
 
@@ -106,7 +127,7 @@ public static class PotionHitResolver
         if (enemyCombat == null) enemyCombat = other.GetComponentInParent<EnemyCombat>();
         if (enemyCombat != null)
         {
-            if (!ReserveFrameHit(enemyCombat)) return false;
+            if (!ReserveFrameHit(sourceInstanceId, enemyCombat)) return false;
             ApplyEnemyHit(spec, enemyCombat);
             return true;
         }
@@ -115,7 +136,7 @@ public static class PotionHitResolver
         if (bossHealth == null) bossHealth = other.GetComponentInParent<BossHealth>();
         if (bossHealth != null)
         {
-            if (!ReserveFrameHit(bossHealth)) return false;
+            if (!ReserveFrameHit(sourceInstanceId, bossHealth)) return false;
             ApplyBossHit(spec, bossHealth);
             return true;
         }
@@ -123,15 +144,15 @@ public static class PotionHitResolver
         return false;
     }
 
-    private static void ApplyPlayerHit(PotionPhaseSpec spec, PlayerHealth health)
+    private static void ApplyPlayerHit(PotionPhaseSpec spec, PlayerHealth health, bool isSelfHit)
     {
         if (health == null) return;
 
-        if (spec.healsPlayerOnSelfHit)
+        if (isSelfHit && spec.healsPlayerOnSelfHit)
         {
             health.HealWithOvercap(1, 3);
         }
-        else if (!spec.ignoreSelfHitPenalty)
+        else if (isSelfHit && !spec.ignoreSelfHitPenalty)
         {
             health.TakeDamage(1);
         }
@@ -267,28 +288,47 @@ public static class PotionHitResolver
         return comp;
     }
 
-    private static bool ReserveFrameHit(Object target)
+    private static bool ReserveFrameHit(int sourceInstanceId, Object target)
     {
         if (target == null)
         {
             return false;
         }
 
-        int id = target.GetInstanceID();
+        int targetId = target.GetInstanceID();
+        ulong hitKey = ComposeHitKey(sourceInstanceId, targetId);
         int frame = Time.frameCount;
 
-        if (LastHitFrameByTarget.TryGetValue(id, out int lastFrame) && lastFrame == frame)
+        if (LastHitFrameByPair.TryGetValue(hitKey, out int lastFrame) && lastFrame == frame)
         {
             return false;
         }
 
-        if (LastHitFrameByTarget.Count > 8192)
+        if (LastHitFrameByPair.Count > 8192)
         {
-            LastHitFrameByTarget.Clear();
+            LastHitFrameByPair.Clear();
         }
 
-        LastHitFrameByTarget[id] = frame;
+        LastHitFrameByPair[hitKey] = frame;
         return true;
+    }
+
+    private static ulong ComposeHitKey(int sourceInstanceId, int targetInstanceId)
+    {
+        unchecked
+        {
+            return ((ulong)(uint)sourceInstanceId << 32) | (uint)targetInstanceId;
+        }
+    }
+
+    private static bool IsOwnerTarget(Transform owner, Transform target)
+    {
+        if (owner == null || target == null)
+        {
+            return false;
+        }
+
+        return target == owner || target.IsChildOf(owner) || owner.IsChildOf(target);
     }
 
     private static bool IsOwnerCollider(PotionProjectileController projectile, Collider2D other)

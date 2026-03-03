@@ -7,6 +7,7 @@ public readonly struct PatternSpawnRequest
     public readonly ProjectilePatternType PatternType;
     public readonly int PhaseIndex;
     public readonly float LineAngleDeg;
+    public readonly Vector2 AnchorCenter;
     public readonly Vector2 Direction;
     public readonly float SpeedUnitsPerSec;
     public readonly float SpawnOffsetUnits;
@@ -16,6 +17,7 @@ public readonly struct PatternSpawnRequest
         ProjectilePatternType patternType,
         int phaseIndex,
         float lineAngleDeg,
+        Vector2 anchorCenter,
         Vector2 direction,
         float speedUnitsPerSec,
         float spawnOffsetUnits,
@@ -24,6 +26,7 @@ public readonly struct PatternSpawnRequest
         PatternType = patternType;
         PhaseIndex = phaseIndex;
         LineAngleDeg = lineAngleDeg;
+        AnchorCenter = anchorCenter;
         Direction = direction;
         SpeedUnitsPerSec = speedUnitsPerSec;
         SpawnOffsetUnits = spawnOffsetUnits;
@@ -70,16 +73,32 @@ public static class ProjectilePatternExecutor
     public static IEnumerator ExecutePhase(
         PotionPhaseSpec phase,
         bool isFirstPhase,
-        Transform origin,
+        Vector2 anchorCenter,
+        Vector2 baseDirection,
         Action<PatternSpawnRequest> spawnProjectile,
         Action<bool, float> setGroupRotationActive = null,
         Transform parentGroup = null,
         ProjectilePatternType? forcedPatternType = null,
-        float maxEndTime = float.PositiveInfinity)
+        float phaseStartTime = 0f,
+        float globalEndTime = float.PositiveInfinity)
     {
-        if (phase == null || origin == null || spawnProjectile == null)
+        if (phase == null || spawnProjectile == null)
         {
             yield break;
+        }
+
+        if (baseDirection.sqrMagnitude < 0.0001f)
+        {
+            baseDirection = Vector2.up;
+        }
+        else
+        {
+            baseDirection.Normalize();
+        }
+
+        if (phaseStartTime <= 0f)
+        {
+            phaseStartTime = Time.time;
         }
 
         ProjectilePatternType patternType = forcedPatternType ?? phase.patternType;
@@ -87,33 +106,61 @@ public static class ProjectilePatternExecutor
         switch (patternType)
         {
             case ProjectilePatternType.AfterimageBomb:
-                yield return ExecuteAfterimageBomb(phase, phaseIndex, isFirstPhase, spawnProjectile, parentGroup, maxEndTime);
+                yield return ExecuteAfterimageBomb(
+                    phaseIndex,
+                    isFirstPhase,
+                    anchorCenter,
+                    baseDirection,
+                    spawnProjectile,
+                    parentGroup,
+                    phaseStartTime,
+                    globalEndTime);
                 break;
             case ProjectilePatternType.Tornado:
-                yield return ExecuteTornado(phase, phaseIndex, isFirstPhase, spawnProjectile, setGroupRotationActive, parentGroup, maxEndTime);
+                yield return ExecuteTornado(
+                    phaseIndex,
+                    isFirstPhase,
+                    anchorCenter,
+                    baseDirection,
+                    spawnProjectile,
+                    setGroupRotationActive,
+                    parentGroup,
+                    phaseStartTime,
+                    globalEndTime);
                 break;
             default:
-                yield return ExecuteFireworks(phase, phaseIndex, isFirstPhase, spawnProjectile, parentGroup, maxEndTime);
+                yield return ExecuteFireworks(
+                    phaseIndex,
+                    isFirstPhase,
+                    anchorCenter,
+                    baseDirection,
+                    spawnProjectile,
+                    parentGroup,
+                    phaseStartTime,
+                    globalEndTime);
                 break;
         }
     }
 
     private static IEnumerator ExecuteFireworks(
-        PotionPhaseSpec phase,
         int phaseIndex,
         bool isFirstPhase,
+        Vector2 anchorCenter,
+        Vector2 baseDirection,
         Action<PatternSpawnRequest> spawnProjectile,
         Transform parentGroup,
-        float maxEndTime)
+        float phaseStartTime,
+        float globalEndTime)
     {
         float[] angles = isFirstPhase ? FireworksPlusAngles : FireworksXAngles;
         float spacing = PixelsToUnits(FireworksLineSpacingPx);
-        float speed = ResolveSpeed(phase, FireworksSpeedPxPerFrame);
-        float nextEventTime = Time.time;
+        float speed = PxPerFrameToUnitsPerSecond(FireworksSpeedPxPerFrame);
+        float interval = FireworksIntervalSeconds;
+        float nextEventTime = phaseStartTime;
 
-        while (IsBeforePatternEnd(nextEventTime, maxEndTime))
+        while (IsBeforePatternEnd(nextEventTime, globalEndTime))
         {
-            if (!TryWaitUntil(nextEventTime, maxEndTime, out float waitToEvent))
+            if (!TryWaitUntil(nextEventTime, globalEndTime, out float waitToEvent))
             {
                 yield break;
             }
@@ -130,28 +177,33 @@ public static class ProjectilePatternExecutor
                 FireworksLineCount,
                 spacing,
                 speed,
+                anchorCenter,
+                baseDirection,
                 parentGroup,
                 spawnProjectile);
-            nextEventTime += FireworksIntervalSeconds;
+            nextEventTime += interval;
         }
     }
 
     private static IEnumerator ExecuteAfterimageBomb(
-        PotionPhaseSpec phase,
         int phaseIndex,
         bool isFirstPhase,
+        Vector2 anchorCenter,
+        Vector2 baseDirection,
         Action<PatternSpawnRequest> spawnProjectile,
         Transform parentGroup,
-        float maxEndTime)
+        float phaseStartTime,
+        float globalEndTime)
     {
         float[] angles = isFirstPhase ? AfterimageFirstAngles : AfterimageSecondAngles;
         float spacing = PixelsToUnits(AfterimageLineSpacingPx);
-        float speed = ResolveSpeed(phase, AfterimageSpeedPxPerFrame);
-        float nextEventTime = Time.time;
+        float speed = PxPerFrameToUnitsPerSecond(AfterimageSpeedPxPerFrame);
+        float interval = AfterimageIntervalSeconds;
+        float nextEventTime = phaseStartTime;
 
-        while (IsBeforePatternEnd(nextEventTime, maxEndTime))
+        while (IsBeforePatternEnd(nextEventTime, globalEndTime))
         {
-            if (!TryWaitUntil(nextEventTime, maxEndTime, out float waitToEvent))
+            if (!TryWaitUntil(nextEventTime, globalEndTime, out float waitToEvent))
             {
                 yield break;
             }
@@ -168,30 +220,34 @@ public static class ProjectilePatternExecutor
                 AfterimageLineCount,
                 spacing,
                 speed,
+                anchorCenter,
+                baseDirection,
                 parentGroup,
                 spawnProjectile);
-            nextEventTime += AfterimageIntervalSeconds;
+            nextEventTime += interval;
         }
     }
 
     private static IEnumerator ExecuteTornado(
-        PotionPhaseSpec phase,
         int phaseIndex,
         bool isFirstPhase,
+        Vector2 anchorCenter,
+        Vector2 baseDirection,
         Action<PatternSpawnRequest> spawnProjectile,
         Action<bool, float> setGroupRotationActive,
         Transform parentGroup,
-        float maxEndTime)
+        float phaseStartTime,
+        float globalEndTime)
     {
         float[] baseAngles = isFirstPhase ? AfterimageFirstAngles : AfterimageSecondAngles;
-        float speed = ResolveSpeed(phase, TornadoSpeedPxPerFrame);
+        float speed = PxPerFrameToUnitsPerSecond(TornadoSpeedPxPerFrame);
         float spacing = PixelsToUnits(TornadoLineSpacingPx);
         float shotInterval = TornadoFireSeconds / TornadoShotsPerLine;
-        float nextShotTime = Time.time;
+        float nextShotTime = phaseStartTime;
 
-        for (int shot = 0; shot < TornadoShotsPerLine && IsBeforePatternEnd(nextShotTime, maxEndTime); shot++)
+        for (int shot = 0; shot < TornadoShotsPerLine && IsBeforePatternEnd(nextShotTime, globalEndTime); shot++)
         {
-            if (!TryWaitUntil(nextShotTime, maxEndTime, out float waitToShot))
+            if (!TryWaitUntil(nextShotTime, globalEndTime, out float waitToShot))
             {
                 yield break;
             }
@@ -205,11 +261,12 @@ public static class ProjectilePatternExecutor
             for (int i = 0; i < baseAngles.Length; i++)
             {
                 float lineAngle = baseAngles[i];
-                Vector2 direction = DirFromAngleUpClockwise(lineAngle);
+                Vector2 direction = DirFromBaseClockwise(baseDirection, lineAngle);
                 spawnProjectile(new PatternSpawnRequest(
                     ProjectilePatternType.Tornado,
                     phaseIndex,
                     lineAngle,
+                    anchorCenter,
                     direction,
                     speed,
                     spawnOffsetUnits,
@@ -219,16 +276,16 @@ public static class ProjectilePatternExecutor
         }
 
         bool rotating = false;
-        if (HasTimeRemaining(maxEndTime) && setGroupRotationActive != null)
+        if (HasTimeRemaining(globalEndTime) && setGroupRotationActive != null)
         {
             setGroupRotationActive(true, TornadoRotateSpeedDegPerSec);
             rotating = true;
         }
 
         float rotateElapsed = 0f;
-        while (rotateElapsed < TornadoRotateSeconds && HasTimeRemaining(maxEndTime + EndInclusiveEpsilon))
+        while (rotateElapsed < TornadoRotateSeconds && HasTimeRemaining(globalEndTime + EndInclusiveEpsilon))
         {
-            if (!TryGetWaitSeconds(Mathf.Min(0.05f, TornadoRotateSeconds - rotateElapsed), maxEndTime, out float wait))
+            if (!TryGetWaitSeconds(Mathf.Min(0.05f, TornadoRotateSeconds - rotateElapsed), globalEndTime, out float wait))
             {
                 break;
             }
@@ -250,19 +307,22 @@ public static class ProjectilePatternExecutor
         int bulletsPerLine,
         float spacingUnits,
         float speedUnitsPerSec,
+        Vector2 anchorCenter,
+        Vector2 baseDirection,
         Transform parentGroup,
         Action<PatternSpawnRequest> spawnProjectile)
     {
         for (int i = 0; i < lineAngles.Length; i++)
         {
             float lineAngle = lineAngles[i];
-            Vector2 direction = DirFromAngleUpClockwise(lineAngle);
+            Vector2 direction = DirFromBaseClockwise(baseDirection, lineAngle);
             for (int n = 0; n < bulletsPerLine; n++)
             {
                 spawnProjectile(new PatternSpawnRequest(
                     patternType,
                     phaseIndex,
                     lineAngle,
+                    anchorCenter,
                     direction,
                     speedUnitsPerSec,
                     spacingUnits * n,
@@ -316,17 +376,6 @@ public static class ProjectilePatternExecutor
         return pxPerFrame / PixelPerUnit;
     }
 
-    private static float ResolveSpeed(PotionPhaseSpec phase, float defaultPxPerFrame)
-    {
-        float specDefault = PxPerFrameToUnitsPerSecond(defaultPxPerFrame);
-        if (phase != null && phase.projectileSpeed > 0f)
-        {
-            return Mathf.Max(phase.projectileSpeed, specDefault);
-        }
-
-        return specDefault;
-    }
-
     private static bool TryWaitUntil(float targetTime, float maxEndTime, out float wait)
     {
         wait = 0f;
@@ -363,9 +412,10 @@ public static class ProjectilePatternExecutor
         return time < maxEndTime - EndInclusiveEpsilon;
     }
 
-    private static Vector2 DirFromAngleUpClockwise(float degrees)
+    private static Vector2 DirFromBaseClockwise(Vector2 baseDirection, float degrees)
     {
-        float rad = degrees * Mathf.Deg2Rad;
-        return new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)).normalized;
+        Vector2 baseDir = baseDirection.sqrMagnitude < 0.0001f ? Vector2.up : baseDirection.normalized;
+        Vector3 rotated = Quaternion.Euler(0f, 0f, -degrees) * (Vector3)baseDir;
+        return new Vector2(rotated.x, rotated.y).normalized;
     }
 }

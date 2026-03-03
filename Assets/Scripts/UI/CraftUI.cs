@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
@@ -114,7 +114,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             potSlot2Image.enabled = true;
             nextReplaceIndex = 0;
         }
-        Debug.Log("???묎덩???ш끽維쀩????⑤베堉?!");
+        Debug.Log("[CraftUI] Material selected for crafting.");
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -126,9 +126,9 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
         if (!gameStarted && (slot1Item == null || slot2Item == null))
         {
-                Debug.Log("재료가 부족합니다!");
-                isPointerPressed = false;
-                return;
+            Debug.Log("[CraftUI] Not enough materials to start crafting.");
+            isPointerPressed = false;
+            return;
         }
     }
 
@@ -228,6 +228,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         isDragging = false;
         isPointerPressed = false;
         wasDraggingDuringGame = false;
+        EnsureInventory();
 
         PotionTemp potionTemp = DeterminePotionTemp(gaugeValue);
         string resultName = GetPotionName(potionTemp);
@@ -243,11 +244,22 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             PotionData craftedPotion = CraftPotion(slot1Item, slot2Item, potionTemp);
             if (craftedPotion != null)
             {
-                inventory.AddPotion(craftedPotion, 1);
+                if (inventory != null)
+                {
+                    inventory.AddPotion(craftedPotion, 1);
+                    if (inventoryUI != null)
+                    {
+                        inventoryUI.RefreshUI();
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[CraftUI] Inventory reference is missing. Crafted potion was not added.");
+                }
             }
         }
 
-        Debug.Log($"?濡ろ뜐??????ろ꼤嶺? ?濡ろ뜐???ル쵐??: {gaugeValue:F1}");
+        Debug.Log($"[CraftUI] Crafting finished. Gauge: {gaugeValue:F1}");
 
         RemoveUsedMaterials();
 
@@ -255,6 +267,12 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     }
     private void RemoveUsedMaterials()
     {
+        EnsureInventory();
+        if (inventory == null)
+        {
+            return;
+        }
+
         if (slot1Item != null)
         {
             int index = inventory.MaterialItems.IndexOf(slot1Item);
@@ -383,6 +401,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     private void InitializeUiRefs()
     {
+        EnsureInventory();
         EnsureInventoryUI();
         EnsureCloseButton();
         EnsureResetButton();
@@ -660,6 +679,17 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
     }
 
+    private void EnsureInventory()
+    {
+        if (inventory != null) return;
+
+        inventory = Inventory.Instance;
+        if (inventory == null)
+        {
+            inventory = FindFirstObjectByType<Inventory>(FindObjectsInactive.Include);
+        }
+    }
+
     private void EnsureBellowsRefs()
     {
         if (bellowsImage == null)
@@ -814,40 +844,37 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     }
     public static PotionTemp DeterminePotionTemp(float gaugeValue)
     {
-        float failMax = 100f * (1f / 7f);
-        float lowMax = 100f * (3f / 7f);
-        float midMax = 100f * (6f / 7f);
-
-        if (gaugeValue < failMax)
-            return PotionTemp.Failure;
-        else if (gaugeValue < lowMax)
-            return PotionTemp.LowTemp;
-        else if (gaugeValue < midMax)
-            return PotionTemp.MidTemp;
-        else
-            return PotionTemp.HighTemp;
+        CraftTemperatureBand band = PotionCraftRules.DetermineBand(gaugeValue);
+        return band switch
+        {
+            CraftTemperatureBand.Low => PotionTemp.LowTemp,
+            CraftTemperatureBand.Mid => PotionTemp.MidTemp,
+            CraftTemperatureBand.High => PotionTemp.HighTemp,
+            _ => PotionTemp.Failure
+        };
     }
     public static string GetPotionName(PotionTemp type)
     {
-        return type switch
+        CraftTemperatureBand band = type switch
         {
-            PotionTemp.Failure => "FAILED",
-            PotionTemp.LowTemp => "LOW TEMP POTION",
-            PotionTemp.MidTemp => "MID TEMP POTION",
-            PotionTemp.HighTemp => "HIGH TEMP POTION",
-            _ => "Unknown"
+            PotionTemp.LowTemp => CraftTemperatureBand.Low,
+            PotionTemp.MidTemp => CraftTemperatureBand.Mid,
+            PotionTemp.HighTemp => CraftTemperatureBand.High,
+            _ => CraftTemperatureBand.Failure
         };
+        return PotionCraftRules.GetPotionName(band);
     }
 
     private static PotionTemperature ToPotionTemperature(PotionTemp tempType)
     {
-        return tempType switch
+        CraftTemperatureBand band = tempType switch
         {
-            PotionTemp.LowTemp => PotionTemperature.Low,
-            PotionTemp.MidTemp => PotionTemperature.Mid,
-            PotionTemp.HighTemp => PotionTemperature.High,
-            _ => PotionTemperature.Failure
+            PotionTemp.LowTemp => CraftTemperatureBand.Low,
+            PotionTemp.MidTemp => CraftTemperatureBand.Mid,
+            PotionTemp.HighTemp => CraftTemperatureBand.High,
+            _ => CraftTemperatureBand.Failure
         };
+        return PotionCraftRules.ToPotionTemperature(band);
     }
 
     public PotionData CraftPotion(Item first, Item second, PotionTemp tempType)

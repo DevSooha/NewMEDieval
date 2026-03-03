@@ -52,6 +52,7 @@ public class PlayerAttackSystem : MonoBehaviour
     private readonly List<GameObject> activeMarkers = new();
     private readonly List<Tilemap> cachedGroundTilemaps = new();
     private bool groundTilemapsCached;
+    private float nextInventoryUiResolveTime;
 
 
     void Start()
@@ -116,23 +117,100 @@ public class PlayerAttackSystem : MonoBehaviour
         }
     }
 
-    public void EquipPotionFromInventory(Potion potion)
+    public bool EquipPotionFromInventory(Potion potion)
     {
         if (potion == null || potion.data == null)
-            return;
+            return false;
 
         EnsureCoreSlots();
-        int potionSlotIndex = 1;
+        int existingSlotIndex = FindEquippedPotionSlotIndex(potion);
+        if (existingSlotIndex >= 0)
+        {
+            return true;
+        }
+
+        int potionSlotIndex = FindFirstAvailablePotionSlotIndex();
+        if (potionSlotIndex < 0)
+        {
+            NotifyPotionEquipFailed("No empty potion slot available.");
+            return false;
+        }
 
         WeaponSlot slot = slots[potionSlotIndex];
+        if (slot == null)
+        {
+            slot = new WeaponSlot();
+        }
+
         slot.type = WeaponType.PotionBomb;
         slot.equippedPotion = potion;
-        slot.count = potion.quantity;
+        slot.count = Mathf.Max(1, potion.quantity);
         slot.specificPrefab = null;
 
         slots[potionSlotIndex] = slot;
         NotifyWeaponSlotsChanged(compactSlots: false);
+        return true;
+    }
 
+    public int FindFirstAvailablePotionSlotIndex()
+    {
+        EnsureCoreSlots();
+        for (int i = 1; i < slots.Count; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot == null)
+            {
+                return i;
+            }
+
+            if (slot.type == WeaponType.None && slot.equippedPotion == null)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private int FindEquippedPotionSlotIndex(Potion potion)
+    {
+        if (potion == null)
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < slots.Count; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot == null)
+            {
+                continue;
+            }
+
+            if (slot.type != WeaponType.PotionBomb)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(slot.equippedPotion, potion))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void NotifyPotionEquipFailed(string message)
+    {
+        TryResolveInventoryUI();
+
+        if (inventoryUI != null)
+        {
+            inventoryUI.RefreshUI();
+        }
+
+        Debug.LogWarning($"[PlayerAttackSystem] {message}");
     }
 
     void UpdateAimDirection()
@@ -217,7 +295,7 @@ public class PlayerAttackSystem : MonoBehaviour
             float duration = Time.time - chargeStartTime;
             int spawnedCount = duration < 0.5f
                 ? (SpawnBombAt(1) ? 1 : 0)
-                : SpawnBombsByStack();
+                : SpawnBombsAtMarkerTiles();
 
             if (spawnedCount > 0)
             {
@@ -304,33 +382,64 @@ public class PlayerAttackSystem : MonoBehaviour
         Vector2 spawnPos = (Vector2)transform.position + (distance * tileSize * GetAimDirection());
         if (!CanPlaceBombAtDistance(distance)) return false;
 
+        return SpawnBombAtPosition(spawnPos);
+    }
+
+    private bool SpawnBombAtPosition(Vector2 spawnPos)
+    {
+        if (slots.Count == 0) return false;
+        if (slots[0].type != WeaponType.PotionBomb) return false;
+        if (!CanPlaceBombAtPosition(spawnPos)) return false;
+
         WeaponSlot slot = slots[0];
-        GameObject prefabToUse = slot.specificPrefab != null ? slot.specificPrefab : defaultBombPrefab;
+        GameObject prefabToUse = defaultBombPrefab != null ? defaultBombPrefab : slot.specificPrefab;
         if (prefabToUse == null) return false;
 
         GameObject bombObj = Instantiate(prefabToUse, spawnPos, Quaternion.identity);
         Bomb bomb = bombObj.GetComponent<Bomb>();
-        if (bomb != null && slot.equippedPotion != null && slot.equippedPotion.data != null)
+        if (bomb != null)
         {
-            bomb.ConfigureFromPotionData(slot.equippedPotion.data);
+            bomb.SetProjectileOwner(transform);
+            if (slot.equippedPotion != null && slot.equippedPotion.data != null)
+            {
+                bomb.ConfigureFromPotionData(slot.equippedPotion.data);
+            }
+        }
+
+        if (slot.equippedPotion != null && slot.equippedPotion.data != null)
+        {
+            BombVisualRenderer visualRenderer = bombObj.GetComponent<BombVisualRenderer>();
+            if (visualRenderer == null)
+            {
+                visualRenderer = bombObj.AddComponent<BombVisualRenderer>();
+            }
+
+            visualRenderer.Apply(slot.equippedPotion.data);
         }
 
         return true;
     }
 
-    int SpawnBombsByStack()
+    int SpawnBombsAtMarkerTiles()
     {
-        if (currentStack == 0)
+        if (activeMarkers.Count == 0)
         {
             return SpawnBombAt(1) ? 1 : 0;
         }
 
         int spawnedCount = 0;
-        for (int i = 1; i <= currentStack; i++)
+        for (int i = 0; i < activeMarkers.Count; i++)
         {
-            if (!SpawnBombAt(i))
+            GameObject marker = activeMarkers[i];
+            if (marker == null)
             {
-                break;
+                continue;
+            }
+
+            Vector2 markerPosition = marker.transform.position;
+            if (!SpawnBombAtPosition(markerPosition))
+            {
+                continue;
             }
 
             spawnedCount++;
@@ -342,6 +451,11 @@ public class PlayerAttackSystem : MonoBehaviour
     bool CanPlaceBombAtDistance(int distance)
     {
         Vector2 spawnPos = (Vector2)transform.position + (distance * tileSize * GetAimDirection());
+        return CanPlaceBombAtPosition(spawnPos);
+    }
+
+    bool CanPlaceBombAtPosition(Vector2 spawnPos)
+    {
         if (!IsValidTile(spawnPos))
         {
             return false;
@@ -672,15 +786,28 @@ public class PlayerAttackSystem : MonoBehaviour
     {
         RefreshWeaponSlotUI();
 
-        if (inventoryUI == null)
-        {
-            inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
-        }
+        TryResolveInventoryUI();
 
         if (inventoryUI != null)
         {
             inventoryUI.RefreshUI();
         }
+    }
+
+    private void TryResolveInventoryUI()
+    {
+        if (inventoryUI != null)
+        {
+            return;
+        }
+
+        if (Time.unscaledTime < nextInventoryUiResolveTime)
+        {
+            return;
+        }
+
+        nextInventoryUiResolveTime = Time.unscaledTime + 0.25f;
+        inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
     }
 
     public void NotifyWeaponSlotsChanged(bool compactSlots = true)

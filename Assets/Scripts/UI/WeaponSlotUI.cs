@@ -21,6 +21,7 @@ public class WeaponSlotUI : MonoBehaviour
     private readonly RectTransform[] slotRoots = new RectTransform[4];
     private readonly Image[] slotTopImages = new Image[4];
     private readonly Image[] slotBottomImages = new Image[4];
+    private readonly Image[] slotShellImages = new Image[4];
     private readonly TextMeshProUGUI[] slotCountTexts = new TextMeshProUGUI[4];
 
     private void Awake()
@@ -51,8 +52,9 @@ public class WeaponSlotUI : MonoBehaviour
         for (int i = 0; i < slotRoots.Length; i++)
         {
             RectTransform slot = slotRoots[i];
-            slotBottomImages[i] = EnsureSlotLayerImage(slot, "BottomHalf", 0);
-            slotTopImages[i] = EnsureSlotLayerImage(slot, "TopHalf", 1);
+            slotBottomImages[i] = EnsureSlotLayerImage(slot, "BottomHalf", 1);
+            slotTopImages[i] = EnsureSlotLayerImage(slot, "TopHalf", 2);
+            slotShellImages[i] = EnsureSlotLayerImage(slot, "Shell", 3);
             slotCountTexts[i] = EnsureSlotCountLabel(slot, $"Slot{i + 1}Count");
 
             AttachClickHandler(slot, i);
@@ -73,8 +75,8 @@ public class WeaponSlotUI : MonoBehaviour
 
         for (int i = 0; i < slotRoots.Length; i++)
         {
-            ResolveSpritesForSlot(i, out Sprite topSprite, out Sprite bottomSprite);
-            ApplySlotVisual(i, topSprite, bottomSprite);
+            ResolveSpritesForSlot(i, out Sprite topSprite, out Sprite bottomSprite, out Sprite shellSprite);
+            ApplySlotVisual(i, topSprite, bottomSprite, shellSprite);
             RefreshCountLabel(i);
         }
     }
@@ -84,10 +86,11 @@ public class WeaponSlotUI : MonoBehaviour
         Refresh();
     }
 
-    private void ResolveSpritesForSlot(int index, out Sprite topSprite, out Sprite bottomSprite)
+    private void ResolveSpritesForSlot(int index, out Sprite topSprite, out Sprite bottomSprite, out Sprite shellSprite)
     {
         topSprite = null;
         bottomSprite = null;
+        shellSprite = null;
 
         if (attackSystem == null || attackSystem.slots == null || attackSystem.slots.Count <= index)
         {
@@ -100,25 +103,16 @@ public class WeaponSlotUI : MonoBehaviour
         {
             topSprite = meleeSprite;
             bottomSprite = null;
+            shellSprite = null;
             return;
         }
 
         if (slot.type == WeaponType.PotionBomb && slot.equippedPotion != null && slot.equippedPotion.data != null)
         {
-            PotionData data = slot.equippedPotion.data;
-
-            topSprite = data.topIMG != null
-                ? data.topIMG
-                : (data.icon != null ? data.icon : data.bottomIMG);
-
-            bottomSprite = data.bottomIMG != null
-                ? data.bottomIMG
-                : null;
-
-            if (bottomSprite == topSprite)
-            {
-                bottomSprite = null;
-            }
+            PotionVisualParts visualParts = PotionVisualResolver.Resolve(slot.equippedPotion.data);
+            topSprite = visualParts.Top;
+            bottomSprite = visualParts.Bottom;
+            shellSprite = visualParts.Frame != null ? visualParts.Frame : slot.equippedPotion.data.icon;
 
             return;
         }
@@ -133,7 +127,7 @@ public class WeaponSlotUI : MonoBehaviour
         }
     }
 
-    private void ApplySlotVisual(int index, Sprite topSprite, Sprite bottomSprite)
+    private void ApplySlotVisual(int index, Sprite topSprite, Sprite bottomSprite, Sprite shellSprite)
     {
         if (index < 0 || index >= slotTopImages.Length)
         {
@@ -142,6 +136,7 @@ public class WeaponSlotUI : MonoBehaviour
 
         Image top = slotTopImages[index];
         Image bottom = slotBottomImages[index];
+        Image shell = slotShellImages[index];
 
         if (bottom != null)
         {
@@ -155,6 +150,13 @@ public class WeaponSlotUI : MonoBehaviour
             top.sprite = topSprite;
             top.enabled = topSprite != null;
             top.color = Color.white;
+        }
+
+        if (shell != null)
+        {
+            shell.sprite = shellSprite;
+            shell.enabled = shellSprite != null;
+            shell.color = Color.white;
         }
     }
 

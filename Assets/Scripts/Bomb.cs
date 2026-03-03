@@ -2,80 +2,90 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class Bomb : MonoBehaviour
 {
-    private const float PatternWindowSeconds = 8f;
+    private const float PatternTotalSeconds = 8f;
     private const float SecondPhaseDelaySeconds = 2f;
-    private const float AfterimageHazardDurationSeconds = 2f;
-    private const float AfterimageHazardSizeUnits = 2f; // 64px with 32px = 1u
+    private const float AfterimageExplosionDurationSeconds = 2f;
+    private const float AfterimageExplosionSizePx = 64f;
+    private const float PixelPerUnit = 32f;
+    private const float LineAngleToleranceDeg = 0.5f;
 
     [Header("Bomb Settings")]
     public ElementType bombElement = ElementType.Water;
     public int baseDamage = 200;
     public float timeToExplode = 2.0f;
-    public float explosionRadius = 1.5f;
     public GameObject explosionEffect;
-    [SerializeField] private float projectileLifetime = 2.5f;
-    [SerializeField] private float projectileSpawnOffset = 0.1f;
-    [SerializeField] private bool spawnProjectilePatterns = true;
 
-    [Header("Projectile VFX")]
+    [Header("Bomb Visual")]
+    [SerializeField] private BombVisualRenderer visualRenderer;
+
+    [Header("Pattern Projectile")]
+    [SerializeField] private GameObject projectilePrefab;
     [SerializeField] private GameObject waterProjectileVfxPrefab;
     [SerializeField] private GameObject fireProjectileVfxPrefab;
     [SerializeField] private GameObject electricProjectileVfxPrefab;
+    [FormerlySerializedAs("projectileLifetime")]
+    [SerializeField] private float defaultProjectileLifetime = 3f;
+    [SerializeField] private float projectileLifetimeFromPhaseDurationScale = 0.35f;
+    [SerializeField] private float minProjectileLifetime = 0.25f;
+    [FormerlySerializedAs("projectileSpawnOffset")]
+    [SerializeField] private float projectileSpawnOffset = 0.1f;
 
+    [Header("Debug")]
+    [FormerlySerializedAs("debugDisablePatternSpawn")]
+    [FormerlySerializedAs("spawnProjectilePatterns")]
+    [SerializeField] private bool spawnProjectilePatterns = true;
+    [SerializeField] private bool debugVisualOnlyExplosion;
+
+    private PotionData sourcePotionData;
+    private Transform projectileOwner;
     private PotionPhaseSpec phase1Spec;
     private PotionPhaseSpec phase2Spec;
-    private bool hasPotionSpecs;
-    private bool exploded;
+    private int bombInstanceId;
+    private Coroutine lifecycleRoutine;
+    private Coroutine phase1Routine;
+    private Coroutine phase2Routine;
+    private readonly List<Coroutine> rotationRoutines = new List<Coroutine>();
+    private readonly List<Transform> phaseGroups = new List<Transform>();
+    private readonly List<PotionProjectileController> spawnedProjectiles = new List<PotionProjectileController>();
+    private readonly List<PotionAreaHazard> spawnedHazards = new List<PotionAreaHazard>();
+    private bool suppressForcedCleanup;
 
-    private float activeSequenceEndTime;
-    private bool patternSequenceRunning;
-    private ProjectilePatternType activePatternType = ProjectilePatternType.Fireworks;
-
-    private readonly List<PotionProjectileController> activeProjectiles = new List<PotionProjectileController>();
-    private readonly List<PotionAreaHazard> activeHazards = new List<PotionAreaHazard>();
-    private readonly List<Transform> runtimeGroups = new List<Transform>();
-    private readonly Dictionary<Transform, Coroutine> groupRotationRoutines = new Dictionary<Transform, Coroutine>();
-
-    private void Start()
+    private void Awake()
     {
-        StartCoroutine(ExplodeSequence());
-    }
-
-    private void OnDisable()
-    {
-        ForceImmediateCleanup();
+        bombInstanceId = gameObject.GetInstanceID();
+        ResolveVisualRenderer();
     }
 
     public void ConfigureFromPotionData(PotionData potionData)
     {
-        if (potionData == null) return;
-
-        phase1Spec = potionData.GetPhase(0);
-        phase2Spec = potionData.GetPhase(1);
-        hasPotionSpecs = phase1Spec != null || phase2Spec != null;
-
-        if (!hasPotionSpecs)
+        sourcePotionData = potionData;
+        if (potionData != null)
         {
-            return;
+            baseDamage = Mathf.Max(1, potionData.damage1 + potionData.damage2);
+            bombElement = potionData.element1 switch
+            {
+                Element.Fire => ElementType.Fire,
+                Element.Lightning => ElementType.Electric,
+                _ => ElementType.Water
+            };
         }
 
-        int combinedDamage = 0;
-        if (phase1Spec != null) combinedDamage += Mathf.Max(0, phase1Spec.baseDamage);
-        if (phase2Spec != null) combinedDamage += Mathf.Max(0, phase2Spec.baseDamage);
+        ApplyPotionVisual();
+    }
 
-        if (combinedDamage > 0)
-        {
-            baseDamage = combinedDamage;
-        }
+    public void SetProjectileOwner(Transform ownerTransform)
+    {
+        projectileOwner = ownerTransform;
+    }
 
-        PotionPhaseSpec leadSpec = phase1Spec != null ? phase1Spec : phase2Spec;
-        if (leadSpec != null)
-        {
-            bombElement = leadSpec.primaryElement;
-        }
+    private void Start()
+    {
+        ApplyPotionVisual();
+        StartCoroutine(ExplodeSequence());
     }
 
     private IEnumerator ExplodeSequence()
@@ -86,430 +96,405 @@ public class Bomb : MonoBehaviour
 
     private void Explode()
     {
-        if (exploded) return;
-        exploded = true;
-
         if (explosionEffect != null)
         {
             Instantiate(explosionEffect, transform.position, Quaternion.identity);
         }
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
-        HashSet<EnemyCombat> hitEnemies = new HashSet<EnemyCombat>();
-        HashSet<BossHealth> hitBosses = new HashSet<BossHealth>();
-        HashSet<PlayerHealth> hitPlayers = new HashSet<PlayerHealth>();
-
-        foreach (Collider2D hit in hits)
+        // AoE direct damage is intentionally removed. Bombs now deal damage only via spawned pattern projectiles.
+        if (debugVisualOnlyExplosion || !spawnProjectilePatterns)
         {
-            EnemyCombat enemy = hit.GetComponent<EnemyCombat>();
-            if (enemy == null) enemy = hit.GetComponentInParent<EnemyCombat>();
-            if (enemy != null && hitEnemies.Add(enemy))
-            {
-                if (hasPotionSpecs)
-                {
-                    ApplyPotionSpecsToEnemy(enemy);
-                }
-                else
-                {
-                    enemy.EnemyTakeDamage(baseDamage);
-                }
-            }
-
-            BossHealth boss = hit.GetComponent<BossHealth>();
-            if (boss == null) boss = hit.GetComponentInParent<BossHealth>();
-            if (boss != null && hitBosses.Add(boss))
-            {
-                if (hasPotionSpecs)
-                {
-                    ApplyPotionSpecsToBoss(boss);
-                }
-                else
-                {
-                    boss.TakeDamage(baseDamage, bombElement);
-                }
-            }
-
-            PlayerHealth player = hit.GetComponent<PlayerHealth>();
-            if (player == null) player = hit.GetComponentInParent<PlayerHealth>();
-            if (player != null && hitPlayers.Add(player) && hasPotionSpecs)
-            {
-                ApplyPotionSpecsToPlayer(player);
-            }
-
-            if (hit.CompareTag("Grass"))
-            {
-                Destroy(hit.gameObject);
-            }
-        }
-
-        if (hasPotionSpecs && spawnProjectilePatterns)
-        {
-            StartCoroutine(SpawnPotionProjectilePatternsAndDestroy());
+            Destroy(gameObject);
             return;
         }
 
-        Destroy(gameObject);
+        if (lifecycleRoutine != null)
+        {
+            StopCoroutine(lifecycleRoutine);
+        }
+
+        lifecycleRoutine = StartCoroutine(RunPatternLifecycle());
     }
 
-    private void ApplyPotionSpecsToEnemy(EnemyCombat enemy)
+    private IEnumerator RunPatternLifecycle()
     {
-        if (enemy == null) return;
+        phase1Spec = sourcePotionData != null ? sourcePotionData.GetPhase(0) : null;
+        phase2Spec = sourcePotionData != null ? sourcePotionData.GetPhase(1) : null;
+
+        if (phase1Spec == null && phase2Spec == null)
+        {
+            phase1Spec = BuildFallbackPhase();
+        }
+
+        Vector2 anchorCenter = ResolveAnchorCenter();
+        Vector2 baseDirection = ResolveBaseDirection();
+
+        float patternStartTime = Time.time;
+        float globalEndTime = patternStartTime + PatternTotalSeconds;
 
         if (phase1Spec != null)
         {
-            PotionHitResolver.ApplySpecToEnemy(phase1Spec, enemy);
+            phase1Routine = StartCoroutine(RunPatternPhase(
+                phase1Spec,
+                true,
+                anchorCenter,
+                baseDirection,
+                patternStartTime,
+                globalEndTime));
         }
 
         if (phase2Spec != null)
         {
-            PotionHitResolver.ApplySpecToEnemy(phase2Spec, enemy);
-        }
-    }
-
-    private void ApplyPotionSpecsToBoss(BossHealth boss)
-    {
-        if (boss == null) return;
-
-        if (phase1Spec != null)
-        {
-            PotionHitResolver.ApplySpecToBoss(phase1Spec, boss);
+            phase2Routine = StartCoroutine(RunPatternPhaseWithDelay(
+                phase2Spec,
+                anchorCenter,
+                baseDirection,
+                patternStartTime + SecondPhaseDelaySeconds,
+                globalEndTime));
         }
 
-        if (phase2Spec != null)
-        {
-            PotionHitResolver.ApplySpecToBoss(phase2Spec, boss);
-        }
-    }
-
-    private void ApplyPotionSpecsToPlayer(PlayerHealth player)
-    {
-        if (player == null) return;
-
-        if (phase1Spec != null)
-        {
-            PotionHitResolver.ApplySpecToPlayer(phase1Spec, player);
-        }
-
-        if (phase2Spec != null)
-        {
-            PotionHitResolver.ApplySpecToPlayer(phase2Spec, player);
-        }
-    }
-
-    private IEnumerator SpawnPotionProjectilePatternsAndDestroy()
-    {
-        activeSequenceEndTime = Time.time + PatternWindowSeconds;
-        patternSequenceRunning = true;
-        activePatternType = ResolveSharedPatternType();
-
-        if (phase1Spec != null)
-        {
-            StartCoroutine(ExecutePhaseWithDelay(phase1Spec, true, 0f, activePatternType, activeSequenceEndTime));
-        }
-
-        if (phase2Spec != null)
-        {
-            StartCoroutine(ExecutePhaseWithDelay(phase2Spec, false, SecondPhaseDelaySeconds, activePatternType, activeSequenceEndTime));
-        }
-
-        Collider2D ownCollider = GetComponent<Collider2D>();
-        if (ownCollider != null)
-        {
-            ownCollider.enabled = false;
-        }
-
-        SpriteRenderer ownRenderer = GetComponent<SpriteRenderer>();
-        if (ownRenderer != null)
-        {
-            ownRenderer.enabled = false;
-        }
-
-        while (Time.time < activeSequenceEndTime)
+        while (Time.time < globalEndTime)
         {
             yield return null;
         }
 
-        if (activePatternType == ProjectilePatternType.AfterimageBomb)
-        {
-            ConvertAfterimageProjectilesToHazards(true, 1);
-            ConvertAfterimageProjectilesToHazards(false, 2);
-        }
+        StopActivePatternRoutines();
+        ConvertAfterimageProjectilesToHazards();
+        CleanupPatternState(destroyProjectiles: true, destroyHazards: false, destroyGroups: true, stopCoroutines: false);
 
-        CleanupRuntimeObjects(includeHazards: false);
-
-        yield return WaitForHazardsToExpire(AfterimageHazardDurationSeconds + 0.2f);
-
-        patternSequenceRunning = false;
+        suppressForcedCleanup = true;
+        lifecycleRoutine = null;
         Destroy(gameObject);
     }
 
-    private IEnumerator ExecutePhaseWithDelay(PotionPhaseSpec phase, bool isFirstPhase, float delay, ProjectilePatternType forcedPatternType, float sequenceEndTime)
+    private IEnumerator RunPatternPhaseWithDelay(
+        PotionPhaseSpec phase,
+        Vector2 anchorCenter,
+        Vector2 baseDirection,
+        float phaseStartTime,
+        float globalEndTime)
+    {
+        if (!TryWaitUntil(phaseStartTime, globalEndTime, out float waitToPhase))
+        {
+            yield break;
+        }
+
+        if (waitToPhase > 0f)
+        {
+            yield return new WaitForSeconds(waitToPhase);
+        }
+
+        if (Time.time >= globalEndTime)
+        {
+            yield break;
+        }
+
+        yield return StartCoroutine(RunPatternPhase(
+            phase,
+            false,
+            anchorCenter,
+            baseDirection,
+            phaseStartTime,
+            globalEndTime));
+    }
+
+    private IEnumerator RunPatternPhase(
+        PotionPhaseSpec phase,
+        bool isFirstPhase,
+        Vector2 anchorCenter,
+        Vector2 baseDirection,
+        float phaseStartTime,
+        float globalEndTime)
     {
         if (phase == null)
         {
             yield break;
         }
 
-        if (delay > 0f)
+        Transform phaseGroup = new GameObject(isFirstPhase ? "BombPhase1Group" : "BombPhase2Group").transform;
+        phaseGroup.position = anchorCenter;
+        phaseGroup.rotation = Quaternion.identity;
+        phaseGroups.Add(phaseGroup);
+
+        Coroutine rotateRoutine = null;
+        float groupRotateSpeedDegPerSec = 0f;
+
+        void SetGroupRotationActive(bool active, float speedDegPerSec)
         {
-            yield return new WaitForSeconds(delay);
-        }
+            groupRotateSpeedDegPerSec = active ? speedDegPerSec : 0f;
 
-        if (Time.time >= sequenceEndTime || !patternSequenceRunning)
-        {
-            yield break;
-        }
-
-        Transform group = null;
-        Action<bool, float> rotationSetter = null;
-
-        if (forcedPatternType == ProjectilePatternType.Tornado)
-        {
-            group = CreateRuntimeGroup(isFirstPhase ? "TornadoGroup_Phase1" : "TornadoGroup_Phase2");
-            rotationSetter = (active, speed) => SetGroupRotation(group, active, speed);
-        }
-
-        yield return ProjectilePatternExecutor.ExecutePhase(
-            phase,
-            isFirstPhase,
-            transform,
-            request => SpawnProjectileFromPhase(phase, request),
-            rotationSetter,
-            group,
-            forcedPatternType,
-            sequenceEndTime);
-
-        if (group != null)
-        {
-            SetGroupRotation(group, false, 0f);
-        }
-    }
-
-    private ProjectilePatternType ResolveSharedPatternType()
-    {
-        if (phase1Spec != null)
-        {
-            return phase1Spec.patternType;
-        }
-
-        if (phase2Spec != null)
-        {
-            return phase2Spec.patternType;
-        }
-
-        return ProjectilePatternType.Fireworks;
-    }
-
-    private Transform CreateRuntimeGroup(string groupName)
-    {
-        GameObject groupObj = new GameObject(groupName);
-        groupObj.transform.SetParent(transform, false);
-        groupObj.transform.localPosition = Vector3.zero;
-        groupObj.transform.localRotation = Quaternion.identity;
-        runtimeGroups.Add(groupObj.transform);
-        return groupObj.transform;
-    }
-
-    private void SetGroupRotation(Transform group, bool active, float speedDegPerSec)
-    {
-        if (group == null)
-        {
-            return;
-        }
-
-        if (!active)
-        {
-            if (groupRotationRoutines.TryGetValue(group, out Coroutine running))
+            if (active)
             {
-                if (running != null)
+                if (rotateRoutine == null)
                 {
-                    StopCoroutine(running);
+                    rotateRoutine = StartCoroutine(RotateGroupRoutine(phaseGroup, () => groupRotateSpeedDegPerSec));
+                    rotationRoutines.Add(rotateRoutine);
                 }
 
-                groupRotationRoutines.Remove(group);
+                return;
             }
 
-            return;
+            if (rotateRoutine != null)
+            {
+                StopCoroutine(rotateRoutine);
+                rotationRoutines.Remove(rotateRoutine);
+                rotateRoutine = null;
+            }
         }
 
-        if (groupRotationRoutines.ContainsKey(group))
+        yield return StartCoroutine(ProjectilePatternExecutor.ExecutePhase(
+            phase,
+            isFirstPhase,
+            anchorCenter,
+            baseDirection,
+            SpawnPatternProjectile,
+            SetGroupRotationActive,
+            phaseGroup,
+            null,
+            phaseStartTime,
+            globalEndTime));
+
+        if (rotateRoutine != null)
         {
-            return;
+            StopCoroutine(rotateRoutine);
+            rotationRoutines.Remove(rotateRoutine);
         }
 
-        Coroutine routine = StartCoroutine(RotateGroupClockwise(group, Mathf.Abs(speedDegPerSec)));
-        groupRotationRoutines[group] = routine;
+        if (phaseGroup != null)
+        {
+            phaseGroups.Remove(phaseGroup);
+            Destroy(phaseGroup.gameObject);
+        }
     }
 
-    private IEnumerator RotateGroupClockwise(Transform group, float speedDegPerSec)
+    private IEnumerator RotateGroupRoutine(Transform phaseGroup, Func<float> getRotateSpeed)
     {
-        while (patternSequenceRunning && group != null)
+        while (phaseGroup != null)
         {
-            group.Rotate(0f, 0f, -speedDegPerSec * Time.deltaTime, Space.Self);
+            float rotateSpeed = getRotateSpeed != null ? getRotateSpeed() : 0f;
+            if (Mathf.Abs(rotateSpeed) > 0.01f)
+            {
+                phaseGroup.Rotate(0f, 0f, -rotateSpeed * Time.deltaTime);
+            }
+
             yield return null;
         }
     }
 
-    private void SpawnProjectileFromPhase(PotionPhaseSpec phase, PatternSpawnRequest request)
+    private void SpawnPatternProjectile(PatternSpawnRequest request)
     {
-        if (phase == null || !patternSequenceRunning) return;
-
-        GameObject projectilePrefab = ResolveProjectilePrefab(phase);
-        GameObject projectileObj = projectilePrefab != null
-            ? Instantiate(projectilePrefab)
-            : new GameObject("PotionProjectile");
-
-        projectileObj.name = "PotionProjectile";
+        PotionPhaseSpec phase = ResolvePhaseSpec(request.PhaseIndex);
+        if (phase == null)
+        {
+            return;
+        }
 
         Vector2 dir = request.Direction.sqrMagnitude > 0.0001f ? request.Direction.normalized : Vector2.up;
-        float totalOffset = Mathf.Max(0f, projectileSpawnOffset + request.SpawnOffsetUnits);
-        Vector2 spawnPos = (Vector2)transform.position + (dir * totalOffset);
-        projectileObj.transform.position = spawnPos;
+        float offsetUnits = Mathf.Max(0f, request.SpawnOffsetUnits) + Mathf.Max(0f, projectileSpawnOffset);
+        Vector3 offset = (Vector3)(dir * offsetUnits);
+        bool useLocalSpaceMovement = request.PatternType == ProjectilePatternType.Tornado && request.ParentGroup != null;
+        Vector3 anchorCenter = new Vector3(request.AnchorCenter.x, request.AnchorCenter.y, transform.position.z);
 
-        if (request.ParentGroup != null)
+        GameObject prefabToSpawn = ResolvePatternProjectilePrefab(phase);
+        GameObject projectileObj = prefabToSpawn != null
+            ? Instantiate(prefabToSpawn)
+            : new GameObject("PotionPatternProjectile");
+
+        Transform projectileTransform = projectileObj.transform;
+        if (useLocalSpaceMovement)
         {
-            projectileObj.transform.SetParent(request.ParentGroup, true);
+            projectileTransform.SetParent(request.ParentGroup, false);
+            projectileTransform.localPosition = offset;
+            projectileTransform.localRotation = Quaternion.identity;
+        }
+        else
+        {
+            projectileTransform.position = anchorCenter + offset;
         }
 
-        PotionProjectileController projectile = projectileObj.GetComponent<PotionProjectileController>();
-        if (projectile == null)
+        PotionProjectileController controller = projectileObj.GetComponent<PotionProjectileController>();
+        if (controller == null)
         {
-            projectile = projectileObj.AddComponent<PotionProjectileController>();
+            controller = projectileObj.AddComponent<PotionProjectileController>();
         }
 
-        float life = Mathf.Max(projectileLifetime, Mathf.Max(0.1f, activeSequenceEndTime - Time.time + 0.25f));
-        bool useLocalSpace = request.PatternType == ProjectilePatternType.Tornado && request.ParentGroup != null;
+        Transform hitOwner = projectileOwner != null ? projectileOwner : transform;
+        bool allowFallbackSprite = prefabToSpawn == null;
 
-        projectile.Init(
-            transform,
+        controller.Init(
+            hitOwner,
             phase,
             dir,
             request.SpeedUnitsPerSec,
-            life,
+            ResolveProjectileLifetime(phase),
             0f,
             null,
-            projectilePrefab == null,
-            useLocalSpace,
-            GetInstanceID(),
+            allowFallbackSprite,
+            useLocalSpaceMovement,
+            bombInstanceId,
             request.PhaseIndex,
             request.PatternType,
-            NormalizeAngle(request.LineAngleDeg));
+            request.LineAngleDeg);
 
-        activeProjectiles.Add(projectile);
+        spawnedProjectiles.Add(controller);
     }
 
-    private void ConvertAfterimageProjectilesToHazards(bool isFirstPhase, int phaseIndex)
+    private GameObject ResolvePatternProjectilePrefab(PotionPhaseSpec phase)
     {
-        float[] allowedAngles = ProjectilePatternExecutor.GetAfterimageAngles(isFirstPhase);
-
-        for (int i = 0; i < activeProjectiles.Count; i++)
+        if (projectilePrefab != null)
         {
-            PotionProjectileController projectile = activeProjectiles[i];
+            return projectilePrefab;
+        }
+
+        ElementType element = phase != null ? NormalizeElement(phase.primaryElement) : NormalizeElement(bombElement);
+        return element switch
+        {
+            ElementType.Fire => fireProjectileVfxPrefab,
+            ElementType.Electric => electricProjectileVfxPrefab,
+            _ => waterProjectileVfxPrefab
+        };
+    }
+
+    private PotionPhaseSpec ResolvePhaseSpec(int phaseIndex)
+    {
+        if (phaseIndex == 1) return phase1Spec;
+        if (phaseIndex == 2) return phase2Spec;
+        return phase1Spec ?? phase2Spec;
+    }
+
+    private float ResolveProjectileLifetime(PotionPhaseSpec phase)
+    {
+        if (phase == null)
+        {
+            return Mathf.Max(0.1f, Mathf.Max(defaultProjectileLifetime, PatternTotalSeconds + 0.1f));
+        }
+
+        float scaledByPhase = Mathf.Max(0f, phase.duration) * Mathf.Max(0f, projectileLifetimeFromPhaseDurationScale);
+        float baseLife = scaledByPhase > 0f ? scaledByPhase : defaultProjectileLifetime;
+        float patternMinimum = PatternTotalSeconds + 0.1f;
+        return Mathf.Max(minProjectileLifetime, Mathf.Max(baseLife, patternMinimum));
+    }
+
+    private PotionPhaseSpec BuildFallbackPhase()
+    {
+        return new PotionPhaseSpec
+        {
+            patternType = ProjectilePatternType.Fireworks,
+            duration = 0.2f,
+            projectileSpeed = 6f,
+            baseDamage = Mathf.Max(1, baseDamage),
+            primaryElement = NormalizeElement(bombElement),
+            subElement = ElementType.None,
+            damageTarget = DamageTargetType.EnemyOnly
+        };
+    }
+
+    private void ResolveVisualRenderer()
+    {
+        if (visualRenderer != null)
+        {
+            return;
+        }
+
+        visualRenderer = GetComponent<BombVisualRenderer>();
+        if (visualRenderer == null)
+        {
+            visualRenderer = gameObject.AddComponent<BombVisualRenderer>();
+        }
+    }
+
+    private void ApplyPotionVisual()
+    {
+        ResolveVisualRenderer();
+        if (visualRenderer != null)
+        {
+            visualRenderer.Apply(sourcePotionData);
+        }
+    }
+
+    private static ElementType NormalizeElement(ElementType element)
+    {
+        return element == ElementType.None ? ElementType.Water : element;
+    }
+
+    private Vector2 ResolveAnchorCenter()
+    {
+        // One bomb owns one bullet-pattern center: start from bomb world position.
+        return transform.position;
+    }
+
+    private Vector2 ResolveBaseDirection()
+    {
+        if (projectileOwner == null)
+        {
+            return Vector2.up;
+        }
+
+        Vector2 dir = (Vector2)projectileOwner.position - (Vector2)transform.position;
+        if (dir.sqrMagnitude < 0.0001f)
+        {
+            return Vector2.up;
+        }
+
+        return dir.normalized;
+    }
+
+    private void ConvertAfterimageProjectilesToHazards()
+    {
+        float[] firstPhaseAngles = ProjectilePatternExecutor.GetAfterimageAngles(true);
+        float[] secondPhaseAngles = ProjectilePatternExecutor.GetAfterimageAngles(false);
+        Vector2 hazardSize = Vector2.one * (AfterimageExplosionSizePx / PixelPerUnit);
+
+        for (int i = 0; i < spawnedProjectiles.Count; i++)
+        {
+            PotionProjectileController projectile = spawnedProjectiles[i];
             if (projectile == null) continue;
-            if (projectile.SourceBombId != GetInstanceID()) continue;
+            if (projectile.SourceBombId != bombInstanceId) continue;
             if (projectile.PatternType != ProjectilePatternType.AfterimageBomb) continue;
-            if (projectile.PhaseIndex != phaseIndex) continue;
-            if (!IsAngleMatched(projectile.LineAngleDeg, allowedAngles)) continue;
 
-            SpawnAfterimageHazard(projectile.PhaseSpec, projectile.transform.position);
-            Destroy(projectile.gameObject);
-            activeProjectiles[i] = null;
-        }
-    }
-
-    private void SpawnAfterimageHazard(PotionPhaseSpec phase, Vector2 worldPosition)
-    {
-        if (phase == null) return;
-
-        GameObject hazardObj = new GameObject("PotionAreaHazard");
-        hazardObj.transform.SetParent(transform, true);
-        hazardObj.transform.position = worldPosition;
-
-        PotionAreaHazard hazard = hazardObj.AddComponent<PotionAreaHazard>();
-        hazard.Init(
-            phase,
-            new Vector2(AfterimageHazardSizeUnits, AfterimageHazardSizeUnits),
-            AfterimageHazardDurationSeconds);
-
-        activeHazards.Add(hazard);
-    }
-
-    private IEnumerator WaitForHazardsToExpire(float timeout)
-    {
-        float endTime = Time.time + Mathf.Max(0f, timeout);
-
-        while (Time.time < endTime)
-        {
-            PruneNullHazards();
-            if (activeHazards.Count == 0)
+            bool onAllowedLine = projectile.PhaseIndex switch
             {
-                yield break;
+                1 => IsAngleInLines(projectile.LineAngleDeg, firstPhaseAngles),
+                2 => IsAngleInLines(projectile.LineAngleDeg, secondPhaseAngles),
+                _ => IsAngleInLines(projectile.LineAngleDeg, firstPhaseAngles) || IsAngleInLines(projectile.LineAngleDeg, secondPhaseAngles)
+            };
+
+            if (!onAllowedLine)
+            {
+                continue;
             }
 
-            yield return null;
-        }
-    }
-
-    private void CleanupRuntimeObjects(bool includeHazards)
-    {
-        foreach (KeyValuePair<Transform, Coroutine> pair in groupRotationRoutines)
-        {
-            if (pair.Value != null)
-            {
-                StopCoroutine(pair.Value);
-            }
-        }
-
-        groupRotationRoutines.Clear();
-
-        for (int i = 0; i < activeProjectiles.Count; i++)
-        {
-            PotionProjectileController projectile = activeProjectiles[i];
-            if (projectile == null) continue;
+            PotionPhaseSpec phase = ResolvePhaseSpec(projectile.PhaseIndex) ?? phase1Spec ?? phase2Spec;
+            SpawnAreaHazard(projectile.transform.position, phase, hazardSize, AfterimageExplosionDurationSeconds, projectile.PhaseIndex);
             Destroy(projectile.gameObject);
         }
+    }
 
-        activeProjectiles.Clear();
-
-        for (int i = 0; i < runtimeGroups.Count; i++)
+    private void SpawnAreaHazard(Vector3 worldPosition, PotionPhaseSpec phase, Vector2 sizeUnits, float durationSeconds, int phaseIndex)
+    {
+        if (phase == null)
         {
-            Transform group = runtimeGroups[i];
-            if (group == null) continue;
-            Destroy(group.gameObject);
+            return;
         }
 
-        runtimeGroups.Clear();
+        GameObject hazardObject = new GameObject("PotionAfterimageHazard");
+        hazardObject.transform.position = worldPosition;
 
-        if (includeHazards)
+        PotionAreaHazard hazard = hazardObject.AddComponent<PotionAreaHazard>();
+        hazard.Init(phase, sizeUnits, durationSeconds, bombInstanceId, phaseIndex);
+        spawnedHazards.Add(hazard);
+    }
+
+    private static bool IsAngleInLines(float angleDeg, float[] lineAngles)
+    {
+        if (lineAngles == null)
         {
-            for (int i = 0; i < activeHazards.Count; i++)
-            {
-                PotionAreaHazard hazard = activeHazards[i];
-                if (hazard == null) continue;
-                Destroy(hazard.gameObject);
-            }
-
-            activeHazards.Clear();
+            return false;
         }
-    }
 
-    private void ForceImmediateCleanup()
-    {
-        patternSequenceRunning = false;
-        CleanupRuntimeObjects(includeHazards: true);
-    }
-
-    private void PruneNullHazards()
-    {
-        activeHazards.RemoveAll(h => h == null);
-    }
-
-    private static bool IsAngleMatched(float angle, float[] allowedAngles)
-    {
-        float normalized = NormalizeAngle(angle);
-        for (int i = 0; i < allowedAngles.Length; i++)
+        for (int i = 0; i < lineAngles.Length; i++)
         {
-            if (Mathf.Abs(Mathf.DeltaAngle(normalized, NormalizeAngle(allowedAngles[i]))) <= 0.1f)
+            if (Mathf.Abs(Mathf.DeltaAngle(angleDeg, lineAngles[i])) <= LineAngleToleranceDeg)
             {
                 return true;
             }
@@ -518,41 +503,152 @@ public class Bomb : MonoBehaviour
         return false;
     }
 
-    private static float NormalizeAngle(float angle)
+    private void StopActivePatternRoutines()
     {
-        return Mathf.Repeat(angle + 180f, 360f) - 180f;
-    }
-
-    private GameObject ResolveProjectilePrefab(PotionPhaseSpec phase)
-    {
-        if (phase != null)
+        if (phase1Routine != null)
         {
-            GameObject byPhaseElement = GetProjectilePrefabByElement(phase.primaryElement);
-            if (byPhaseElement != null)
+            StopCoroutine(phase1Routine);
+            phase1Routine = null;
+        }
+
+        if (phase2Routine != null)
+        {
+            StopCoroutine(phase2Routine);
+            phase2Routine = null;
+        }
+
+        for (int i = 0; i < rotationRoutines.Count; i++)
+        {
+            Coroutine rotateRoutine = rotationRoutines[i];
+            if (rotateRoutine != null)
             {
-                return byPhaseElement;
+                StopCoroutine(rotateRoutine);
             }
         }
 
-        GameObject byBombElement = GetProjectilePrefabByElement(bombElement);
-        if (byBombElement != null)
-        {
-            return byBombElement;
-        }
-
-        if (waterProjectileVfxPrefab != null) return waterProjectileVfxPrefab;
-        if (fireProjectileVfxPrefab != null) return fireProjectileVfxPrefab;
-        if (electricProjectileVfxPrefab != null) return electricProjectileVfxPrefab;
-        return null;
+        rotationRoutines.Clear();
     }
 
-    private GameObject GetProjectilePrefabByElement(ElementType element)
+    private void CleanupPatternState(bool destroyProjectiles, bool destroyHazards, bool destroyGroups, bool stopCoroutines)
     {
-        return element switch
+        if (stopCoroutines)
         {
-            ElementType.Fire => fireProjectileVfxPrefab,
-            ElementType.Electric => electricProjectileVfxPrefab,
-            _ => waterProjectileVfxPrefab
-        };
+            StopAllCoroutines();
+            lifecycleRoutine = null;
+            phase1Routine = null;
+            phase2Routine = null;
+            rotationRoutines.Clear();
+        }
+
+        if (destroyGroups)
+        {
+            for (int i = 0; i < phaseGroups.Count; i++)
+            {
+                Transform group = phaseGroups[i];
+                if (group != null)
+                {
+                    Destroy(group.gameObject);
+                }
+            }
+
+            phaseGroups.Clear();
+        }
+
+        if (destroyProjectiles)
+        {
+            for (int i = 0; i < spawnedProjectiles.Count; i++)
+            {
+                PotionProjectileController projectile = spawnedProjectiles[i];
+                if (projectile != null)
+                {
+                    Destroy(projectile.gameObject);
+                }
+            }
+
+            PotionProjectileController[] allProjectiles = FindObjectsByType<PotionProjectileController>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+            for (int i = 0; i < allProjectiles.Length; i++)
+            {
+                PotionProjectileController projectile = allProjectiles[i];
+                if (projectile != null && projectile.SourceBombId == bombInstanceId)
+                {
+                    Destroy(projectile.gameObject);
+                }
+            }
+
+            spawnedProjectiles.Clear();
+        }
+
+        if (destroyHazards)
+        {
+            for (int i = 0; i < spawnedHazards.Count; i++)
+            {
+                PotionAreaHazard hazard = spawnedHazards[i];
+                if (hazard != null)
+                {
+                    Destroy(hazard.gameObject);
+                }
+            }
+
+            PotionAreaHazard[] allHazards = FindObjectsByType<PotionAreaHazard>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+            for (int i = 0; i < allHazards.Length; i++)
+            {
+                PotionAreaHazard hazard = allHazards[i];
+                if (hazard != null && hazard.SourceBombId == bombInstanceId)
+                {
+                    Destroy(hazard.gameObject);
+                }
+            }
+
+            spawnedHazards.Clear();
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (suppressForcedCleanup)
+        {
+            return;
+        }
+
+        CleanupPatternState(destroyProjectiles: true, destroyHazards: true, destroyGroups: true, stopCoroutines: true);
+    }
+
+    private void OnDestroy()
+    {
+        if (suppressForcedCleanup)
+        {
+            return;
+        }
+
+        CleanupPatternState(destroyProjectiles: true, destroyHazards: true, destroyGroups: true, stopCoroutines: true);
+    }
+
+    private static bool TryWaitUntil(float targetTime, float maxEndTime, out float wait)
+    {
+        wait = 0f;
+
+        if (float.IsPositiveInfinity(maxEndTime))
+        {
+            wait = Mathf.Max(0f, targetTime - Time.time);
+            return true;
+        }
+
+        if (Time.time >= maxEndTime)
+        {
+            return false;
+        }
+
+        wait = Mathf.Max(0f, targetTime - Time.time);
+        float remaining = maxEndTime - Time.time;
+        if (wait > remaining)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

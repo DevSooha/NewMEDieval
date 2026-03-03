@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,6 +9,7 @@ public class PotionTestHarness : MonoBehaviour
     [SerializeField] private int quantityPerPotion = 3;
     [SerializeField] private bool addDuplicateForStackTest = true;
     [SerializeField] private bool autoEquipFirstPotionToSlot1 = false;
+    [SerializeField] private bool restrictAutoGrantToTestScenes = true;
 
     [Header("Hotkeys")]
     [SerializeField] private KeyCode regrantHotkey = KeyCode.F6;
@@ -23,7 +25,14 @@ public class PotionTestHarness : MonoBehaviour
         ResolveReferences();
         if (grantOnStart)
         {
-            GrantRepresentativePotions(clearExisting: false);
+            if (CanRunAutoGrantInCurrentScene())
+            {
+                GrantRepresentativePotions(clearExisting: false);
+            }
+            else
+            {
+                Debug.Log($"[PotionTestHarness] Auto-grant blocked in non-test scene: {gameObject.scene.name}");
+            }
         }
     }
 
@@ -249,5 +258,17 @@ public class PotionTestHarness : MonoBehaviour
             if (p == null || p.data == null) continue;
             Debug.Log($"[PotionTestHarness] [{i}] {p.data.GetDisplayName()} x{p.quantity}");
         }
+    }
+
+    private bool CanRunAutoGrantInCurrentScene()
+    {
+        if (!restrictAutoGrantToTestScenes)
+        {
+            return true;
+        }
+
+        string sceneName = gameObject.scene.name;
+        return !string.IsNullOrWhiteSpace(sceneName)
+               && sceneName.IndexOf("test", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

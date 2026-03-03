@@ -68,9 +68,9 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         
         if (potion != null && potion.data != null)
         {
-            Sprite topSprite = potion.data.topIMG != null
-                ? potion.data.topIMG
-                : (potion.data.icon != null ? potion.data.icon : potion.data.bottomIMG);
+            PotionVisualParts visualParts = PotionVisualResolver.Resolve(potion.data);
+
+            Sprite topSprite = visualParts.Top;
             if (topIMG != null && topSprite != null)
             {
                 topIMG.sprite = topSprite;
@@ -82,9 +82,7 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
                 topIMG.enabled = false;
             }
             
-            Sprite bottomSprite = potion.data.bottomIMG != null
-                ? potion.data.bottomIMG
-                : (potion.data.icon != null ? potion.data.icon : potion.data.topIMG);
+            Sprite bottomSprite = visualParts.Bottom;
             if (bottomIMG != null && bottomSprite != null)
             {
                 bottomIMG.sprite = bottomSprite;
@@ -98,7 +96,12 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
             
             if (frame != null)
             {
-                frame.enabled = true;
+                if (visualParts.Frame != null)
+                {
+                    frame.sprite = visualParts.Frame;
+                }
+
+                frame.enabled = frame.sprite != null;
             }
             
             if (quantityText != null && potion.data.isStackable && potion.quantity > 1)

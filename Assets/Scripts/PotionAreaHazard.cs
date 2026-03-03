@@ -10,6 +10,11 @@ public class PotionAreaHazard : MonoBehaviour
     private PotionPhaseSpec phaseSpec;
     private bool initialized;
     private readonly HashSet<int> enteredTargets = new HashSet<int>();
+    private int sourceBombId;
+    private int phaseIndex;
+
+    public int SourceBombId => sourceBombId;
+    public int PhaseIndex => phaseIndex;
 
     private void Awake()
     {
@@ -30,9 +35,16 @@ public class PotionAreaHazard : MonoBehaviour
 
     public void Init(PotionPhaseSpec spec, Vector2 sizeUnits, float durationSeconds)
     {
+        Init(spec, sizeUnits, durationSeconds, 0, 0);
+    }
+
+    public void Init(PotionPhaseSpec spec, Vector2 sizeUnits, float durationSeconds, int sourceBombInstanceId, int sourcePhaseIndex)
+    {
         phaseSpec = spec;
         enteredTargets.Clear();
         initialized = true;
+        sourceBombId = sourceBombInstanceId;
+        phaseIndex = sourcePhaseIndex;
 
         triggerCollider.size = new Vector2(
             Mathf.Max(0.05f, sizeUnits.x),
@@ -65,6 +77,6 @@ public class PotionAreaHazard : MonoBehaviour
             return;
         }
 
-        PotionHitResolver.TryResolveAreaHit(phaseSpec, other);
+        PotionHitResolver.TryResolveAreaHit(phaseSpec, other, gameObject.GetInstanceID());
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class GrantAllItemDataToInventoryTest : MonoBehaviour
@@ -10,6 +11,7 @@ public class GrantAllItemDataToInventoryTest : MonoBehaviour
     [SerializeField] private int amountPerItem = 20;
     [SerializeField] private bool includePotionCategory = false;
     [SerializeField] private bool grantOnStart = true;
+    [SerializeField] private bool restrictAutoGrantToTestScenes = true;
     [SerializeField] private bool oneShotOnStart = true;
     [SerializeField] private KeyCode grantHotkey = KeyCode.F7;
 
@@ -21,8 +23,15 @@ public class GrantAllItemDataToInventoryTest : MonoBehaviour
 
         if (grantOnStart)
         {
-            GrantAll();
-            grantedOnStart = true;
+            if (CanRunAutoGrantInCurrentScene())
+            {
+                GrantAll();
+                grantedOnStart = true;
+            }
+            else
+            {
+                Debug.Log($"[GrantAllItemDataToInventoryTest] Auto-grant blocked in non-test scene: {gameObject.scene.name}");
+            }
         }
     }
 
@@ -86,5 +95,17 @@ public class GrantAllItemDataToInventoryTest : MonoBehaviour
         if (inventory != null) return;
 
         inventory = FindFirstObjectByType<Inventory>(FindObjectsInactive.Include);
+    }
+
+    private bool CanRunAutoGrantInCurrentScene()
+    {
+        if (!restrictAutoGrantToTestScenes)
+        {
+            return true;
+        }
+
+        string sceneName = gameObject.scene.name;
+        return !string.IsNullOrWhiteSpace(sceneName)
+               && sceneName.IndexOf("test", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

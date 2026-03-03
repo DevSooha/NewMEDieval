@@ -73,31 +73,27 @@ public class PotionProjectileController : MonoBehaviour
         body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
         SpriteRenderer renderer = GetComponent<SpriteRenderer>();
-        bool needsSpriteRenderer = sprite != null || allowFallbackSprite || renderer != null;
-        if (renderer == null && needsSpriteRenderer)
+        if (sprite != null)
         {
-            renderer = gameObject.AddComponent<SpriteRenderer>();
-        }
+            if (renderer == null)
+            {
+                renderer = gameObject.AddComponent<SpriteRenderer>();
+            }
 
-        if (renderer != null)
+            renderer.sprite = sprite;
+            renderer.color = Color.white;
+            renderer.enabled = true;
+        }
+        else if (allowFallbackSprite)
         {
-            if (sprite != null)
+            if (renderer == null)
             {
-                renderer.sprite = sprite;
-                renderer.color = Color.white;
-                renderer.enabled = true;
+                renderer = gameObject.AddComponent<SpriteRenderer>();
             }
-            else if (allowFallbackSprite)
-            {
-                renderer.sprite = GetFallbackSprite();
-                renderer.color = new Color(0.3f, 0.9f, 1f, 0.75f);
-                renderer.enabled = true;
-            }
-            else
-            {
-                renderer.sprite = null;
-                renderer.enabled = false;
-            }
+
+            renderer.sprite = GetFallbackSprite();
+            renderer.color = new Color(0.3f, 0.9f, 1f, 0.75f);
+            renderer.enabled = true;
         }
 
         ApplySortingToRenderers();
