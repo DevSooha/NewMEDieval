@@ -7,7 +7,7 @@ public class Spawner : MonoBehaviour
     public TextAsset csvFile;
     public Tilemap floorTilemap;
 
-    [Header("°ø¿ë ¾ÆÀÌÅÛ ÇÁ¸®ÆÕ")]
+    [Header("ê³µìš© ì•„ì´í…œ í”„ë¦¬íŒ¹")]
     public GameObject worldItemPrefab;
 
     [System.Serializable]
@@ -49,9 +49,7 @@ public class Spawner : MonoBehaviour
 
             float spawnRate = float.Parse(rateStr) / 100f;
 
-            // ¸®½ºÆ®¿¡¼­ ID¿¡ ¸Â´Â ¸ÊÇÎ µ¥ÀÌÅÍ Ã£±â
             SpawnMapping mapping = spawnList.Find(x => x.itemID == itemID);
-
             if (!string.IsNullOrEmpty(mapping.itemID))
             {
                 TrySpawn(mapping, spawnRate, itemID);
@@ -81,38 +79,54 @@ public class Spawner : MonoBehaviour
             Collider2D hit = Physics2D.OverlapCircle(spawnPos, 0.3f);
             if (hit != null && hit.CompareTag("Obstacle")) continue;
 
-            // 1. ¾ÆÀÌÅÛ »ý¼º
             GameObject item = Instantiate(worldItemPrefab, spawnPos, Quaternion.identity, transform);
 
             WorldItem worldItemScript = item.GetComponent<WorldItem>();
-            if (worldItemScript != null)
+            if (worldItemScript != null && mapping.itemData != null)
             {
-                if (mapping.itemData != null)
+                worldItemScript.Init(mapping.itemData, 1);
+            }
+
+            Sprite sprite = ResolveSpawnSprite(mapping);
+            if (sprite != null)
+            {
+                SpriteRenderer renderer = item.GetComponent<SpriteRenderer>();
+                if (renderer != null)
                 {
-                    worldItemScript.Init(mapping.itemData, 1);
+                    renderer.sprite = sprite;
                 }
             }
 
-            Sprite sprite = Resources.Load<Sprite>(mapping.spritePath);
-            if (sprite != null)
-            {
-                item.GetComponent<SpriteRenderer>().sprite = sprite;
-            }
-
-            // 4. ÅÂ±× ¹× ·¹ÀÌ¾î ¼³Á¤ (PlayerInteractionÀÌ Ã£À» ¼ö ÀÖ°Ô)
             item.tag = "Respawn";
             item.layer = 0;
-
             item.SetActive(true);
             return;
         }
+    }
+
+    private Sprite ResolveSpawnSprite(SpawnMapping mapping)
+    {
+        if (mapping.itemData != null && mapping.itemData.icon != null)
+        {
+            return mapping.itemData.icon;
+        }
+
+        if (!string.IsNullOrWhiteSpace(mapping.spritePath))
+        {
+            Sprite direct = Resources.Load<Sprite>(mapping.spritePath);
+            if (direct != null) return direct;
+
+            Sprite fromItemIcon = Resources.Load<Sprite>($"ItemIcon/{mapping.spritePath}");
+            if (fromItemIcon != null) return fromItemIcon;
+        }
+
+        return null;
     }
 
     void ClearPreviousSpawns()
     {
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            // ÅÂ±×°¡ ItemÀÌµç RespawnÀÌµç Spawner ÀÚ½ÄÀÌ¸é ´Ù Áö¿ò
             Destroy(transform.GetChild(i).gameObject);
         }
     }

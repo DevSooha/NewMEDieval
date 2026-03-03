@@ -1,5 +1,4 @@
 using UnityEngine;
-using TMPro;
 
 public class MapNode : MonoBehaviour
 {
@@ -17,98 +16,64 @@ public class MapNode : MonoBehaviour
 
     private BoxCollider2D myCollider;
 
-    private bool wasLocked;
+    private float nextBlockedMessageTime;
+    private float nextBossScanTime;
+    private bool cachedHasActiveBoss;
+
+    private const float blockedMessageCooldown = 0.6f;
+    private const float bossScanInterval = 0.2f;
+
     private void Awake()
     {
         myCollider = GetComponent<BoxCollider2D>();
     }
 
-    private void Start()
-    {
-        if(BossManager.Instance != null)
-        {
-            wasLocked = BossManager.Instance.IsBossActive;
-        }
-        else
-        {
-            wasLocked = false;
-        }
-    }
-
-    // ★ [핵심] 매 프레임 문 상태를 결정합니다.
+    // 매 프레임 문 상태를 갱신
     private void Update()
     {
         if (myCollider == null) return;
 
-        bool isBossActive = BossManager.Instance != null && BossManager.Instance.IsBossActive;
+        bool isBossActive = IsBossBattleLocked();
 
-        if(wasLocked && !isBossActive)
-        {
-            //if(nextRoom != null)
-            //{
-            //    // 방어코드- 보스전이 끝나고 연결된 방이 있을 때만 메시지 출력
-                
-            //}
-            ShowMessage(unlockedMessage);
-        }
-
-        wasLocked = isBossActive;
-
-        // 1. 연결된 방이 아예 없으면 -> 무조건 벽
-        if (nextRoom == null)
-        {
-            myCollider.isTrigger = false;
-        }
-        // 2. 보스전 중이면 -> 무조건 벽 (딱딱하게 막힘)
-        else if (isBossActive)
-        {
-            myCollider.isTrigger = false;
-        }
-        // 3. 그 외(평소) -> 문 (지나갈 수 있음 -> Trigger 발동)
-        else
-        {
-            myCollider.isTrigger = true;
-        }
+        // 연결된 방이 없거나 보스전 중이면 벽으로 취급
+        myCollider.isTrigger = nextRoom != null && !isBossActive;
     }
 
-    // ★ 벽(isTrigger=false)일 때 부딪히면 실행됨
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            // 방이 없어서 막힌 경우
-            if (nextRoom == null)
-            {
-                ShowMessage(defaultBlockMessage);
-            }
-            // 보스전이라서 막힌 경우
-            else if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
-            {
-                ShowMessage(lockedMessage);
-            }
-        }
+        TryShowBlockedMessage(collision);
     }
 
-    // ★ 문(isTrigger=true)일 때 겹치면 실행됨 (이동 로직)
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        TryShowBlockedMessage(collision);
+    }
+
+    // 문(isTrigger=true)일 때 겹치면 실행됨
     private void OnTriggerEnter2D(Collider2D other) { TryEnterRoom(other); }
     private void OnTriggerStay2D(Collider2D other) { TryEnterRoom(other); }
 
     private void TryEnterRoom(Collider2D other)
     {
-        if (other.CompareTag("Player") && other is CapsuleCollider2D)
+        if (!other.CompareTag("Player") || !IsPlayerBodyCollider(other)) return;
+
+        if (UIManager.DialogueActive || UIManager.SelectionActive) return;
+        if (RoomManager.Instance == null) return;
+
+        if (IsBossBattleLocked())
         {
-            if (UIManager.DialogueActive || UIManager.SelectionActive) return;
-
-            float inputX = Input.GetAxisRaw("Horizontal");
-            float inputY = Input.GetAxisRaw("Vertical");
-
-            // 문 방향으로 밀고 있을 때만 이동
-            if (!IsPushingTowardsDoor(inputX, inputY)) return;
-
-            // 이동 실행
-            Vector2 dirVector = GetDirectionVector();
-            RoomManager.Instance.RequestMove(dirVector, nextRoom, overrideDistance);
+            TryShowBlockedMessage(lockedMessage);
+            return;
         }
+
+        float inputX = Input.GetAxisRaw("Horizontal");
+        float inputY = Input.GetAxisRaw("Vertical");
+
+        // 문 방향으로 밀고 있을 때만 이동
+        if (!IsPushingTowardsDoor(inputX, inputY)) return;
+
+        Vector2 dirVector = GetDirectionVector();
+        RoomManager.Instance.RequestMove(dirVector, nextRoom, overrideDistance);
     }
 
     private bool IsPushingTowardsDoor(float x, float y)
@@ -133,6 +98,63 @@ public class MapNode : MonoBehaviour
             case Direction.West: return Vector2.left;
             default: return Vector2.zero;
         }
+    }
+
+    private bool IsBossBattleLocked()
+    {
+        if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+        {
+            return true;
+        }
+
+        if (Time.time >= nextBossScanTime)
+        {
+            GameObject[] activeBosses = GameObject.FindGameObjectsWithTag("Boss");
+            bool hasTaggedBoss = activeBosses != null && activeBosses.Length > 0;
+
+            if (hasTaggedBoss)
+            {
+                cachedHasActiveBoss = true;
+            }
+            else
+            {
+                BossCombatBase[] activeBossCombats = FindObjectsByType<BossCombatBase>(FindObjectsSortMode.None);
+                cachedHasActiveBoss = activeBossCombats != null && activeBossCombats.Length > 0;
+            }
+
+            nextBossScanTime = Time.time + bossScanInterval;
+        }
+
+        return cachedHasActiveBoss;
+    }
+
+    private bool IsPlayerBodyCollider(Collider2D col)
+    {
+        return col is CapsuleCollider2D;
+    }
+
+    private void TryShowBlockedMessage(Collision2D collision)
+    {
+        if (!collision.gameObject.CompareTag("Player")) return;
+        if (!IsPlayerBodyCollider(collision.otherCollider)) return;
+
+        if (nextRoom == null)
+        {
+            TryShowBlockedMessage(defaultBlockMessage);
+            return;
+        }
+
+        if (IsBossBattleLocked())
+        {
+            TryShowBlockedMessage(lockedMessage);
+        }
+    }
+
+    private void TryShowBlockedMessage(string message)
+    {
+        if (Time.unscaledTime < nextBlockedMessageTime) return;
+        nextBlockedMessageTime = Time.unscaledTime + blockedMessageCooldown;
+        ShowMessage(message);
     }
 
     private void ShowMessage(string message)

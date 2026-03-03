@@ -3,12 +3,12 @@
 public enum ElementType
 {
     None,
-    Fire,       // 불
-    Water,      // 물
-    Electric,   // 전기
-    Light,      // 빛 (New)
-    Dark,       // 어둠 (New)
-    Poison      // 독
+    Fire,
+    Water,
+    Electric,
+    Light,
+    Dark,
+    Poison
 }
 
 public static class ElementManager
@@ -21,38 +21,47 @@ public static class ElementManager
         // 같은 속성 = 1배
         if (attack == defend) return 1.0f;
 
-        // 상성 로직 (기획서 약점 기준 역산)
-        // 불 마녀의 약점은 물 -> 즉, 물 공격이 불에게 2배
         switch (attack)
         {
             case ElementType.Water:
-                if (defend == ElementType.Fire) return 2.0f;      // 물 -> 불 (2배)
-                if (defend == ElementType.Electric) return 0.5f; // 물 -> 전기 (0.5배)
+                if (defend == ElementType.Fire) return 2.0f;
+                if (defend == ElementType.Electric) return 0.5f;
                 break;
             case ElementType.Fire:
-                if (defend == ElementType.Electric) return 2.0f; // 불 -> 전기 (2배)
-                if (defend == ElementType.Water) return 0.5f;    // 불 -> 물 (0.5배)
+                if (defend == ElementType.Electric) return 2.0f;
+                if (defend == ElementType.Water) return 0.5f;
                 break;
             case ElementType.Electric:
-                if (defend == ElementType.Water) return 2.0f;    // 전기 -> 물 (2배)
-                if (defend == ElementType.Fire) return 0.5f;     // 전기 -> 불 (0.5배)
+                if (defend == ElementType.Water) return 2.0f;
+                if (defend == ElementType.Fire) return 0.5f;
                 break;
-            // Light, Dark, Poison는 현재 상호 상성이 정의되지 않았으므로 기본 1.0f 반환
+            case ElementType.Light:
+                if (defend == ElementType.Dark) return 2.0f;
+                break;
+            case ElementType.Dark:
+                if (defend == ElementType.Light) return 2.0f;
+                break;
         }
 
-        return 1.0f; // 그 외
+        return 1.0f;
     }
 
-    public static float GetCombinedDamageMultiplier(ElementType primaryAttack, ElementType subAttack, ElementType defend)
+    public static float GetCombinedDamageMultiplier(
+        ElementType primaryAttack,
+        ElementType subAttack,
+        ElementType defenderPrimary)
     {
-        float primary = GetDamageMultiplier(primaryAttack, defend);
+        float multiplier = GetDamageMultiplier(primaryAttack, defenderPrimary);
 
-        if (subAttack == ElementType.None)
+        if (subAttack == ElementType.Light && defenderPrimary == ElementType.Dark)
         {
-            return primary;
+            multiplier *= 2f;
+        }
+        else if (subAttack == ElementType.Dark && defenderPrimary == ElementType.Light)
+        {
+            multiplier *= 2f;
         }
 
-        float sub = GetDamageMultiplier(subAttack, defend);
-        return primary * sub;
+        return multiplier;
     }
 }

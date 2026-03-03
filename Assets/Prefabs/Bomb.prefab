@@ -108,3 +108,9 @@ MonoBehaviour:
   timeToExplode: 2
   explosionRadius: 1.5
   explosionEffect: {fileID: 0}
+  projectileLifetime: 2.5
+  projectileSpawnOffset: 0.1
+  spawnProjectilePatterns: 1
+  waterProjectileVfxPrefab: {fileID: 4791540778913851724, guid: 4bc1bfdb2ed432040808e68a1ecbc511, type: 3}
+  fireProjectileVfxPrefab: {fileID: 7588588366850297520, guid: 001b7578dba940349a44e9a754a8d096, type: 3}
+  electricProjectileVfxPrefab: {fileID: 1045807124205389876, guid: 12674abd401660545974933c80aabeb0, type: 3}

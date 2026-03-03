@@ -74,6 +74,12 @@ public static class BossHitResolver
             return true;
         }
 
+        PlayerStatusController status = player.GetComponent<PlayerStatusController>();
+        if (status != null && status.IsKnockbackImmune)
+        {
+            return true;
+        }
+
         Vector2 knockbackDirection = (Vector2)player.transform.position - attackerPosition;
         if (knockbackDirection.sqrMagnitude <= 0.0001f)
         {
