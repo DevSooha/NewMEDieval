@@ -3,42 +3,65 @@ using UnityEngine;
 public enum ElementType
 {
     None,
-    Fire,       // ºÒ
-    Water,      // ¹°
-    Electric,   // Àü±â
-    Light,      // ºû (New)
-    Dark        // ¾îµÒ (New)
+    Fire,
+    Water,
+    Electric,
+    Light,
+    Dark,
+    Poison
 }
 
 public static class ElementManager
 {
-    // °ø°ÝÀÚ(attack)°¡ ¹æ¾îÀÚ(defend)¸¦ ¶§¸± ¶§ÀÇ ¹èÀ² °è»ê
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(attack)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½(defend)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     public static float GetDamageMultiplier(ElementType attack, ElementType defend)
     {
         if (attack == ElementType.None || defend == ElementType.None) return 1.0f;
 
-        // °°Àº ¼Ó¼º = 1¹è
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ó¼ï¿½ = 1ï¿½ï¿½
         if (attack == defend) return 1.0f;
 
-        // »ó¼º ·ÎÁ÷ (±âÈ¹¼­ ¾àÁ¡ ±âÁØ ¿ª»ê)
-        // ºÒ ¸¶³àÀÇ ¾àÁ¡Àº ¹° -> Áï, ¹° °ø°ÝÀÌ ºÒ¿¡°Ô 2¹è
         switch (attack)
         {
             case ElementType.Water:
-                if (defend == ElementType.Fire) return 2.0f;      // ¹° -> ºÒ (2¹è)
-                if (defend == ElementType.Electric) return 0.5f; // ¹° -> Àü±â (0.5¹è)
+                if (defend == ElementType.Fire) return 2.0f;
+                if (defend == ElementType.Electric) return 0.5f;
                 break;
             case ElementType.Fire:
-                if (defend == ElementType.Electric) return 2.0f; // ºÒ -> Àü±â (2¹è)
-                if (defend == ElementType.Water) return 0.5f;    // ºÒ -> ¹° (0.5¹è)
+                if (defend == ElementType.Electric) return 2.0f;
+                if (defend == ElementType.Water) return 0.5f;
                 break;
             case ElementType.Electric:
-                if (defend == ElementType.Water) return 2.0f;    // Àü±â -> ¹° (2¹è)
-                if (defend == ElementType.Fire) return 0.5f;     // Àü±â -> ºÒ (0.5¹è)
+                if (defend == ElementType.Water) return 2.0f;
+                if (defend == ElementType.Fire) return 0.5f;
                 break;
-            // Light, Dark´Â ÇöÀç »óÈ£ »ó¼ºÀÌ Á¤ÀÇµÇÁö ¾Ê¾ÒÀ¸¹Ç·Î ±âº» 1.0f ¹ÝÈ¯
+            case ElementType.Light:
+                if (defend == ElementType.Dark) return 2.0f;
+                break;
+            case ElementType.Dark:
+                if (defend == ElementType.Light) return 2.0f;
+                break;
         }
 
-        return 1.0f; // ±× ¿Ü
+        return 1.0f;
     }
-}
+
+    public static float GetCombinedDamageMultiplier(
+        ElementType primaryAttack,
+        ElementType subAttack,
+        ElementType defenderPrimary)
+    {
+        float multiplier = GetDamageMultiplier(primaryAttack, defenderPrimary);
+
+        if (subAttack == ElementType.Light && defenderPrimary == ElementType.Dark)
+        {
+            multiplier *= 2f;
+        }
+        else if (subAttack == ElementType.Dark && defenderPrimary == ElementType.Light)
+        {
+            multiplier *= 2f;
+        }
+
+        return multiplier;
+    }
+}

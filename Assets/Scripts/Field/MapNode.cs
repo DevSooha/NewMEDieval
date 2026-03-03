@@ -1,114 +1,79 @@
 using UnityEngine;
-using TMPro;
 
 public class MapNode : MonoBehaviour
 {
     public enum Direction { North, South, East, West }
 
-    [Header("¹æ ÀÌµ¿ ¼³Á¤")]
+    [Header("ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½")]
     public Direction moveDirection;
     public RoomData nextRoom;
     public float overrideDistance = 0f;
 
-    [Header("Â÷´Ü ¸Þ½ÃÁö ¼³Á¤")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
     public string defaultBlockMessage = "The path is blocked.";
     public string lockedMessage = "You cannot flee!";
     public string unlockedMessage = "Now you can proceed.";
 
     private BoxCollider2D myCollider;
 
-    private bool wasLocked;
+    private float nextBlockedMessageTime;
+    private float nextBossScanTime;
+    private bool cachedHasActiveBoss;
+
+    private const float blockedMessageCooldown = 0.6f;
+    private const float bossScanInterval = 0.2f;
+
     private void Awake()
     {
         myCollider = GetComponent<BoxCollider2D>();
     }
 
-    private void Start()
-    {
-        if(BossManager.Instance != null)
-        {
-            wasLocked = BossManager.Instance.IsBossActive;
-        }
-        else
-        {
-            wasLocked = false;
-        }
-    }
-
-    // ¡Ú [ÇÙ½É] ¸Å ÇÁ·¹ÀÓ ¹® »óÅÂ¸¦ °áÁ¤ÇÕ´Ï´Ù.
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½
     private void Update()
     {
         if (myCollider == null) return;
 
-        bool isBossActive = BossManager.Instance != null && BossManager.Instance.IsBossActive;
+        bool isBossActive = IsBossBattleLocked();
 
-        if(wasLocked && !isBossActive)
-        {
-            //if(nextRoom != null)
-            //{
-            //    // ¹æ¾îÄÚµå- º¸½ºÀüÀÌ ³¡³ª°í ¿¬°áµÈ ¹æÀÌ ÀÖÀ» ¶§¸¸ ¸Þ½ÃÁö Ãâ·Â
-                
-            //}
-            ShowMessage(unlockedMessage);
-        }
-
-        wasLocked = isBossActive;
-
-        // 1. ¿¬°áµÈ ¹æÀÌ ¾Æ¿¹ ¾øÀ¸¸é -> ¹«Á¶°Ç º®
-        if (nextRoom == null)
-        {
-            myCollider.isTrigger = false;
-        }
-        // 2. º¸½ºÀü ÁßÀÌ¸é -> ¹«Á¶°Ç º® (µüµüÇÏ°Ô ¸·Èû)
-        else if (isBossActive)
-        {
-            myCollider.isTrigger = false;
-        }
-        // 3. ±× ¿Ü(Æò¼Ò) -> ¹® (Áö³ª°¥ ¼ö ÀÖÀ½ -> Trigger ¹ßµ¿)
-        else
-        {
-            myCollider.isTrigger = true;
-        }
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+        myCollider.isTrigger = nextRoom != null && !isBossActive;
     }
 
-    // ¡Ú º®(isTrigger=false)ÀÏ ¶§ ºÎµúÈ÷¸é ½ÇÇàµÊ
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            // ¹æÀÌ ¾ø¾î¼­ ¸·Èù °æ¿ì
-            if (nextRoom == null)
-            {
-                ShowMessage(defaultBlockMessage);
-            }
-            // º¸½ºÀüÀÌ¶ó¼­ ¸·Èù °æ¿ì
-            else if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
-            {
-                ShowMessage(lockedMessage);
-            }
-        }
+        TryShowBlockedMessage(collision);
     }
 
-    // ¡Ú ¹®(isTrigger=true)ÀÏ ¶§ °ãÄ¡¸é ½ÇÇàµÊ (ÀÌµ¿ ·ÎÁ÷)
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        TryShowBlockedMessage(collision);
+    }
+
+    // ï¿½ï¿½(isTrigger=true)ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
     private void OnTriggerEnter2D(Collider2D other) { TryEnterRoom(other); }
     private void OnTriggerStay2D(Collider2D other) { TryEnterRoom(other); }
 
     private void TryEnterRoom(Collider2D other)
     {
-        if (other.CompareTag("Player") && other is CapsuleCollider2D)
+        if (!other.CompareTag("Player") || !IsPlayerBodyCollider(other)) return;
+
+        if (UIManager.DialogueActive || UIManager.SelectionActive) return;
+        if (RoomManager.Instance == null) return;
+
+        if (IsBossBattleLocked())
         {
-            if (UIManager.DialogueActive || UIManager.SelectionActive) return;
-
-            float inputX = Input.GetAxisRaw("Horizontal");
-            float inputY = Input.GetAxisRaw("Vertical");
-
-            // ¹® ¹æÇâÀ¸·Î ¹Ð°í ÀÖÀ» ¶§¸¸ ÀÌµ¿
-            if (!IsPushingTowardsDoor(inputX, inputY)) return;
-
-            // ÀÌµ¿ ½ÇÇà
-            Vector2 dirVector = GetDirectionVector();
-            RoomManager.Instance.RequestMove(dirVector, nextRoom, overrideDistance);
+            TryShowBlockedMessage(lockedMessage);
+            return;
         }
+
+        float inputX = Input.GetAxisRaw("Horizontal");
+        float inputY = Input.GetAxisRaw("Vertical");
+
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ð°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
+        if (!IsPushingTowardsDoor(inputX, inputY)) return;
+
+        Vector2 dirVector = GetDirectionVector();
+        RoomManager.Instance.RequestMove(dirVector, nextRoom, overrideDistance);
     }
 
     private bool IsPushingTowardsDoor(float x, float y)
@@ -135,8 +100,65 @@ public class MapNode : MonoBehaviour
         }
     }
 
+    private bool IsBossBattleLocked()
+    {
+        if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+        {
+            return true;
+        }
+
+        if (Time.time >= nextBossScanTime)
+        {
+            GameObject[] activeBosses = GameObject.FindGameObjectsWithTag("Boss");
+            bool hasTaggedBoss = activeBosses != null && activeBosses.Length > 0;
+
+            if (hasTaggedBoss)
+            {
+                cachedHasActiveBoss = true;
+            }
+            else
+            {
+                BossCombatBase[] activeBossCombats = FindObjectsByType<BossCombatBase>(FindObjectsSortMode.None);
+                cachedHasActiveBoss = activeBossCombats != null && activeBossCombats.Length > 0;
+            }
+
+            nextBossScanTime = Time.time + bossScanInterval;
+        }
+
+        return cachedHasActiveBoss;
+    }
+
+    private bool IsPlayerBodyCollider(Collider2D col)
+    {
+        return col is CapsuleCollider2D;
+    }
+
+    private void TryShowBlockedMessage(Collision2D collision)
+    {
+        if (!collision.gameObject.CompareTag("Player")) return;
+        if (!IsPlayerBodyCollider(collision.otherCollider)) return;
+
+        if (nextRoom == null)
+        {
+            TryShowBlockedMessage(defaultBlockMessage);
+            return;
+        }
+
+        if (IsBossBattleLocked())
+        {
+            TryShowBlockedMessage(lockedMessage);
+        }
+    }
+
+    private void TryShowBlockedMessage(string message)
+    {
+        if (Time.unscaledTime < nextBlockedMessageTime) return;
+        nextBlockedMessageTime = Time.unscaledTime + blockedMessageCooldown;
+        ShowMessage(message);
+    }
+
     private void ShowMessage(string message)
     {
         if (UIManager.Instance != null) UIManager.Instance.ShowWarning(message);
     }
-}
+}

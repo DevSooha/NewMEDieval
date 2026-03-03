@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d59bd60959b40674d815b75ed82e6639, type: 3}
+  m_Name: MISTYFOG
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  ingredientId: MISTYFOG
+  topName: Misty
+  bottomName: Fog
+  shapeType: 2
+  topDamage: 0
+  bottomDamage: 0
+  element: 0
+  topSprite: {fileID: 4656078512215115204, guid: c80214b94259acc4dac9a90f226e11c0, type: 3}
+  bottomSprite: {fileID: -6284743842021920071, guid: c317aa11bd6f578449e04bf940b861d6, type: 3}
+  description: MistyFog ingredient
+  icon: {fileID: 4983661325511017720, guid: 4b9edad9238f48e45bc7103f584a7bf6, type: 3}
+  specificPrefab: {fileID: 0}
+  maxStack: 99
+  isStackable: 1
+  quantity: 0
+  category: 0

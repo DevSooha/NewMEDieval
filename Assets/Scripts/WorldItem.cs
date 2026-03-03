@@ -7,7 +7,6 @@ public class WorldItem : MonoBehaviour
     public int quantity = 1;
 
     private bool initialized = false;
-
     private bool isPickingUp = false;
     private Transform playerTransform;
     private Collider2D col;
@@ -31,15 +30,22 @@ public class WorldItem : MonoBehaviour
         itemData = data;
         quantity = amount;
         initialized = true;
+
+        if (itemData != null && itemData.icon != null)
+        {
+            SpriteRenderer renderer = GetComponent<SpriteRenderer>();
+            if (renderer != null)
+            {
+                renderer.sprite = itemData.icon;
+            }
+        }
     }
 
-    // PlayerInteraction에서 호출
     public void Pickup()
     {
-
         if (isPickingUp || !initialized)
         {
-            Debug.Log("[WorldItem] 줍기 실패");
+            Debug.Log("[WorldItem] Pickup failed");
             return;
         }
 
@@ -54,7 +60,6 @@ public class WorldItem : MonoBehaviour
             }
 
             bool added = inventory.AddItem(itemData, quantity);
-
             if (added)
             {
                 StartCoroutine(PickupEffect());
@@ -76,7 +81,6 @@ public class WorldItem : MonoBehaviour
             Player.Instance.CancelAttack();
         }
 
-        // --- 날아가는 연출 ---
         float time = 0f;
         float duration = 0.12f;
         Vector3 startPos = transform.position;
@@ -98,6 +102,9 @@ public class WorldItem : MonoBehaviour
 
         Destroy(gameObject);
 
-        if (Player.Instance != null) Player.Instance.OnInteractionFinished();
+        if (Player.Instance != null)
+        {
+            Player.Instance.OnInteractionFinished();
+        }
     }
 }

@@ -1,5 +1,6 @@
-using NUnit.Framework;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerInteraction : MonoBehaviour
 {
@@ -10,14 +11,19 @@ public class PlayerInteraction : MonoBehaviour
     private CircleCollider2D interactionCollider;
     private NPC currentNPC;
     private WorldItem currentItem;
-    public GameObject craftingMenu;
 
-    private bool canInteract = false;
-    private bool isCampfire = false;
+    public CraftUI craftUI;
+    [SerializeField] private GameObject craftingMenu;
+    [SerializeField] private InventoryUI inventoryUI;
 
-    public bool IsInteractable => canInteract;
+    private bool canInteract;
+    private bool isCampfire;
+    private Coroutine craftingOpenTransitionRoutine;
+    private const float CraftingOpenTransitionSeconds = 0.5f;
 
-    void Start()
+    public bool IsInteractable => canInteract || IsCraftingActive();
+
+    private void Start()
     {
         interactionCollider = GetComponent<CircleCollider2D>();
         if (interactionCollider == null)
@@ -30,71 +36,218 @@ public class PlayerInteraction : MonoBehaviour
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
 
+        EnsureUiReferences();
+
         if (craftingMenu != null)
         {
             craftingMenu.SetActive(false);
         }
+        else if (craftUI != null)
+        {
+            craftUI.gameObject.SetActive(false);
+        }
         else
         {
-            Debug.LogWarning($"[PlayerInteraction] craftUI is not assigned on {gameObject.name}.");
+            Debug.LogWarning($"[PlayerInteraction] CraftingMenu/CraftUI is not assigned on {gameObject.name}.");
         }
     }
-    void Update()
+
+    private void Update()
     {
-        if (isCampfire == true && Input.GetKeyDown(KeyCode.Escape))
+        if (IsCraftingActive() && Input.GetKeyDown(KeyCode.X))
         {
-            isCampfire = false;
-            craftingMenu.SetActive(false);
+            if (craftUI != null)
+            {
+                craftUI.RequestCloseConfirm();
+            }
+            else if (craftingMenu != null)
+            {
+                craftingMenu.SetActive(false);
+            }
+        }
+
+        if (UIManager.Instance != null && UIManager.Instance.IsSelectPanelActive() && Input.GetKeyDown(KeyCode.X))
+        {
+            UIManager.Instance.HideSelectPanel();
         }
     }
 
     public bool TryInteract()
     {
-        // 1. 상호작용 불가능하면 실패 반환
-        if (!canInteract) return false;
-
-        // 2. 아이템 줍기
-        if (currentItem != null)
+        if (IsCraftingActive())
         {
-            PickUpItem();
+            CombatInputHelper.ConsumeAttackInputThisFrame();
             return true;
         }
 
-        // 3. NPC 대화
+        if (!canInteract) return false;
+
+        if (currentItem != null)
+        {
+            PickUpItem();
+            CombatInputHelper.ConsumeAttackInputThisFrame();
+            return true;
+        }
+
         if (currentNPC != null)
         {
             if (UIManager.Instance == null) return false;
 
             if (!UIManager.Instance.IsDialogueActive())
+            {
                 StartDialogue();
+            }
             else
+            {
                 UIManager.Instance.AdvanceDialogue();
+            }
 
+            CombatInputHelper.ConsumeAttackInputThisFrame();
             return true;
         }
 
-        // 4. 캠프파이어
         if (isCampfire)
         {
+            CombatInputHelper.ConsumeAttackInputThisFrame();
             return true;
         }
 
         return false;
     }
 
-    void PickUpItem()
+    private bool IsCraftingActive()
     {
-        if (currentItem != null)
-        {
-            currentItem.Pickup();
-            currentItem = null;
-            canInteract = false;
+        EnsureUiReferences();
 
-            if (Player.Instance != null) Player.Instance.OnInteractionFinished();
+        if (craftingMenu != null)
+        {
+            return craftingMenu.activeInHierarchy;
+        }
+
+        return craftUI != null && craftUI.gameObject.activeInHierarchy;
+    }
+
+    private void EnsureUiReferences()
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+
+        if (craftUI == null || craftUI.gameObject.scene != activeScene)
+        {
+            craftUI = FindInActiveScene<CraftUI>();
+            if (craftUI == null)
+            {
+                craftUI = FindFirstObjectByType<CraftUI>(FindObjectsInactive.Include);
+            }
+        }
+
+        if (craftingMenu == null || craftingMenu.scene != activeScene)
+        {
+            craftingMenu = null;
+
+            if (craftUI != null)
+            {
+                craftingMenu = FindAncestorByName(craftUI.transform, "CraftingMenu");
+            }
+
+            if (craftingMenu == null)
+            {
+                craftingMenu = FindGameObjectInActiveScene("CraftingMenu");
+            }
+        }
+
+        if (craftUI == null && craftingMenu != null)
+        {
+            craftUI = craftingMenu.GetComponent<CraftUI>();
+            if (craftUI == null)
+            {
+                craftUI = craftingMenu.GetComponentInChildren<CraftUI>(true);
+            }
+        }
+
+        if (inventoryUI == null || inventoryUI.gameObject.scene != activeScene)
+        {
+            inventoryUI = FindInActiveScene<InventoryUI>();
+            if (inventoryUI == null)
+            {
+                inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+            }
         }
     }
 
-    void StartDialogue()
+    private static T FindInActiveScene<T>() where T : Component
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+        T[] candidates = Resources.FindObjectsOfTypeAll<T>();
+
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            T candidate = candidates[i];
+            if (candidate == null) continue;
+
+            GameObject go = candidate.gameObject;
+            if (!go.scene.IsValid()) continue;
+            if (go.scene != activeScene) continue;
+            if (go.hideFlags != HideFlags.None) continue;
+
+            return candidate;
+        }
+
+        return null;
+    }
+
+    private static GameObject FindAncestorByName(Transform start, string targetName)
+    {
+        Transform current = start;
+        while (current != null)
+        {
+            if (current.name == targetName)
+            {
+                return current.gameObject;
+            }
+
+            current = current.parent;
+        }
+
+        return null;
+    }
+
+    private static GameObject FindGameObjectInActiveScene(string objectName)
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+        Transform[] candidates = Resources.FindObjectsOfTypeAll<Transform>();
+
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            Transform t = candidates[i];
+            if (t == null) continue;
+            if (t.name != objectName) continue;
+
+            GameObject go = t.gameObject;
+            if (!go.scene.IsValid()) continue;
+            if (go.scene != activeScene) continue;
+            if (go.hideFlags != HideFlags.None) continue;
+
+            return go;
+        }
+
+        return null;
+    }
+
+    private void PickUpItem()
+    {
+        if (currentItem == null) return;
+
+        currentItem.Pickup();
+        currentItem = null;
+        canInteract = false;
+
+        if (Player.Instance != null)
+        {
+            Player.Instance.OnInteractionFinished();
+        }
+    }
+
+    private void StartDialogue()
     {
         Vector2 dir = (transform.position - currentNPC.transform.position).normalized;
         currentNPC.FaceDirection(dir);
@@ -103,12 +256,12 @@ public class PlayerInteraction : MonoBehaviour
         {
             if (Player.Instance != null)
             {
-                Player.Instance.OnInteractionFinished(); // 상태 복귀 함수
+                Player.Instance.OnInteractionFinished();
             }
         });
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    private void OnTriggerEnter2D(Collider2D other)
     {
         NPC npc = other.GetComponent<NPC>();
         if (npc != null)
@@ -130,30 +283,60 @@ public class PlayerInteraction : MonoBehaviour
         {
             isCampfire = true;
             canInteract = true;
-            UIManager.Instance.ShowSelectPanel(
-            "Campfire?",
-            "Yes",
-            () => { EnterCrafting(); },
-            "No",
-            () => { }
-            );
+
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.ShowSelectPanel(
+                    "Campfire?",
+                    "Yes",
+                    () => { EnterCrafting(); },
+                    "No",
+                    () => { }
+                );
+            }
         }
     }
+
     public void EnterCrafting()
     {
-        craftingMenu?.SetActive(true);
+        EnsureUiReferences();
+
+        if (craftingOpenTransitionRoutine != null)
+        {
+            StopCoroutine(craftingOpenTransitionRoutine);
+        }
+
+        craftingOpenTransitionRoutine = StartCoroutine(EnterCraftingWithTransition());
     }
 
-    void OnTriggerExit2D(Collider2D other)
+    public void ForceCloseCraftingUI()
     {
-        
-        NPC exitedNPC = other.GetComponent<NPC>();
-        if (exitedNPC != null && exitedNPC == currentNPC)
+        if (craftingOpenTransitionRoutine != null)
+        {
+            StopCoroutine(craftingOpenTransitionRoutine);
+            craftingOpenTransitionRoutine = null;
+        }
+
+        isCampfire = false;
+
+        if (craftUI != null)
+        {
+            craftUI.ForceCloseImmediate();
+        }
+        else if (craftingMenu != null)
+        {
+            craftingMenu.SetActive(false);
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        NPC exitedNpc = other.GetComponent<NPC>();
+        if (exitedNpc != null && exitedNpc == currentNPC)
         {
             currentNPC = null;
         }
 
-       
         if (other.CompareTag("Campfire"))
         {
             isCampfire = false;
@@ -173,6 +356,52 @@ public class PlayerInteraction : MonoBehaviour
         if (currentNPC == null && !isCampfire && currentItem == null)
         {
             canInteract = false;
+        }
+    }
+
+    private IEnumerator EnterCraftingWithTransition()
+    {
+        float halfDuration = CraftingOpenTransitionSeconds * 0.5f;
+        UIManager uiManager = UIManager.Instance;
+
+        if (uiManager != null && uiManager.fadeImage != null)
+        {
+            yield return StartCoroutine(uiManager.FadeOut(halfDuration));
+        }
+
+        OpenCraftingUiImmediate();
+
+        if (uiManager != null && uiManager.fadeImage != null)
+        {
+            yield return StartCoroutine(uiManager.FadeIn(halfDuration));
+        }
+
+        craftingOpenTransitionRoutine = null;
+    }
+
+    private void OpenCraftingUiImmediate()
+    {
+        if (craftingMenu != null)
+        {
+            craftingMenu.SetActive(true);
+        }
+        else if (craftUI != null)
+        {
+            craftUI.gameObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError("[PlayerInteraction] EnterCrafting failed: CraftingMenu reference is missing.");
+        }
+
+        if (inventoryUI != null)
+        {
+            inventoryUI.gameObject.SetActive(true);
+            inventoryUI.RefreshUI();
+        }
+        else
+        {
+            Debug.LogError("[PlayerInteraction] EnterCrafting failed: InventoryUI reference is missing.");
         }
     }
 }

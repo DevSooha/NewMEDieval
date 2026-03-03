@@ -31,6 +31,9 @@ public class EnemyCombat : MonoBehaviour
     public float dropChance = 1f;
 
     private bool isDead = false;
+    public int CurrentHealth => currentHealth;
+    public int MaxHealth => maxHealth;
+    public bool IsDead => isDead;
 
     private float lastAttackTime;
     public float combatCooldown = 1f;
@@ -133,7 +136,11 @@ public class EnemyCombat : MonoBehaviour
             if (playerScript != null && hit.gameObject.activeInHierarchy)
             {
                 hit.GetComponent<PlayerHealth>()?.TakeDamage(damageAmount);
-                playerScript.KnockBackByDistance(((Vector2)(hit.transform.position - transform.position)).normalized, knockbackTileSize * knockbackTiles, knockbackDuration);
+                PlayerStatusController status = playerScript.GetComponent<PlayerStatusController>();
+                if (status == null || !status.IsKnockbackImmune)
+                {
+                    playerScript.KnockBackByDistance(((Vector2)(hit.transform.position - transform.position)).normalized, knockbackTileSize * knockbackTiles, knockbackDuration);
+                }
                 return;
             }
         }
@@ -184,6 +191,12 @@ public class EnemyCombat : MonoBehaviour
         }
     }
 
+    public void Heal(int amount)
+    {
+        if (amount <= 0 || isDead) return;
+        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
+    }
+
     private void Die()
     {
         Debug.Log("Enemy died.");
@@ -210,7 +223,17 @@ public class EnemyCombat : MonoBehaviour
         if (wi != null)
         {
             wi.Init(pastelbloomItemData, dropAmount);
-            item.GetComponent<SpriteRenderer>().sprite = pastelbloomItemData.icon;
+            Sprite dropSprite = pastelbloomItemData != null ? pastelbloomItemData.icon : null;
+            if (dropSprite == null)
+            {
+                dropSprite = Resources.Load<Sprite>("ItemIcon/Pastelbloom Spawn (2)");
+            }
+
+            SpriteRenderer renderer = item.GetComponent<SpriteRenderer>();
+            if (renderer != null)
+            {
+                renderer.sprite = dropSprite;
+            }
         }
     }
 }

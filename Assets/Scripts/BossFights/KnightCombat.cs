@@ -102,6 +102,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
     private void OnDisable()
     {
         PlayerHealth.OnPlayerDeath -= HandlePlayerDeath;
+        CleanupOffensivesOnDisable();
     }
 
     public override void StartBattle()
@@ -275,6 +276,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
         StainedSwordProjectile projectile = Instantiate(stainedSwordProjectilePrefab, spawnPosition, Quaternion.identity);
         projectile.Initialize(playerTransform, HandleProjectileDestroyed);
+        RegisterBossOffensive(projectile.gameObject);
         spawnedProjectiles.Add(projectile);
         return projectile;
     }
@@ -282,6 +284,11 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
     private void HandleProjectileDestroyed(StainedSwordProjectile projectile)
     {
         spawnedProjectiles.Remove(projectile);
+
+        if (projectile != null)
+        {
+            UnregisterBossOffensive(projectile.gameObject);
+        }
     }
 
     private void FaceDirection(Vector2 direction)
@@ -449,6 +456,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
         {
             if (projectile != null)
             {
+                UnregisterBossOffensive(projectile.gameObject);
                 Destroy(projectile.gameObject);
             }
         }
@@ -466,6 +474,8 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
         {
             bossHealth.currentHP = bossHealth.maxHP;
         }
+
+        CleanupOffensivesOnBattleReset();
 
         SetToPointAImmediate();
 
@@ -496,6 +506,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
         {
             if (thorn != null)
             {
+                UnregisterBossOffensive(thorn.gameObject);
                 Destroy(thorn.gameObject);
             }
         }
@@ -511,6 +522,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
             LatentThornHitbox thorn = Instantiate(thornHitboxPrefab, spawnPoint.position, Quaternion.identity, parent);
             thorn.ResetState();
+            RegisterBossOffensive(thorn.gameObject);
             thornHitboxes.Add(thorn);
         }
     }
@@ -574,6 +586,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
             int last = thornTimelines.Count - 1;
             if (thornTimelines[last] != null)
             {
+                UnregisterBossOffensive(thornTimelines[last].gameObject);
                 Destroy(thornTimelines[last].gameObject);
             }
             thornTimelines.RemoveAt(last);
@@ -608,6 +621,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
             director.Stop();
             director.time = 0;
             BindThornTimelineReferences(director);
+            RegisterBossOffensive(instance, true);
             thornTimelines.Add(director);
         }
 

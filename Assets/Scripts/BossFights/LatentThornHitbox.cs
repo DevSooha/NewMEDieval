@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reflection;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
@@ -36,6 +37,19 @@ public class LatentThornHitbox : MonoBehaviour
         gameObject.SetActive(true);
     }
 
+    public void DespawnImmediate()
+    {
+        StopAllCoroutines();
+        canDamage = false;
+
+        if (hitboxCollider != null)
+        {
+            hitboxCollider.enabled = false;
+        }
+
+        gameObject.SetActive(false);
+    }
+
     public void ApplyElementHit(ElementType attackElement)
     {
         if (attackElement == ElementType.Light)
@@ -64,25 +78,37 @@ public class LatentThornHitbox : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!canDamage) return;
+        TryApplyElementHit(other);
+        TryDamagePlayer(other);
+    }
 
-        if (other.CompareTag("Player"))
-        {
-            bool didDamage = BossHitResolver.TryApplyBossHit(
-                other,
-                damage,
-                transform.position
-            );
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        TryApplyElementHit(other);
+    }
 
-            if (didDamage)
-            {
-                StartCoroutine(DamageCooldownRoutine());
-            }
-        }
-
+    private void TryApplyElementHit(Collider2D other)
+    {
         if (TryGetElementFromAttacker(other, out ElementType attackerElement))
         {
             ApplyElementHit(attackerElement);
+        }
+    }
+
+    private void TryDamagePlayer(Collider2D other)
+    {
+        if (!canDamage) return;
+        if (other == null || !other.CompareTag("Player")) return;
+
+        bool didDamage = BossHitResolver.TryApplyBossHit(
+            other,
+            damage,
+            transform.position
+        );
+
+        if (didDamage)
+        {
+            StartCoroutine(DamageCooldownRoutine());
         }
     }
 
@@ -133,18 +159,75 @@ public class LatentThornHitbox : MonoBehaviour
 
     private static bool TryGetElementFromAttacker(Collider2D other, out ElementType element)
     {
-        BossProjectile projectile = other.GetComponent<BossProjectile>();
+        if (other == null)
+        {
+            element = default;
+            return false;
+        }
+
+        BossProjectile projectile = other.GetComponentInParent<BossProjectile>();
         if (projectile != null)
         {
             element = projectile.projectileElement;
             return true;
         }
 
-        Bomb bomb = other.GetComponent<Bomb>();
+        Bomb bomb = other.GetComponentInParent<Bomb>();
         if (bomb != null)
         {
             element = bomb.bombElement;
             return true;
+        }
+
+        // Fallback for custom attack hitboxes:
+        // If a collider (or its parent) has an ElementType field/property,
+        // read it by common member names.
+        if (TryReadElementViaReflection(other, out element))
+        {
+            return true;
+        }
+
+        element = default;
+        return false;
+    }
+
+    private static bool TryReadElementViaReflection(Collider2D other, out ElementType element)
+    {
+        string[] memberNames =
+        {
+            "attackElement",
+            "elementType",
+            "element",
+            "projectileElement",
+            "bombElement",
+            "currentElement"
+        };
+
+        Component[] components = other.GetComponentsInParent<Component>(true);
+        for (int i = 0; i < components.Length; i++)
+        {
+            Component comp = components[i];
+            if (comp == null) continue;
+
+            System.Type type = comp.GetType();
+            for (int n = 0; n < memberNames.Length; n++)
+            {
+                string memberName = memberNames[n];
+
+                FieldInfo field = type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (field != null && field.FieldType == typeof(ElementType))
+                {
+                    element = (ElementType)field.GetValue(comp);
+                    return true;
+                }
+
+                PropertyInfo property = type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (property != null && property.PropertyType == typeof(ElementType) && property.CanRead)
+                {
+                    element = (ElementType)property.GetValue(comp);
+                    return true;
+                }
+            }
         }
 
         element = default;

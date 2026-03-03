@@ -1,20 +1,19 @@
-using UnityEngine;
+癤퓎sing UnityEngine;
 
-// 상속: BossProjectile의 기능(풀링, 데미지 등)을 그대로 물려받음
+// Inherits pooling/damage behavior from BossProjectile.
 public class MasqueIllusionProjectile : BossProjectile
 {
     [Header("Trap Settings")]
-    public float trackingDuration = 4f; // 추적 지속 시간 (기획: 4초)
-    public float trapDuration = 3f;     // 구속 제한 시간 (기획: 3초 이내)
-    public int requiredEscapeInputs = 5;// 탈출 카운트 (기획: 5회)
+    public float trackingDuration = 4f;
+    public float trapDuration = 3f;
+    public int requiredEscapeInputs = 5;
 
     private Transform playerTransform;
     private Player trappedPlayer;
-    private bool isTrapping = false;
-    private float stateTimer = 0f;
-    private int currentInputs = 0;
+    private bool isTrapping;
+    private float stateTimer;
+    private int currentInputs;
 
-    // 보스 패턴에서 탄막 생성 시 호출해줄 초기화 함수
     public void InitializeTrap(Transform targetPlayer)
     {
         playerTransform = targetPlayer;
@@ -23,7 +22,6 @@ public class MasqueIllusionProjectile : BossProjectile
         stateTimer = 0f;
         currentInputs = 0;
 
-        // 이전 구속 상태에서 남은 부모 관계를 끊고 재사용 상태를 초기화
         if (transform.parent != null)
         {
             transform.SetParent(null);
@@ -64,12 +62,13 @@ public class MasqueIllusionProjectile : BossProjectile
 
         if (stateTimer >= trapDuration)
         {
-            Debug.Log("탈출 실패! 체력 -1 감소");
-
             PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
             if (playerHealth == null) playerHealth = playerTransform.GetComponentInParent<PlayerHealth>();
 
-            if (playerHealth != null) playerHealth.TakeDamage(damage);
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(damage);
+            }
 
             ReleasePlayer();
             return;
@@ -83,30 +82,19 @@ public class MasqueIllusionProjectile : BossProjectile
             currentInputs++;
             if (currentInputs >= requiredEscapeInputs)
             {
-                Debug.Log("탈출 성공! 데미지 없이 조작 권한 복구");
                 ReleasePlayer();
             }
         }
     }
 
-
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        if (isTrapping)
-        {
-            if (trappedPlayer != null)
-            {
-                trappedPlayer.SetCanMove(true);
-            }
-            else if (Player.Instance != null)
-            {
-                Player.Instance.SetCanMove(true);
-            }
-        }
-
+        base.OnDisable();
+        RestorePlayerControl();
         trappedPlayer = null;
         isTrapping = false;
     }
+
     protected override void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Boss")) return;
@@ -139,7 +127,6 @@ public class MasqueIllusionProjectile : BossProjectile
         }
         else if (Player.Instance != null)
         {
-            // 구버전 구조 호환용 fallback
             Player.Instance.CancelAttack();
             Player.Instance.StopMoving();
             Player.Instance.SetCanMove(false);
@@ -148,21 +135,45 @@ public class MasqueIllusionProjectile : BossProjectile
 
     private void ReleasePlayer()
     {
-        if (trappedPlayer != null)
+        RestorePlayerControl();
+
+        if (transform.parent != null)
         {
-            trappedPlayer.SetCanMove(true);
-        }
-        else if (Player.Instance != null)
-        {
-            Player.Instance.SetCanMove(true);
+            transform.SetParent(null);
         }
 
-        transform.SetParent(null);
         trappedPlayer = null;
         isTrapping = false;
 
         DestroyProjectile();
     }
+
+    public override void DespawnImmediate()
+    {
+        CancelInvoke(nameof(DestroyProjectile));
+        RestorePlayerControl();
+
+        if (transform.parent != null)
+        {
+            transform.SetParent(null);
+        }
+
+        trappedPlayer = null;
+        isTrapping = false;
+        DestroyProjectile();
+    }
+
+    private void RestorePlayerControl()
+    {
+        if (trappedPlayer != null)
+        {
+            trappedPlayer.SetCanMove(true);
+            return;
+        }
+
+        if (Player.Instance != null)
+        {
+            Player.Instance.SetCanMove(true);
+        }
+    }
 }
-
-

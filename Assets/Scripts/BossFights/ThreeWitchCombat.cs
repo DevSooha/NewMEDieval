@@ -53,6 +53,11 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         StartCoroutine(AppearRoutine());
     }
 
+    private void OnDisable()
+    {
+        CleanupOffensivesOnDisable();
+    }
+
     public void OnBossHpChanged(int currentHp, int maxHp)
     {
         int nextPhase = 1;
@@ -160,8 +165,10 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
                 Vector3 spawnPos = transform.position + (rot * Vector3.right * 2.5f);
 
                 GameObject muzzle = Instantiate(fireStartEffect, spawnPos, rot);
+                RegisterBossOffensive(muzzle, true);
 
                 GameObject projectile = Instantiate(fireWallPrefab, spawnPos, rot);
+                RegisterBossOffensive(projectile);
                 projectile.GetComponent<BossProjectile>()?.Setup(ElementType.Fire);
                 Destroy(muzzle, 1.0f);
             }
@@ -184,6 +191,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             Quaternion rot = Quaternion.FromToRotation(Vector3.down, fireDir);
 
             GameObject rayObj = Instantiate(aquaRayPrefab, spawnPos, rot);
+            RegisterBossOffensive(rayObj);
             rayObj.GetComponent<BossProjectile>()?.Setup(ElementType.Water);
         }
         yield return new WaitForSeconds(0.5f);
@@ -204,6 +212,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             Vector3 spawnPos = transform.position + (rot * Vector3.right * 2.5f);
 
             GameObject wallObj = Instantiate(electricWallPrefab, spawnPos, rot);
+            RegisterBossOffensive(wallObj);
             wallObj.GetComponent<BossProjectile>()?.Setup(ElementType.Electric);
         }
 
@@ -220,6 +229,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             Quaternion rot = Quaternion.FromToRotation(Vector3.down, fireDir);
 
             GameObject rayObj = Instantiate(electricRayPrefab, spawnPos, rot);
+            RegisterBossOffensive(rayObj);
             rayObj.GetComponent<BossProjectile>()?.Setup(ElementType.Electric);
         }
     }

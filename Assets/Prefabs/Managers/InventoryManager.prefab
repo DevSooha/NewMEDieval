@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8684582519390542535}
   - component: {fileID: 3205105243500157674}
-  - component: {fileID: 318690062588908932}
   m_Layer: 5
   m_Name: InventoryManager
   m_TagString: Untagged
@@ -54,18 +53,3 @@ MonoBehaviour:
   slotPerPotionPage: 5
   currentMaterialPage: 0
   currentPotionPage: 0
---- !u!114 &318690062588908932
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 350788919678288017}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1c6f642303b55fe4d864acdf2fb10f4e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TestInventory
-  inventory: {fileID: 3205105243500157674}
-  testItem1: {fileID: 11400000, guid: 45050787700e243429be702c4ac9c2a0, type: 2}
-  testItem2: {fileID: 11400000, guid: d683e4c8fb702e849a7a43d9aef42ecd, type: 2}

@@ -16,6 +16,20 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
     
     public int SlotIndex { get; set; }
 
+    private void Awake()
+    {
+        EnsureImageRefs();
+        EnsureVisualOrder();
+        EnsureClickArea();
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        EnsureImageRefs();
+    }
+#endif
+
     public void Init(InventoryUI ui, int index)
     {
         inventoryUI = ui;
@@ -25,75 +39,114 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
 
     public void OnClick()
     {
+        OnClick(PointerEventData.InputButton.Right);
+    }
+
+    public void OnClick(PointerEventData.InputButton button)
+    {
         if (inventoryUI != null)
         {
-            inventoryUI.OnPotionSlotClicked(SlotIndex);
+            inventoryUI.OnPotionSlotClicked(SlotIndex, button);
         }
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (eventData.button != PointerEventData.InputButton.Left)
+        if (eventData.button != PointerEventData.InputButton.Right)
         {
             return;
         }
-        OnClick();
+        OnClick(eventData.button);
     }
 
     public void SetPotion(Potion potion)
     {
+        EnsureImageRefs();
+        EnsureVisualOrder();
+
         currentPotion = potion;
         
         if (potion != null && potion.data != null)
         {
-            if (potion.data.topIMG != null)
+            PotionVisualParts visualParts = PotionVisualResolver.Resolve(potion.data);
+
+            Sprite topSprite = visualParts.Top;
+            if (topIMG != null && topSprite != null)
             {
-                topIMG.sprite = potion.data.topIMG;
+                topIMG.sprite = topSprite;
+                topIMG.color = Color.white;
                 topIMG.enabled = true;
             }
-            else
+            else if (topIMG != null)
             {
                 topIMG.enabled = false;
             }
             
-            if (potion.data.bottomIMG != null)
+            Sprite bottomSprite = visualParts.Bottom;
+            if (bottomIMG != null && bottomSprite != null)
             {
-                bottomIMG.sprite = potion.data.bottomIMG;
+                bottomIMG.sprite = bottomSprite;
+                bottomIMG.color = Color.white;
                 bottomIMG.enabled = true;
             }
-            else
+            else if (bottomIMG != null)
             {
                 bottomIMG.enabled = false;
             }
             
-            frame.enabled = true;
+            if (frame != null)
+            {
+                if (visualParts.Frame != null)
+                {
+                    frame.sprite = visualParts.Frame;
+                }
+
+                frame.enabled = frame.sprite != null;
+            }
             
-            if (potion.data.isStackable && potion.quantity > 1)
+            if (quantityText != null && potion.data.isStackable && potion.quantity > 1)
             {
                 quantityText.text = potion.quantity.ToString();
                 quantityText.enabled = true;
             }
-            else
+            else if (quantityText != null)
             {
                 quantityText.enabled = false;
             }
+        }
+        else
+        {
+            Clear();
         }
     }
     
     public void Clear()
     {
+        EnsureImageRefs();
+        EnsureVisualOrder();
+
         currentPotion = null;
-        topIMG.enabled = false;
-        bottomIMG.enabled = false;
-        frame.enabled = false;
-        quantityText.enabled = false;
+        if (topIMG != null) topIMG.enabled = false;
+        if (bottomIMG != null) bottomIMG.enabled = false;
+        if (frame != null) frame.enabled = false;
+        if (quantityText != null) quantityText.enabled = false;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (currentPotion != null && inventoryUI != null)
         {
-            inventoryUI.ShowPotionTooltip(currentPotion, eventData.position);
+            Vector3 anchorPosition = eventData.position;
+            RectTransform rect = transform as RectTransform;
+            if (rect != null)
+            {
+                Vector3[] corners = new Vector3[4];
+                rect.GetWorldCorners(corners);
+                Camera cam = eventData != null ? eventData.enterEventCamera : null;
+                anchorPosition = RectTransformUtility.WorldToScreenPoint(cam, corners[1]);
+            }
+
+            inventoryUI.ShowPotionTooltip(currentPotion, anchorPosition);
         }
     }
 
@@ -119,5 +172,88 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
 
         clickArea.color = new Color(1f, 1f, 1f, 0f);
         clickArea.raycastTarget = true;
+    }
+
+    private void EnsureImageRefs()
+    {
+        if (topIMG == null)
+        {
+            topIMG = FindImageByName("TopHalf");
+        }
+
+        if (bottomIMG == null)
+        {
+            bottomIMG = FindImageByName("BottomHalf");
+        }
+
+        if (frame == null)
+        {
+            frame = FindImageByName("Frame");
+        }
+
+        if (quantityText == null)
+        {
+            quantityText = GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+    }
+
+    private Image FindImageByName(string objectName)
+    {
+        if (string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        Transform child = transform.Find(objectName);
+        if (child != null)
+        {
+            return child.GetComponent<Image>();
+        }
+
+        Transform[] allChildren = GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < allChildren.Length; i++)
+        {
+            Transform t = allChildren[i];
+            if (t == null) continue;
+
+            if (string.Equals(t.name, objectName, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return t.GetComponent<Image>();
+            }
+        }
+
+        return null;
+    }
+
+    private void EnsureVisualOrder()
+    {
+        if (!Application.isPlaying)
+        {
+            return;
+        }
+
+        if (topIMG == null || bottomIMG == null)
+        {
+            return;
+        }
+
+        Transform parent = topIMG.transform.parent;
+        if (parent == null || bottomIMG.transform.parent != parent)
+        {
+            return;
+        }
+
+        bottomIMG.transform.SetSiblingIndex(0);
+        topIMG.transform.SetSiblingIndex(1);
+
+        if (frame != null && frame.transform.parent == parent)
+        {
+            frame.transform.SetAsLastSibling();
+        }
+
+        if (quantityText != null && quantityText.transform.parent == parent)
+        {
+            quantityText.transform.SetAsLastSibling();
+        }
     }
 }

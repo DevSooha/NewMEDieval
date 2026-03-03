@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Scripts/Field/win_3.asset.meta
+guid: 7bc810811c44c82468d3800bc527bea7
+========
 guid: df844122793586b4fac58eb0067ea489
+>>>>>>>> origin/hyunseo:Assets/Scripts/Field/win_0.asset.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 11400000

@@ -41,6 +41,8 @@ public class RoomManager : MonoBehaviour
     private bool isCoolingDown = false;
     private bool isTransitioning = false;
 
+    public bool CanProcessMoveRequest => !isTransitioning && !isCoolingDown && (BossManager.Instance == null || !BossManager.Instance.IsBossActive);
+
     private Vector3 lastSafeEntryPosition;
 
     // ???�??꾩뿉??'??諛⑹? ???꾩튂'??湲곗�??�꽌 roomCoord ??�닔/以묐???�줈 ?명븳 0,0 ??�룿/寃�?�??以꾩??
@@ -245,6 +247,17 @@ public class RoomManager : MonoBehaviour
 
     public void RequestMove(Vector2 direction, RoomData nextRoom, float distanceOverride = 0f)
     {
+        // Fail-safe: clear stale boss-lock state if no active boss object exists.
+        if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+        {
+            GameObject[] activeBosses = GameObject.FindGameObjectsWithTag("Boss");
+            if (activeBosses == null || activeBosses.Length == 0)
+            {
+                Debug.LogWarning("[RoomManager] Boss lock was active without an active Boss-tag object. Auto-ending boss battle.");
+                BossManager.Instance.EndBossBattle();
+            }
+        }
+
         if (isTransitioning || (BossManager.Instance != null && BossManager.Instance.IsBossActive)) return;
         if (isCoolingDown) return;
         if (nextRoom == null) return;

@@ -4,6 +4,7 @@ public class EnemyMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
     private EnemyCombat enemyCombat;
+    private EnemyStatusController statusController;
     private Transform player;
     private EnemyState enemyState;
     private float facingDirection = -1;
@@ -20,6 +21,7 @@ public class EnemyMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         enemyCombat = GetComponent<EnemyCombat>();
+        statusController = GetComponent<EnemyStatusController>();
 
         if (detectionPoint == null)
         {
@@ -38,9 +40,21 @@ public class EnemyMovement : MonoBehaviour
 
     void Update()
     {
+        if (statusController == null)
+        {
+            statusController = GetComponent<EnemyStatusController>();
+        }
+
         if (enemyCombat != null && enemyCombat.IsAttacking)
         {
             ChangeState(EnemyState.Attacking);
+            Stop();
+            return;
+        }
+
+        if (statusController != null && statusController.IsStunned)
+        {
+            ChangeState(EnemyState.Idle);
             Stop();
             return;
         }
@@ -156,7 +170,8 @@ public class EnemyMovement : MonoBehaviour
             }
         }
 
-        rb.linearVelocity = direction * movespeed;
+        float speedScale = statusController != null ? statusController.SpeedMultiplier : 1f;
+        rb.linearVelocity = direction * (movespeed * speedScale);
     }
 
     private void FlipX()
