@@ -10,6 +10,7 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private float hitBlinkInterval = 0.16f;
 
     private int currentHP;
+    private int temporaryMaxHpBonus;
     private bool isInvulnerable;
     private Coroutine invulnerableRoutine;
 
@@ -18,6 +19,7 @@ public class PlayerHealth : MonoBehaviour
 
     public int MaxHP => maxHP;
     public int CurrentHP => currentHP;
+    public int EffectiveMaxHp => maxHP + temporaryMaxHpBonus;
     public bool IsInvulnerable => isInvulnerable;
 
     private void Awake()
@@ -36,7 +38,7 @@ public class PlayerHealth : MonoBehaviour
         if (isInvulnerable) return;
 
         currentHP -= amount;
-        currentHP = Mathf.Clamp(currentHP, 0, maxHP);
+        currentHP = Mathf.Clamp(currentHP, 0, EffectiveMaxHp);
 
         NotifyHealthChanged();
 
@@ -76,6 +78,7 @@ public class PlayerHealth : MonoBehaviour
     public void Resurrect()
     {
         currentHP = maxHP;
+        temporaryMaxHpBonus = 0;
         SetInvulnerable(false);
 
         if (invulnerableRoutine != null)
@@ -92,8 +95,18 @@ public class PlayerHealth : MonoBehaviour
         if (amount <= 0) return;
 
         currentHP += amount;
-        currentHP = Mathf.Clamp(currentHP, 0, maxHP);
+        currentHP = Mathf.Clamp(currentHP, 0, EffectiveMaxHp);
 
+        NotifyHealthChanged();
+    }
+
+    public void HealWithOvercap(int amount, int bonusMaxHp)
+    {
+        if (amount <= 0) return;
+
+        temporaryMaxHpBonus = Mathf.Max(temporaryMaxHpBonus, Mathf.Max(0, bonusMaxHp));
+        currentHP += amount;
+        currentHP = Mathf.Clamp(currentHP, 0, EffectiveMaxHp);
         NotifyHealthChanged();
     }
 
@@ -115,7 +128,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void NotifyHealthChanged()
     {
-        OnHealthChanged?.Invoke(currentHP, maxHP);
+        OnHealthChanged?.Invoke(currentHP, EffectiveMaxHp);
     }
 
     private void Die()

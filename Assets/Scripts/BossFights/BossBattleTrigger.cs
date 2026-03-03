@@ -21,6 +21,13 @@ public class BossBattleTrigger : MonoBehaviour
 
     private bool hasTriggered = false;
     private Transform playerTransform;
+    private bool isSubscribedToBossEndEvent;
+    private bool battleStarted;
+
+    private void OnEnable()
+    {
+        TrySubscribeBossEndEvent();
+    }
 
     private void Start()
     {
@@ -30,21 +37,37 @@ public class BossBattleTrigger : MonoBehaviour
             assignedBoss.gameObject.SetActive(false);
 
         SetBlockades(false);
+        TrySubscribeBossEndEvent();
+    }
 
-        if (BossManager.Instance != null)
-        {
-            BossManager.Instance.OnBossBattleEnded += OnBattleEnded;
-        }
+    private void TrySubscribeBossEndEvent()
+    {
+        if (isSubscribedToBossEndEvent) return;
+        if (BossManager.Instance == null) return;
+
+        BossManager.Instance.OnBossBattleEnded += OnBattleEnded;
+        isSubscribedToBossEndEvent = true;
     }
 
     private void Update()
     {
         if (!hasTriggered) return;
-        if (BossManager.Instance == null || !BossManager.Instance.IsBossActive) return;
+
+        if (!isSubscribedToBossEndEvent)
+        {
+            TrySubscribeBossEndEvent();
+        }
 
         if (assignedBoss == null || !assignedBoss.gameObject.activeInHierarchy)
         {
-            BossManager.Instance.EndBossBattle();
+            if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+            {
+                BossManager.Instance.EndBossBattle();
+                return;
+            }
+
+            // Safety fallback when boss end event subscription was missed.
+            SetBlockades(false);
         }
     }
 
@@ -54,14 +77,22 @@ public class BossBattleTrigger : MonoBehaviour
         {
             Time.timeScale = 1f;
         }
+
+        TryUnsubscribeBossEndEvent();
     }
 
     private void OnDestroy()
     {
-        if (BossManager.Instance != null)
-        {
-            BossManager.Instance.OnBossBattleEnded -= OnBattleEnded;
-        }
+        TryUnsubscribeBossEndEvent();
+    }
+
+    private void TryUnsubscribeBossEndEvent()
+    {
+        if (!isSubscribedToBossEndEvent) return;
+        if (BossManager.Instance == null) return;
+
+        BossManager.Instance.OnBossBattleEnded -= OnBattleEnded;
+        isSubscribedToBossEndEvent = false;
     }
 
     private void OnBattleEnded()
@@ -69,6 +100,11 @@ public class BossBattleTrigger : MonoBehaviour
         if (hasTriggered)
         {
             SetBlockades(false);
+            if (battleStarted && UIManager.Instance != null)
+            {
+                UIManager.Instance.ShowWarning("Now you can proceed.");
+            }
+            battleStarted = false;
             Debug.Log("[BossTrigger] Boss defeated. Reopening blockades.");
         }
     }
@@ -79,7 +115,10 @@ public class BossBattleTrigger : MonoBehaviour
 
         foreach (Transform child in blockadeParent.transform)
         {
-            child.gameObject.SetActive(isActive);
+            bool isMapNode = child.GetComponent<MapNode>() != null;
+            // Some rooms wire MapNodes as blockadeParent.
+            // In that setup, "blockades active" means map nodes must be disabled.
+            child.gameObject.SetActive(isMapNode ? !isActive : isActive);
         }
     }
 
@@ -132,6 +171,25 @@ public class BossBattleTrigger : MonoBehaviour
     public void CancelBattle()
     {
         Time.timeScale = 1f;
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.HideSelectPanel();
+        }
+
+        SetBlockades(false);
+
+        if (assignedBoss != null && assignedBoss.gameObject.activeSelf)
+        {
+            assignedBoss.gameObject.SetActive(false);
+        }
+
+        // Defensive reset for any stale boss-active state when player declines battle.
+        if (BossManager.Instance != null)
+        {
+            battleStarted = false;
+            BossManager.Instance.EndBossBattle();
+        }
 
         if (playerTransform != null)
         {
@@ -205,6 +263,7 @@ public class BossBattleTrigger : MonoBehaviour
 
             if (BossManager.Instance != null)
             {
+                battleStarted = true;
                 BossManager.Instance.NotifyBossStart();
             }
         }

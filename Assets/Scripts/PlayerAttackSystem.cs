@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -30,6 +31,8 @@ public class PlayerAttackSystem : MonoBehaviour
     [Header("Prefabs")]
     public GameObject defaultBombPrefab;
     public GameObject stackMarkerPrefab;
+    [SerializeField] private LayerMask bombBlockLayer;
+    [SerializeField] private float bombBlockCheckRadius = 0.2f;
 
     [Header("Weapon Slots")]
     public List<WeaponSlot> slots = new();
@@ -45,7 +48,11 @@ public class PlayerAttackSystem : MonoBehaviour
 
     private float chargeStartTime;
     private int currentStack = 0;
+    private Coroutine chargeRoutine;
     private readonly List<GameObject> activeMarkers = new();
+    private readonly List<Tilemap> cachedGroundTilemaps = new();
+    private bool groundTilemapsCached;
+    private float nextInventoryUiResolveTime;
 
 
     void Start()
@@ -65,6 +72,12 @@ public class PlayerAttackSystem : MonoBehaviour
             }
         }
 
+        if (bombBlockLayer.value == 0)
+        {
+            bombBlockLayer = LayerMask.GetMask("Obstacle");
+        }
+
+        CacheGroundTilemaps();
         EnsureCoreSlots();
 
         // Weapon status UI removed.
@@ -75,6 +88,11 @@ public class PlayerAttackSystem : MonoBehaviour
         UpdateAimDirection();
         EnsureCoreSlots();
         SyncPotionSlotCounts();
+
+        if (IsAttackPressed() && interactionSensor != null && interactionSensor.TryInteract())
+        {
+            return;
+        }
 
         if (!isAttack && !isCharging && Input.GetKeyDown(KeyCode.C))
         {
@@ -99,22 +117,100 @@ public class PlayerAttackSystem : MonoBehaviour
         }
     }
 
-    public void EquipPotionFromInventory(Potion potion)
+    public bool EquipPotionFromInventory(Potion potion)
     {
         if (potion == null || potion.data == null)
-            return;
+            return false;
 
         EnsureCoreSlots();
-        int potionSlotIndex = 1;
+        int existingSlotIndex = FindEquippedPotionSlotIndex(potion);
+        if (existingSlotIndex >= 0)
+        {
+            return true;
+        }
+
+        int potionSlotIndex = FindFirstAvailablePotionSlotIndex();
+        if (potionSlotIndex < 0)
+        {
+            NotifyPotionEquipFailed("No empty potion slot available.");
+            return false;
+        }
 
         WeaponSlot slot = slots[potionSlotIndex];
+        if (slot == null)
+        {
+            slot = new WeaponSlot();
+        }
+
         slot.type = WeaponType.PotionBomb;
         slot.equippedPotion = potion;
-        slot.count = potion.quantity;
+        slot.count = Mathf.Max(1, potion.quantity);
         slot.specificPrefab = null;
 
         slots[potionSlotIndex] = slot;
+        NotifyWeaponSlotsChanged(compactSlots: false);
+        return true;
+    }
 
+    public int FindFirstAvailablePotionSlotIndex()
+    {
+        EnsureCoreSlots();
+        for (int i = 1; i < slots.Count; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot == null)
+            {
+                return i;
+            }
+
+            if (slot.type == WeaponType.None && slot.equippedPotion == null)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private int FindEquippedPotionSlotIndex(Potion potion)
+    {
+        if (potion == null)
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < slots.Count; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot == null)
+            {
+                continue;
+            }
+
+            if (slot.type != WeaponType.PotionBomb)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(slot.equippedPotion, potion))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void NotifyPotionEquipFailed(string message)
+    {
+        TryResolveInventoryUI();
+
+        if (inventoryUI != null)
+        {
+            inventoryUI.RefreshUI();
+        }
+
+        Debug.LogWarning($"[PlayerAttackSystem] {message}");
     }
 
     void UpdateAimDirection()
@@ -172,24 +268,40 @@ public class PlayerAttackSystem : MonoBehaviour
             return;
         }
 
-        if (IsAttackPressed())
+        if (IsAttackPressed() && !isCharging)
         {
             isCharging = true;
             chargeStartTime = Time.time;
             currentStack = 0;
+            ClearMarkers();
             if (playerMovement != null) playerMovement.SetCanMove(false);
-            StartCoroutine(ChargeRoutine());
+            if (chargeRoutine != null)
+            {
+                StopCoroutine(chargeRoutine);
+            }
+            chargeRoutine = StartCoroutine(ChargeRoutine());
         }
 
-        if (IsAttackReleased())
+        if (IsAttackReleased() && isCharging)
         {
             isCharging = false;
-            StopAllCoroutines();
+            if (chargeRoutine != null)
+            {
+                StopCoroutine(chargeRoutine);
+                chargeRoutine = null;
+            }
             if (playerMovement != null) playerMovement.SetCanMove(true);
 
             float duration = Time.time - chargeStartTime;
-            if (duration < 0.5f) SpawnBombAt(1);
-            else SpawnBombsByStack();
+            int spawnedCount = duration < 0.5f
+                ? (SpawnBombAt(1) ? 1 : 0)
+                : SpawnBombsAtMarkerTiles();
+
+            if (spawnedCount > 0)
+            {
+                UseAmmo(1);
+                RotateWeaponSlots();
+            }
 
             ClearMarkers();
         }
@@ -200,46 +312,55 @@ public class PlayerAttackSystem : MonoBehaviour
         while (isCharging)
         {
             float t = Time.time - chargeStartTime;
-            int targetStack = 0;
-            if (t >= 1.5f) targetStack = 3;
-            else if (t >= 1.0f) targetStack = 2;
-            else if (t >= 0.5f) targetStack = 1;
+            int targetByTime = GetChargeStackByTime(t);
+            int reachableCap = GetReachableStackLimit();
+            int nextTargetStack = Mathf.Min(targetByTime, reachableCap);
 
-            if (slots[0].count != -1 && targetStack > slots[0].count)
+            while (currentStack < nextTargetStack)
             {
-                targetStack = slots[0].count;
-            }
-
-            if (targetStack > currentStack && targetStack <= 3)
-            {
-                Vector2 nextPos = (Vector2)transform.position + ((currentStack + 1) * tileSize * aimDirection);
-
-                if (IsValidTile(nextPos))
-                {
-                    currentStack = targetStack;
-                    ShowStackMarker(currentStack);
-                }
+                currentStack++;
+                ShowStackMarker(currentStack);
             }
 
             yield return null;
         }
     }
 
+    int GetChargeStackByTime(float elapsed)
+    {
+        if (elapsed >= 1.5f) return 3;
+        if (elapsed >= 1.0f) return 2;
+        if (elapsed >= 0.5f) return 1;
+        return 0;
+    }
+
+    int GetReachableStackLimit()
+    {
+        int reachable = 0;
+        for (int i = 1; i <= 3; i++)
+        {
+            if (CanPlaceBombAtDistance(i))
+            {
+                reachable = i;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return reachable;
+    }
+
     bool IsValidTile(Vector2 pos)
     {
-        if (floorTilemap != null)
-        {
-            Vector3Int cellPos = floorTilemap.WorldToCell(pos);
-            return floorTilemap.HasTile(cellPos);
-        }
-        return true;
+        return HasGroundTileAtPosition(pos);
     }
 
     void ShowStackMarker(int stackIndex)
     {
         if (stackMarkerPrefab == null) return;
 
-        Vector2 spawnPos = (Vector2)transform.position + (stackIndex * tileSize * aimDirection);
+        Vector2 spawnPos = (Vector2)transform.position + (stackIndex * tileSize * GetAimDirection());
         GameObject marker = Instantiate(stackMarkerPrefab, spawnPos, Quaternion.identity);
         activeMarkers.Add(marker);
     }
@@ -253,40 +374,235 @@ public class PlayerAttackSystem : MonoBehaviour
         activeMarkers.Clear();
     }
 
-    void SpawnBombAt(int distance)
+    bool SpawnBombAt(int distance)
     {
-        if (slots.Count == 0) return;
+        if (slots.Count == 0) return false;
+        if (slots[0].type != WeaponType.PotionBomb) return false;
 
-        Vector2 spawnPos = (Vector2)transform.position + (distance * tileSize * aimDirection);
-        if (!IsValidTile(spawnPos)) return;
+        Vector2 spawnPos = (Vector2)transform.position + (distance * tileSize * GetAimDirection());
+        if (!CanPlaceBombAtDistance(distance)) return false;
+
+        return SpawnBombAtPosition(spawnPos);
+    }
+
+    private bool SpawnBombAtPosition(Vector2 spawnPos)
+    {
+        if (slots.Count == 0) return false;
+        if (slots[0].type != WeaponType.PotionBomb) return false;
+        if (!CanPlaceBombAtPosition(spawnPos)) return false;
 
         WeaponSlot slot = slots[0];
-        GameObject prefabToUse = slot.specificPrefab != null ? slot.specificPrefab : defaultBombPrefab;
-        if (prefabToUse == null) return;
+        GameObject prefabToUse = defaultBombPrefab != null ? defaultBombPrefab : slot.specificPrefab;
+        if (prefabToUse == null) return false;
 
         GameObject bombObj = Instantiate(prefabToUse, spawnPos, Quaternion.identity);
         Bomb bomb = bombObj.GetComponent<Bomb>();
-        if (bomb != null && slot.equippedPotion != null && slot.equippedPotion.data != null)
+        if (bomb != null)
         {
-            bomb.baseDamage = slot.equippedPotion.data.damage1 + slot.equippedPotion.data.damage2;
-            bomb.bombElement = ConvertElement(slot.equippedPotion.data.element1);
+            bomb.SetProjectileOwner(transform);
+            if (slot.equippedPotion != null && slot.equippedPotion.data != null)
+            {
+                bomb.ConfigureFromPotionData(slot.equippedPotion.data);
+            }
         }
 
-        UseAmmo(1);
+        if (slot.equippedPotion != null && slot.equippedPotion.data != null)
+        {
+            BombVisualRenderer visualRenderer = bombObj.GetComponent<BombVisualRenderer>();
+            if (visualRenderer == null)
+            {
+                visualRenderer = bombObj.AddComponent<BombVisualRenderer>();
+            }
+
+            visualRenderer.Apply(slot.equippedPotion.data);
+        }
+
+        return true;
     }
 
-    void SpawnBombsByStack()
+    int SpawnBombsAtMarkerTiles()
     {
-        if (currentStack == 0)
+        if (activeMarkers.Count == 0)
         {
-            SpawnBombAt(1);
-            return;
+            return SpawnBombAt(1) ? 1 : 0;
         }
 
-        for (int i = 1; i <= currentStack; i++)
+        int spawnedCount = 0;
+        for (int i = 0; i < activeMarkers.Count; i++)
         {
-            SpawnBombAt(i);
+            GameObject marker = activeMarkers[i];
+            if (marker == null)
+            {
+                continue;
+            }
+
+            Vector2 markerPosition = marker.transform.position;
+            if (!SpawnBombAtPosition(markerPosition))
+            {
+                continue;
+            }
+
+            spawnedCount++;
         }
+
+        return spawnedCount;
+    }
+
+    bool CanPlaceBombAtDistance(int distance)
+    {
+        Vector2 spawnPos = (Vector2)transform.position + (distance * tileSize * GetAimDirection());
+        return CanPlaceBombAtPosition(spawnPos);
+    }
+
+    bool CanPlaceBombAtPosition(Vector2 spawnPos)
+    {
+        if (!IsValidTile(spawnPos))
+        {
+            return false;
+        }
+
+        return !IsBombPlacementBlocked(spawnPos);
+    }
+
+    bool IsBombPlacementBlocked(Vector2 pos)
+    {
+        if (bombBlockLayer.value == 0)
+        {
+            return false;
+        }
+
+        float radius = Mathf.Max(0.05f, bombBlockCheckRadius);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(pos, radius, bombBlockLayer);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider2D hit = hits[i];
+            if (hit == null) continue;
+            if (hit.isTrigger) continue;
+            if (hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
+            if (IsEnemyMonsterBossHit(hit)) continue;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool HasGroundTileAtPosition(Vector2 worldPos)
+    {
+        if (!groundTilemapsCached || cachedGroundTilemaps.Count == 0)
+        {
+            CacheGroundTilemaps();
+        }
+
+        for (int i = 0; i < cachedGroundTilemaps.Count; i++)
+        {
+            Tilemap tilemap = cachedGroundTilemaps[i];
+            if (tilemap == null) continue;
+
+            Vector3Int cellPos = tilemap.WorldToCell(worldPos);
+            if (tilemap.HasTile(cellPos))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void CacheGroundTilemaps()
+    {
+        groundTilemapsCached = true;
+        cachedGroundTilemaps.Clear();
+
+        if (floorTilemap != null && IsGroundTilemap(floorTilemap))
+        {
+            cachedGroundTilemaps.Add(floorTilemap);
+        }
+
+        Tilemap[] tilemaps = FindObjectsByType<Tilemap>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < tilemaps.Length; i++)
+        {
+            Tilemap tilemap = tilemaps[i];
+            if (tilemap == null || !IsGroundTilemap(tilemap))
+            {
+                continue;
+            }
+
+            if (!cachedGroundTilemaps.Contains(tilemap))
+            {
+                cachedGroundTilemaps.Add(tilemap);
+            }
+        }
+
+    }
+
+    private static bool IsGroundTilemap(Tilemap tilemap)
+    {
+        if (tilemap == null)
+        {
+            return false;
+        }
+
+        return HasIdentityInHierarchy(tilemap.transform, "Ground", "ground")
+            || HasIdentityInHierarchy(tilemap.transform, "Floor", "floor");
+    }
+
+    private static bool IsEnemyMonsterBossHit(Collider2D hit)
+    {
+        if (hit == null)
+        {
+            return false;
+        }
+
+        if (hit.GetComponentInParent<EnemyCombat>() != null)
+        {
+            return true;
+        }
+
+        if (hit.GetComponentInParent<BossHealth>() != null)
+        {
+            return true;
+        }
+
+        Transform t = hit.transform;
+        return HasIdentityInHierarchy(t, "Enemy", "enemy")
+            || HasIdentityInHierarchy(t, "Monster", "monster")
+            || HasIdentityInHierarchy(t, "Boss", "boss");
+    }
+
+    private static bool HasIdentityInHierarchy(Transform transformNode, string tagKeyword, string nameKeyword)
+    {
+        Transform current = transformNode;
+        while (current != null)
+        {
+            if (!string.IsNullOrEmpty(tagKeyword))
+            {
+                string tagName = current.tag;
+                if (!string.IsNullOrEmpty(tagName)
+                    && tagName.IndexOf(tagKeyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(nameKeyword))
+            {
+                string objectName = current.name;
+                if (!string.IsNullOrEmpty(objectName)
+                    && objectName.IndexOf(nameKeyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            current = current.parent;
+        }
+
+        return false;
+    }
+
+    Vector2 GetAimDirection()
+    {
+        return aimDirection.sqrMagnitude > 0.001f ? aimDirection.normalized : Vector2.down;
     }
 
     void UseAmmo(int amount)
@@ -295,16 +611,21 @@ public class PlayerAttackSystem : MonoBehaviour
 
         WeaponSlot slot = slots[0];
         if (slot.type != WeaponType.PotionBomb) return;
+        bool consumedAny = false;
+        bool shouldNormalizeAfterUse = false;
 
         if (slot.equippedPotion != null)
         {
             slot.equippedPotion.quantity -= amount;
+            consumedAny = true;
             if (slot.equippedPotion.quantity <= 0)
             {
                 RemovePotionFromInventory(slot.equippedPotion);
                 slot.equippedPotion = null;
-                slot.type = WeaponType.Melee;
+                slot.type = WeaponType.None;
                 slot.count = -1;
+                slot.specificPrefab = null;
+                shouldNormalizeAfterUse = true;
             }
             else
             {
@@ -316,27 +637,43 @@ public class PlayerAttackSystem : MonoBehaviour
             if (slot.count != -1)
             {
                 slot.count -= amount;
+                consumedAny = true;
             }
 
             if (slot.count <= 0)
             {
-                slot.type = WeaponType.Melee;
+                slot.type = WeaponType.None;
                 slot.count = -1;
+                slot.specificPrefab = null;
+                shouldNormalizeAfterUse = true;
             }
+        }
+
+        slots[0] = slot;
+
+        if (consumedAny)
+        {
+            if (shouldNormalizeAfterUse)
+            {
+                // Keep slot positions after depletion so consumed slot can remain visually empty.
+                NormalizeWeaponSlots(compactSlots: false);
+            }
+            RefreshWeaponAndInventoryUI();
         }
 
     }
 
     void RotateWeaponSlots()
     {
-        if (slots.Count <= 1) return;
-
-        CompactSlots();
+        EnsureCoreSlots();
+        NormalizeWeaponSlots(compactSlots: true);
+        if (CountUsableSlots() <= 1) return;
 
         int currentIndex = 0;
         int nextIndex = FindNextNonEmptyIndex(currentIndex);
         if (nextIndex <= 0) return;
         RotateListToIndex(nextIndex);
+        RefreshWeaponAndInventoryUI();
     }
 
     int FindNextNonEmptyIndex(int startIndex)
@@ -366,26 +703,7 @@ public class PlayerAttackSystem : MonoBehaviour
 
     void CompactSlots()
     {
-        if (slots.Count <= 1) return;
-
-        List<WeaponSlot> compacted = new List<WeaponSlot>(slots.Count);
-
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (slots[i].type != WeaponType.None)
-            {
-                compacted.Add(slots[i]);
-            }
-        }
-
-        int emptyCount = slots.Count - compacted.Count;
-        for (int i = 0; i < emptyCount; i++)
-        {
-            compacted.Add(new WeaponSlot { type = WeaponType.None, count = -1 });
-        }
-
-        slots.Clear();
-        slots.AddRange(compacted);
+        NormalizeWeaponSlots(compactSlots: true);
     }
 
     bool IsAttackPressed()
@@ -401,6 +719,7 @@ public class PlayerAttackSystem : MonoBehaviour
     void SyncPotionSlotCounts()
     {
         EnsureCoreSlots();
+        bool slotChanged = false;
         for (int i = 0; i < slots.Count; i++)
         {
             WeaponSlot slot = slots[i];
@@ -411,6 +730,7 @@ public class PlayerAttackSystem : MonoBehaviour
             if (slot.count != qty)
             {
                 slot.count = qty;
+                slotChanged = true;
             }
 
             if (qty == 0)
@@ -418,7 +738,15 @@ public class PlayerAttackSystem : MonoBehaviour
                 slot.type = WeaponType.None;
                 slot.count = -1;
                 slot.equippedPotion = null;
+                slot.specificPrefab = null;
+                slotChanged = true;
             }
+        }
+
+        if (slotChanged)
+        {
+            NormalizeWeaponSlots(compactSlots: true);
+            RefreshWeaponAndInventoryUI();
         }
 
         // Weapon status UI removed.
@@ -442,12 +770,50 @@ public class PlayerAttackSystem : MonoBehaviour
         Inventory inv = Inventory.Instance;
         if (inv == null || potion == null) return;
 
-        List<Potion> list = inv.PotionItems;
-        int idx = list.IndexOf(potion);
-        if (idx >= 0)
+        inv.RemovePotionCompletely(potion);
+    }
+
+    void RefreshWeaponSlotUI()
+    {
+        WeaponSlotUI slotUI = FindFirstObjectByType<WeaponSlotUI>(FindObjectsInactive.Include);
+        if (slotUI != null)
         {
-            list.RemoveAt(idx);
+            slotUI.ForceRefresh();
         }
+    }
+
+    void RefreshWeaponAndInventoryUI()
+    {
+        RefreshWeaponSlotUI();
+
+        TryResolveInventoryUI();
+
+        if (inventoryUI != null)
+        {
+            inventoryUI.RefreshUI();
+        }
+    }
+
+    private void TryResolveInventoryUI()
+    {
+        if (inventoryUI != null)
+        {
+            return;
+        }
+
+        if (Time.unscaledTime < nextInventoryUiResolveTime)
+        {
+            return;
+        }
+
+        nextInventoryUiResolveTime = Time.unscaledTime + 0.25f;
+        inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+    }
+
+    public void NotifyWeaponSlotsChanged(bool compactSlots = true)
+    {
+        NormalizeWeaponSlots(compactSlots);
+        RefreshWeaponAndInventoryUI();
     }
 
     void EnsureCoreSlots()
@@ -457,19 +823,156 @@ public class PlayerAttackSystem : MonoBehaviour
             slots.Add(new WeaponSlot { type = WeaponType.Melee, count = -1 });
         }
 
-        if (slots[0].type != WeaponType.Melee && slots[0].type != WeaponType.PotionBomb)
-        {
-            slots[0].type = WeaponType.Melee;
-            slots[0].count = -1;
-            slots[0].equippedPotion = null;
-        }
-
         while (slots.Count < 4)
         {
             slots.Add(new WeaponSlot { type = WeaponType.None, count = -1 });
         }
     }
 
+    public bool IsCurrentSlotPotion()
+    {
+        EnsureCoreSlots();
+        if (slots == null || slots.Count == 0)
+        {
+            return false;
+        }
+
+        WeaponSlot slot = slots[0];
+        if (slot == null)
+        {
+            return false;
+        }
+
+        return slot.type == WeaponType.PotionBomb
+            && slot.equippedPotion != null
+            && slot.equippedPotion.quantity > 0;
+    }
+
+    void NormalizeWeaponSlots(bool compactSlots = true)
+    {
+        EnsureCoreSlots();
+        int slotCount = slots.Count;
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot == null)
+            {
+                slot = new WeaponSlot();
+            }
+
+            SanitizeSlot(slot);
+            slots[i] = slot;
+        }
+
+        if (!compactSlots)
+        {
+            return;
+        }
+
+        List<WeaponSlot> compacted = new List<WeaponSlot>(slotCount);
+        bool meleeIncluded = false;
+        for (int i = 0; i < slotCount; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot == null || slot.type == WeaponType.None)
+            {
+                continue;
+            }
+
+            if (slot.type == WeaponType.Melee)
+            {
+                if (meleeIncluded)
+                {
+                    continue;
+                }
+
+                meleeIncluded = true;
+            }
+
+            compacted.Add(slot);
+        }
+
+        if (compacted.Count == 0)
+        {
+            compacted.Add(new WeaponSlot { type = WeaponType.Melee, count = -1 });
+        }
+
+        while (compacted.Count < slotCount)
+        {
+            compacted.Add(new WeaponSlot { type = WeaponType.None, count = -1 });
+        }
+
+        slots.Clear();
+        slots.AddRange(compacted);
+    }
+
+    private static void SanitizeSlot(WeaponSlot slot)
+    {
+        if (slot == null)
+        {
+            return;
+        }
+
+        switch (slot.type)
+        {
+            case WeaponType.Melee:
+                slot.count = -1;
+                slot.equippedPotion = null;
+                return;
+            case WeaponType.PotionBomb:
+            {
+                if (slot.equippedPotion == null)
+                {
+                    ClearSlot(slot);
+                    return;
+                }
+
+                int qty = Mathf.Max(0, slot.equippedPotion.quantity);
+                if (qty <= 0)
+                {
+                    ClearSlot(slot);
+                    return;
+                }
+
+                slot.count = qty;
+                return;
+            }
+            default:
+                ClearSlot(slot);
+                return;
+        }
+    }
+
+    private static void ClearSlot(WeaponSlot slot)
+    {
+        slot.equippedPotion = null;
+        slot.specificPrefab = null;
+        slot.count = -1;
+        slot.type = WeaponType.None;
+    }
+
+    private int CountUsableSlots()
+    {
+        int count = 0;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            WeaponSlot slot = slots[i];
+            if (slot == null || slot.type == WeaponType.None)
+            {
+                continue;
+            }
+
+            if (slot.type == WeaponType.PotionBomb && (slot.equippedPotion == null || slot.equippedPotion.quantity <= 0))
+            {
+                continue;
+            }
+
+            count++;
+        }
+
+        return count;
+    }
 
     private void OnDrawGizmosSelected()
     {
@@ -495,14 +998,30 @@ internal static class CombatInputHelper
 {
     private const KeyCode AttackKey = KeyCode.Z;
     private const int AttackMouseButton = 1;
+    private static int consumedAttackInputFrame = -1;
+
+    internal static void ConsumeAttackInputThisFrame()
+    {
+        consumedAttackInputFrame = Time.frameCount;
+    }
 
     internal static bool IsAttackPressed()
     {
+        if (consumedAttackInputFrame == Time.frameCount)
+        {
+            return false;
+        }
+
         return Input.GetKeyDown(AttackKey) || Input.GetMouseButtonDown(AttackMouseButton);
     }
 
     internal static bool IsAttackReleased()
     {
+        if (consumedAttackInputFrame == Time.frameCount)
+        {
+            return false;
+        }
+
         return Input.GetKeyUp(AttackKey) || Input.GetMouseButtonUp(AttackMouseButton);
     }
 }

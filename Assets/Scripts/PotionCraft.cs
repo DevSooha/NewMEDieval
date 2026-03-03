@@ -6,11 +6,15 @@ public class PotionCraft: MonoBehaviour
 
     public static PotionTemp DeterminePotionType(float gaugeValue)
     {
-        if (gaugeValue < 25f)
+        float failMax = 100f * (1f / 7f);
+        float lowMax = 100f * (3f / 7f);
+        float midMax = 100f * (6f / 7f);
+
+        if (gaugeValue < failMax)
             return PotionTemp.Failure;
-        else if (gaugeValue < 50f)
+        else if (gaugeValue < lowMax)
             return PotionTemp.LowTemp;
-        else if (gaugeValue < 75f)
+        else if (gaugeValue < midMax)
             return PotionTemp.MidTemp;
         else
             return PotionTemp.HighTemp;

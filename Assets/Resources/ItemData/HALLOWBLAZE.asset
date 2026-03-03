@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d59bd60959b40674d815b75ed82e6639, type: 3}
+  m_Name: HALLOWBLAZE
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  ingredientId: HALLOWBLAZE
+  topName: Hallow
+  bottomName: Blaze
+  shapeType: 3
+  topDamage: 0
+  bottomDamage: 0
+  element: 1
+  topSprite: {fileID: 1188354737149023149, guid: 7b374d2e586a4d54591abdf3d6599eae, type: 3}
+  bottomSprite: {fileID: -6285966100586756203, guid: 19632955218b7004dbfdefed8994f0f1, type: 3}
+  description: HallowBlaze ingredient
+  icon: {fileID: 5459099342745943989, guid: ce008265d00526f4582e7e874ef0acea, type: 3}
+  specificPrefab: {fileID: 0}
+  maxStack: 99
+  isStackable: 1
+  quantity: 0
+  category: 0

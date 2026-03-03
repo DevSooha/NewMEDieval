@@ -41,8 +41,8 @@ public class PearlBeamController : MonoBehaviour
     [SerializeField] private Transform loopVisualRoot;
     [SerializeField] private float sustainTime = 1.0f;
 
-    [Header("Owner")]
-    [SerializeField] private QueenCombat owner;
+    [Header("Damage")]
+    [SerializeField] private int damagePerHit = 1;
 
     [Header("Hit Tick")]
     [SerializeField] private float hitInterval = 0.25f;
@@ -65,9 +65,6 @@ public class PearlBeamController : MonoBehaviour
         col = GetComponent<BoxCollider2D>();
         col.isTrigger = true;
         col.enabled = false;
-
-        if (owner == null)
-            owner = GetComponentInParent<QueenCombat>();
 
         if (groundTilemap == null)
         {
@@ -196,12 +193,6 @@ public class PearlBeamController : MonoBehaviour
         if (col == null || !col.enabled) return;
         if (!other.CompareTag("Player")) return;
 
-        if (owner == null)
-        {
-            Debug.LogWarning("[PearlBeam] owner(QueenCombat) is null. Assign it in Inspector or make PearlBeam a child of Queen.");
-            return;
-        }
-
         if (Time.time < nextHitTime) return;
 
         var player = other.GetComponent<Player>();
@@ -218,7 +209,7 @@ public class PearlBeamController : MonoBehaviour
         bool knockLeft = (hitCellY > 0);
 
         // ✅ 데미지/피격은 기존 2파라미터만 호출 (3파라미터/ApplyKnockback 사용 안함)
-        owner.OnBeamHit(player, transform);
+        BossHitResolver.TryApplyBossHit(other, damagePerHit, transform.position);
 
         // ✅ 넉백(플레이어 스크립트 수정 없이) : 더미 sender 위치로 방향 유도
         if (knockbackSenderDummy != null && (knockRight || knockLeft))
@@ -230,8 +221,11 @@ public class PearlBeamController : MonoBehaviour
             float senderX = p.x + (knockLeft ? +knockbackSenderOffsetX : -knockbackSenderOffsetX);
 
             knockbackSenderDummy.position = new Vector3(senderX, p.y, p.z);
-
-            player.KnockBack(knockbackSenderDummy, knockbackForce, knockbackStunTime);
+            PlayerStatusController status = player.GetComponent<PlayerStatusController>();
+            if (status == null || !status.IsKnockbackImmune)
+            {
+                player.KnockBack(knockbackSenderDummy, knockbackForce, knockbackStunTime);
+            }
         }
     }
 

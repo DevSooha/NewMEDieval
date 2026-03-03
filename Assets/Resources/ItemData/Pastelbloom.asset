@@ -12,15 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d59bd60959b40674d815b75ed82e6639, type: 3}
   m_Name: Pastelbloom
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  ingredientId: Pastelbloom
   topName: Pastel
   bottomName: bloom
+  shapeType: 1
   topDamage: 0
   bottomDamage: 0
-  element: 2
+  element: 0
   topSprite: {fileID: 5226566282427329800, guid: c8920ea696adc9e4cb63693112ad9f93, type: 3}
   bottomSprite: {fileID: 3607160321004019188, guid: 648f7ab37618eca44ae3d47e3bc3fa39, type: 3}
   description: 
-  icon: {fileID: 8140422811112854518, guid: 6a48f8222c89d0946ab027fe749afc99, type: 3}
+  icon: {fileID: -5156161484225217579, guid: 0ab151524beb3bf49b06b8f9cff6a324, type: 3}
   specificPrefab: {fileID: 0}
   maxStack: 99
   isStackable: 1

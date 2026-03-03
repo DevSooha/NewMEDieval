@@ -24,6 +24,11 @@ public class InstantBossBattleTrigger : MonoBehaviour
 
             startPositioner = bossCombat as IBossStartPositioner;
         }
+
+        if (BossManager.Instance != null && BossManager.Instance.IsBossActive && (bossCombat == null || !bossCombat.gameObject.activeInHierarchy))
+        {
+            BossManager.Instance.EndBossBattle();
+        }
     }
 
     private void OnDestroy()

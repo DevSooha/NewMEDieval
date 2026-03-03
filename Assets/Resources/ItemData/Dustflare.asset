@@ -12,15 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d59bd60959b40674d815b75ed82e6639, type: 3}
   m_Name: Dustflare
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  ingredientId: Dustflare
   topName: Dust
   bottomName: flare
+  shapeType: 1
   topDamage: 0
   bottomDamage: 0
-  element: 0
+  element: 1
   topSprite: {fileID: -6362602851834190104, guid: e01873f2313fbd7419bd18495ddfdbc9, type: 3}
   bottomSprite: {fileID: 7329471390907011160, guid: f2edc2b841bfc3a4b99bdbd997473c02, type: 3}
   description: "\uB354\uC2A4\uD2B8\uD50C\uB808\uC5B4 \uAF43"
-  icon: {fileID: 4715776712294255836, guid: 7b3abdac177e05343a3c600f16410214, type: 3}
+  icon: {fileID: -5589340565486147, guid: d5f4bdc0115869c40b1f408ee7d66296, type: 3}
   specificPrefab: {fileID: 0}
   maxStack: 99
   isStackable: 1

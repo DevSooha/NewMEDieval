@@ -77,13 +77,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0c6ce28f560184388b5c6a06f22fac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bomb
+  bombElement: 3
+  baseDamage: 200
   timeToExplode: 2
-  envDestructionRadius: 1.5
-  potionExplosionPrefab: {fileID: 2106239423698665555, guid: 05f624f3da07fc8459f1a479f0ea3212, type: 3}
-  bulletPatternPrefab: {fileID: 7070370320491528472, guid: 3b1be7dfe3b260241b0a63ecd7d43232, type: 3}
-  bulletPrefabBlue: {fileID: 4447743839898354513, guid: ce9cc11006b632440a4bafe834e81a88, type: 3}
-  bulletPrefabRed: {fileID: 4137174238240989161, guid: 968f9b25ae4cde943905c0a239ad8853, type: 3}
-  bulletPrefabGreen: {fileID: 1114039531541617289, guid: 075f27197d573b74ab8c64269aacdde3, type: 3}
+  explosionEffect: {fileID: 2106239423698665555, guid: 05f624f3da07fc8459f1a479f0ea3212, type: 3}
+  visualRenderer: {fileID: 0}
+  projectilePrefab: {fileID: 0}
+  defaultProjectileLifetime: 2.5
+  projectileLifetimeFromPhaseDurationScale: 0.35
+  minProjectileLifetime: 0.25
+  projectileSpawnOffset: 0.1
+  spawnProjectilePatterns: 1
+  debugVisualOnlyExplosion: 0
+  waterProjectileVfxPrefab: {fileID: 4791540778913851724, guid: 4bc1bfdb2ed432040808e68a1ecbc511, type: 3}
+  fireProjectileVfxPrefab: {fileID: 7588588366850297520, guid: 001b7578dba940349a44e9a754a8d096, type: 3}
+  electricProjectileVfxPrefab: {fileID: 1045807124205389876, guid: 12674abd401660545974933c80aabeb0, type: 3}
 --- !u!212 &9183901349341918339
 SpriteRenderer:
   m_ObjectHideFlags: 0

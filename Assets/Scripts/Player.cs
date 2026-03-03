@@ -21,18 +21,19 @@ public class Player : MonoBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private LayerMask knockbackObstacleLayers;
 
-    // 踰꾪�??�??蹂??
+    // ?�곌?�遊???�???�궰???
     public float baseSpeed = 5f;
     float buffTimeLeft = 0f;
 
-    // ??�쎌??????蹂??
+    // ??좎럩???????�궰???
     private Vector3 savedPosition;
     private bool hasSavedPosition = false;
 
     public bool HasSavedPosition => hasSavedPosition;
 
     [Header("Animation Settings")]
-    private Vector2 lastDirection;
+    private Vector2 lastDirection = Vector2.down;
+    private float lastHorizontalAttackSign = 1f;
 
     public Vector2 LastMoveDirection => lastDirection;
 
@@ -43,6 +44,8 @@ public class Player : MonoBehaviour
     public Animator animator;
     private PlayerInteraction playerInteraction;
     private InventoryUI inventoryUI;
+    private PlayerStatusController statusController;
+    private PlayerAttackSystem attackSystem;
     private bool isKnockedBack = false;
     private RigidbodyType2D defaultBodyType;
     private Coroutine knockbackRoutine;
@@ -50,7 +53,7 @@ public class Player : MonoBehaviour
 
     void Awake()
     {
-        // ??�쏙??????��?�???�쎌??
+        // ??좎룞??????�?????좎럩??
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -77,6 +80,8 @@ public class Player : MonoBehaviour
 
         playerInteraction = GetComponentInChildren<PlayerInteraction>();
         inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+        statusController = GetComponent<PlayerStatusController>();
+        attackSystem = GetComponent<PlayerAttackSystem>();
 
         moveSpeed = baseSpeed;
 
@@ -92,7 +97,7 @@ public class Player : MonoBehaviour
     }
 
 
-    // ??��?�?蹂????�쎌??PlayerState ?�??
+    // ??�?�??�궰?????좎럩??PlayerState ??�??
 
     void ChangeState(PlayerState newState)
     {
@@ -158,11 +163,10 @@ public class Player : MonoBehaviour
     }
 
 
-    // ??�쎈�?????�쎈?�硫붿씠??泥섎????�쎌??
+    // ??좎럥??????좎럥??�쭖?�우�??筌ｌ�????좎럩??
 
     void HandleMovement()
     {
-        // 2. ??�쎈�???�쎈??泥섎??
         if (UIManager.DialogueActive || UIManager.SelectionActive)
         {
             moveInput = Vector2.zero;
@@ -171,10 +175,25 @@ public class Player : MonoBehaviour
             return;
         }
 
+        if (statusController == null)
+        {
+            statusController = GetComponent<PlayerStatusController>();
+        }
+
+        if (statusController != null && statusController.IsStunned)
+        {
+            moveInput = Vector2.zero;
+            ChangeState(PlayerState.Stunned);
+            if (CanUseAnimator()) animator.SetBool("IsMoving", false);
+            return;
+        }
+
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
-        moveInput = new Vector2(horizontal, vertical).normalized;
+        Vector2 rawInput = new Vector2(horizontal, vertical).normalized;
+        moveInput = statusController != null ? statusController.ProcessMovementInput(rawInput) : rawInput;
+
         bool isMoving = moveInput.sqrMagnitude > 0.01f;
 
         if (isMoving)
@@ -186,36 +205,51 @@ public class Player : MonoBehaviour
             ChangeState(PlayerState.Idle);
         }
 
-        // 3. ??�쎈?�硫붿씠??泥섎??
         if (isMoving)
         {
-            if(vertical > 0.01f)
+            Vector2 quantizedDirection = QuantizeToEightDirections(moveInput);
+            if (quantizedDirection.sqrMagnitude > 0.0001f)
             {
-                lastDirection = Vector2.up;
-            }
-
-            else if (horizontal != 0)
-            {
-                lastDirection = new Vector2(horizontal, 0).normalized;
+                lastDirection = quantizedDirection;
+                if (Mathf.Abs(quantizedDirection.x) > 0.0001f)
+                {
+                    lastHorizontalAttackSign = Mathf.Sign(quantizedDirection.x);
+                }
             }
 
             if (spriteRenderer != null) spriteRenderer.flipX = false;
+        }
 
-            if (CanUseAnimator()) animator.SetFloat("InputX", lastDirection.x);
-            if (CanUseAnimator()) animator.SetFloat("InputY", lastDirection.y);
-        }
-        else
-        {
-            if (CanUseAnimator()) animator.SetFloat("InputX", lastDirection.x);
-            if (CanUseAnimator()) animator.SetFloat("InputY", lastDirection.y);
-        }
+        if (CanUseAnimator()) animator.SetFloat("InputX", lastDirection.x);
+        if (CanUseAnimator()) animator.SetFloat("InputY", lastDirection.y);
 
         if (CanUseAnimator()) animator.SetBool("IsMoving", isMoving);
     }
 
+    private static Vector2 QuantizeToEightDirections(Vector2 input)
+    {
+        if (input.sqrMagnitude < 0.0001f) return Vector2.zero;
+
+        float angle = Mathf.Atan2(input.y, input.x) * Mathf.Rad2Deg;
+        if (angle < 0f) angle += 360f;
+
+        int sector = Mathf.RoundToInt(angle / 45f) % 8;
+        return sector switch
+        {
+            0 => Vector2.right,
+            1 => new Vector2(1f, 1f).normalized,
+            2 => Vector2.up,
+            3 => new Vector2(-1f, 1f).normalized,
+            4 => Vector2.left,
+            5 => new Vector2(-1f, -1f).normalized,
+            6 => Vector2.down,
+            _ => new Vector2(1f, -1f).normalized
+        };
+    }
+
     void CheckBuffStatus()
         {
-            // 踰꾪�???�쎄�?泥댄�?
+            // ?�곌?�遊???좎럡??筌ｋ?�寃?
             if (buffTimeLeft > 0f)
             {
                 buffTimeLeft -= Time.deltaTime;
@@ -235,23 +269,58 @@ public class Player : MonoBehaviour
     }
 
 
-    // ?�듦�??�??泥섎????�쎌??
+    // ??��?????�??筌ｌ�????좎럩??
 
     void HandleAttack()
     {
         if (IsInteractOrAttackPressed())
         {
-            // 1. ??��????�쎌???�쇽?? ??�쎈�?
+            // 1. ??�????좎럩???믪눦?? ??좎럥??
             if (playerInteraction != null && playerInteraction.TryInteract())
+            {
+                return;
+            }
+
+            // Potion usage is handled by PlayerAttackSystem; do not play melee attack motion.
+            if (IsPotionWeaponSelected())
             {
                 return;
             }
 
             bool isFlipX = spriteRenderer != null && spriteRenderer.flipX;
             Debug.Log($"Logic Dir: {lastDirection} / Animator X: {(CanUseAnimator() ? animator.GetFloat("InputX") : 0f)} / FlipX: {isFlipX}");
-            // 2. ??��????�쎌???????�쎌?�占??�듦�?
+            // 2. ??�????좎럩???????좎럩???��???��???
             StartCoroutine(PerformAttack());
         }
+    }
+
+    private bool IsPotionWeaponSelected()
+    {
+        if (attackSystem == null)
+        {
+            attackSystem = GetComponent<PlayerAttackSystem>();
+        }
+
+        if (attackSystem == null)
+        {
+            return false;
+        }
+
+        if (attackSystem.IsCurrentSlotPotion())
+        {
+            return true;
+        }
+
+        if (attackSystem.slots == null || attackSystem.slots.Count == 0)
+        {
+            return false;
+        }
+
+        WeaponSlot currentSlot = attackSystem.slots[0];
+        return currentSlot != null
+            && currentSlot.type == WeaponType.PotionBomb
+            && currentSlot.equippedPotion != null
+            && currentSlot.equippedPotion.quantity > 0;
     }
     bool IsInteractOrAttackPressed()
     {
@@ -261,18 +330,18 @@ public class Player : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (isKnockedBack) return; // ??�쎈�?以묒�???�쎈?????�쎈???�댁??
+        if (isKnockedBack) return; // ??좎럥�?餓λ쵐????좎럥?????좎럥????�똻??
 
         switch (currentState)
         {
             case PlayerState.Stunned:
             case PlayerState.Attack:
-                // ??�쎈�??0??�쎈�???�쎌??(??�쎈�???KnockBack ??�쎌???�쎌�???�쎌??媛??�쏙??????�쎄�??0)
+                // ??좎럥???0??좎럥�???좎럩??(??좎럥�???KnockBack ??좎럩???좎럩????좎럩???�쎛???좎룞??????좎럡???0)
                 rb.linearVelocity = Vector2.zero;
                 break;
 
             case PlayerState.Move:
-                // ??�쎈�???��?�????�쎈�??�쇰????媛??�쎄�?
+                // ??좎럥????�?�????좎럥�???�눖?????�쎛???좎럡??
                 rb.linearVelocity = moveInput * moveSpeed;
                 break;
 
@@ -284,35 +353,75 @@ public class Player : MonoBehaviour
 
     IEnumerator PerformAttack()
     {
-        // 1. ?�듦�???��?�?��?吏꾩??
+        if (IsPotionWeaponSelected())
+        {
+            ChangeState(PlayerState.Idle);
+            yield break;
+        }
+        // 1. ??��?????�?�???筌욊???
         ChangeState(PlayerState.Attack);
 
-        // 2. ??�쎈?�硫붿씠????��?�?
-        if (CanUseAnimator()) animator.SetTrigger("IsAttack");
-        yield return null; // ????�쎈?????�쏙??(??�쎈?�硫붿씠??媛깆????��?�?
+        // 2. ??좎럥??�쭖?�우�????�?�?
+        if (CanUseAnimator())
+        {
+            ApplyAttackDirectionForAnimator();
+            animator.SetTrigger("IsAttack");
+        }
+        yield return null; // ????좎럥?????좎룞??(??좎럥??�쭖?�우�???�쏄?????�???
         if (CanUseAnimator()) animator.ResetTrigger("IsAttack");
 
-        // 3. ??�쎈?????�쏙??
+        // 3. ??좎럥?????좎룞??
         yield return new WaitForSeconds(0.4f);
 
-        // 4. ??�쎌????�쏙????��?�?��?蹂듸?? (以묒??)
+        // 4. ??좎럩????좎룞????�?�????�귣�?? (餓λ쵐??)
         ChangeState(PlayerState.Idle);
     }
 
+    private void ApplyAttackDirectionForAnimator()
+    {
+        if (!CanUseAnimator())
+        {
+            return;
+        }
 
-    // ??�쎈�?媛????�쏙?? ??�쎌??????�쎌????�쎌??
+        Vector2 attackDirection = lastDirection;
+
+        // There is no dedicated Attack_S clip.
+        // For south attacks, use side attack based on latest horizontal intent.
+        if (attackDirection.y < -0.5f)
+        {
+            float sideX = Mathf.Abs(attackDirection.x) > 0.0001f
+                ? Mathf.Sign(attackDirection.x)
+                : Mathf.Sign(lastHorizontalAttackSign);
+
+            if (Mathf.Abs(sideX) < 0.0001f)
+            {
+                sideX = 1f;
+            }
+
+            animator.SetFloat("InputX", sideX);
+            animator.SetFloat("InputY", 0f);
+            return;
+        }
+
+        animator.SetFloat("InputX", attackDirection.x);
+        animator.SetFloat("InputY", attackDirection.y);
+    }
+
+
+    // ??좎럥???�쎛?????좎룞?? ??좎럩??????좎럩????좎럩??
 
     public void SetCanMove(bool value)
     {
         if (value)
-            currentState = PlayerState.Idle; // ??�쎈�?媛??��?�?��?Idle
+            currentState = PlayerState.Idle; // ??좎럥???�쎛???�?????Idle
         else
-            currentState = PlayerState.Stunned; // ??�쎈�??�덌????Stunned (??�쏙?? Interact)
+            currentState = PlayerState.Stunned; // ??좎럥???븍뜉????Stunned (??좎룞?? Interact)
     }
 
     public bool CanMove()
     {
-        // Idle??�쎈�?Move ??��?�????�쎈�?true 諛섑??
+        // Idle??좎럥??Move ??�?�????좎럥�?true ?�쏆�??
         return currentState == PlayerState.Idle || currentState == PlayerState.Move;
     }
     public void KnockBack(Transform sender, float force, float stunTime)
@@ -486,7 +595,7 @@ public class Player : MonoBehaviour
     }
 
 
-    // ??�쎌???二쇱?????�듦�?紐⑥??�?��??
+    // ??좎럩????�뚯???????��???筌뤴�??�????
 
     public void CancelAttack()
     {
@@ -501,7 +610,7 @@ public class Player : MonoBehaviour
     }
 
 
-    // --- ????�쎈�?????�쎌???????�??---
+    // --- ????좎럥??????좎럩????????�??---
 
     void OnEnable()
     {
@@ -529,7 +638,7 @@ public class Player : MonoBehaviour
     }
 
 
-    // ??濡쒕�?????�쎌??蹂듦????移�?�????�쎄�?
+    // ???�≪뮆諭?????좎럩???�귣벀?????�삳?�????좎럡??
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -538,7 +647,7 @@ public class Player : MonoBehaviour
             StartCoroutine(UIManager.Instance.FadeIn(0.3f));
         }
 
-        // 2. ??�쎌????�쎄�?
+        // 2. ??좎럩????좎럡??
         if (scene.name == "Field")
         {
             if (hasSavedPosition)
@@ -551,7 +660,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            // 誘몃?�寃??�� ??�쎌�??�쎈??(0,0)??�쎈�?吏??�쎈�???��?�???�쎌???�쎈�?媛뺤????�쎈�?
+            // 沃섎�?꿨칰??�???좎럩???좎럥??(0,0)??좎럥??筌왖???좎럥�???�?????좎럩???좎럥�??�쏅�????좎럥??
             transform.position = new Vector3(0, 0, 0);
             if (rb != null) rb.linearVelocity = Vector2.zero;
             SetCanMove(true);
@@ -560,10 +669,10 @@ public class Player : MonoBehaviour
 
     IEnumerator ForceCameraSync()
     {
-        // ????�쎌????�쎌?? 0.1?�덌?? ??�쎌???湲곕???�쎌�???�쎈??留ㅻ?????�쎌???�덇�??移�?�???�ъ�???媛 ??�쎈�???�쎌�???��?�?
+        // ????좎럩????좎럩?? 0.1?λ??? ??좎럩????�꿸????좎럩????좎럥??筌띲??????좎럩???λ?�由???�삳?�???귐딅?????�쎛? ??좎럥�???좎럩????�?�?
         yield return new WaitForSeconds(0.1f);
 
-        // ?�몃???�쏙?? 李얘�?(??�쎌??諛붾??????�쏙??????�쎈�?李얠�????
+        // ?룸챶???좎룞?? 筌≪뼐由?(??좎럩???�쏅?�??????좎룞??????좎럥�?筌≪뼚釉????
         RoomManager roomManager = FindFirstObjectByType<RoomManager>();
 
         if (roomManager != null)
@@ -572,7 +681,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            // ?�몃???�쏙??媛 ??�쎈??寃쎌????���???�쏙?? 吏곸??硫붿??移�?�?????�쏙?�占?
+            // ?룸챶???좎룞???�쎛? ??좎럥???�껋??????�湲???좎룞?? 筌욊???筌롫????�삳?�?????좎룞??�뜝?
             if (Camera.main != null)
             {
                 Camera.main.transform.position = new Vector3(transform.position.x, transform.position.y, -10f);
@@ -581,13 +690,12 @@ public class Player : MonoBehaviour
     }
 
 
-    // ??�쎌????????�쎌??
+    // ??좎럩????????좎럩??
     public void SaveCurrentPosition()
     {
         savedPosition = transform.position;
         hasSavedPosition = true;
-        Debug.Log($"?�뚰�?????�쎈�? {savedPosition}");
+        Debug.Log($"??�슦�?????좎럥�? {savedPosition}");
     }
 }
-
 

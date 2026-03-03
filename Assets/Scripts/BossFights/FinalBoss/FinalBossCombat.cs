@@ -501,7 +501,13 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         FinalBossHandOfTimeBurstController controller = EnsureHandOfTimeController();
         if (controller == null) yield break;
 
+        int previousHazardCount = spawnedHazards.Count;
         yield return controller.ExecutePattern(playerTransform, damagePerHit, spawnedHazards);
+
+        for (int i = previousHazardCount; i < spawnedHazards.Count; i++)
+        {
+            RegisterBossOffensive(spawnedHazards[i]);
+        }
     }
 
     private IEnumerator MoveToStart(float duration)
@@ -561,12 +567,14 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
             activeCarmaHitbox = parent != null
                 ? Instantiate(carmaTrueHitboxPrefab, transform.position, Quaternion.identity, parent)
                 : Instantiate(carmaTrueHitboxPrefab, transform.position, Quaternion.identity);
+            RegisterBossOffensive(activeCarmaHitbox.gameObject);
             return activeCarmaHitbox;
         }
 
         GameObject go = new GameObject("CarmaExcisionTrueHitbox");
         go.AddComponent<BoxCollider2D>();
         activeCarmaHitbox = go.AddComponent<CarmaExcisionTrueHitbox>();
+        RegisterBossOffensive(activeCarmaHitbox.gameObject);
         return activeCarmaHitbox;
     }
 
@@ -591,6 +599,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         {
             if (thorn != null)
             {
+                UnregisterBossOffensive(thorn.gameObject);
                 Destroy(thorn.gameObject);
             }
         }
@@ -606,6 +615,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
             LatentThornHitbox thorn = Instantiate(latentThornHitboxPrefab, spawnPoint.position, Quaternion.identity, parent);
             thorn.ResetState();
+            RegisterBossOffensive(thorn.gameObject);
             latentThornHitboxes.Add(thorn);
         }
     }
@@ -673,6 +683,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
             int last = latentThornTimelines.Count - 1;
             if (latentThornTimelines[last] != null)
             {
+                UnregisterBossOffensive(latentThornTimelines[last].gameObject);
                 Destroy(latentThornTimelines[last].gameObject);
             }
 
@@ -709,6 +720,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
             director.Stop();
             director.time = 0;
             BindLatentThornTimelineReferences(director);
+            RegisterBossOffensive(instance, true);
             latentThornTimelines.Add(director);
         }
 
@@ -761,13 +773,17 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
     {
         if (bedimmedWallProjectilePrefab != null)
         {
-            return Instantiate(bedimmedWallProjectilePrefab, worldPosition, Quaternion.identity);
+            FinalBossBedimmedWallProjectile projectile = Instantiate(bedimmedWallProjectilePrefab, worldPosition, Quaternion.identity);
+            RegisterBossOffensive(projectile.gameObject);
+            return projectile;
         }
 
         GameObject go = new GameObject("FinalBossBedimmedWallProjectile");
         go.transform.position = worldPosition;
         go.AddComponent<BoxCollider2D>();
-        return go.AddComponent<FinalBossBedimmedWallProjectile>();
+        FinalBossBedimmedWallProjectile fallbackProjectile = go.AddComponent<FinalBossBedimmedWallProjectile>();
+        RegisterBossOffensive(fallbackProjectile.gameObject);
+        return fallbackProjectile;
     }
 
     private FinalBossHandOfTimeBurstController EnsureHandOfTimeController()
@@ -1136,6 +1152,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         }
 
         SetPreplacedLayoutObjectsActive(false);
+        CleanupBossOffensives(BossOffensiveCleanupReason.BattleReset);
     }
 
     private void SetPreplacedLayoutObjectsActive(bool active)
@@ -1163,6 +1180,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         {
             if (hazard != null)
             {
+                UnregisterBossOffensive(hazard);
                 Destroy(hazard);
             }
         }

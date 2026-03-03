@@ -1,5 +1,6 @@
-using System.Collections;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class WeaponSlotUI : MonoBehaviour
@@ -17,10 +18,11 @@ public class WeaponSlotUI : MonoBehaviour
     [SerializeField] private RectTransform slot3;
     [SerializeField] private RectTransform slot4;
 
-    private Image[] slotImages = new Image[4];
-    private Sprite[] lastSprites = new Sprite[4];
-    private Coroutine[] fadeRoutines = new Coroutine[4];
-    [SerializeField] private float fadeDuration = 0.08f;
+    private readonly RectTransform[] slotRoots = new RectTransform[4];
+    private readonly Image[] slotTopImages = new Image[4];
+    private readonly Image[] slotBottomImages = new Image[4];
+    private readonly Image[] slotShellImages = new Image[4];
+    private readonly TextMeshProUGUI[] slotCountTexts = new TextMeshProUGUI[4];
 
     private void Awake()
     {
@@ -42,15 +44,21 @@ public class WeaponSlotUI : MonoBehaviour
             slot4 = FindSlot("Slot4");
         }
 
-        slotImages[0] = EnsureSlotImage(slot1, "Slot1Icon");
-        slotImages[1] = EnsureSlotImage(slot2, "Slot2Icon");
-        slotImages[2] = EnsureSlotImage(slot3, "Slot3Icon");
-        slotImages[3] = EnsureSlotImage(slot4, "Slot4Icon");
+        slotRoots[0] = slot1;
+        slotRoots[1] = slot2;
+        slotRoots[2] = slot3;
+        slotRoots[3] = slot4;
 
-        AttachClickHandler(slot1, 0);
-        AttachClickHandler(slot2, 1);
-        AttachClickHandler(slot3, 2);
-        AttachClickHandler(slot4, 3);
+        for (int i = 0; i < slotRoots.Length; i++)
+        {
+            RectTransform slot = slotRoots[i];
+            slotBottomImages[i] = EnsureSlotLayerImage(slot, "BottomHalf", 1);
+            slotTopImages[i] = EnsureSlotLayerImage(slot, "TopHalf", 2);
+            slotShellImages[i] = EnsureSlotLayerImage(slot, "Shell", 3);
+            slotCountTexts[i] = EnsureSlotCountLabel(slot, $"Slot{i + 1}Count");
+
+            AttachClickHandler(slot, i);
+        }
     }
 
     private void LateUpdate()
@@ -60,45 +68,96 @@ public class WeaponSlotUI : MonoBehaviour
 
     private void Refresh()
     {
-        if (attackSystem == null) return;
-        if (attackSystem.slots == null) return;
-
-        for (int i = 0; i < 4; i++)
+        if (attackSystem == null || attackSystem.slots == null)
         {
-            Sprite next = GetSpriteForSlot(i);
-            if (slotImages[i] == null) continue;
+            return;
+        }
 
-            if (lastSprites[i] != next)
-            {
-                lastSprites[i] = next;
-                StartFadeSwap(i, next);
-            }
+        for (int i = 0; i < slotRoots.Length; i++)
+        {
+            ResolveSpritesForSlot(i, out Sprite topSprite, out Sprite bottomSprite, out Sprite shellSprite);
+            ApplySlotVisual(i, topSprite, bottomSprite, shellSprite);
+            RefreshCountLabel(i);
         }
     }
 
-    private Sprite GetSpriteForSlot(int index)
+    public void ForceRefresh()
     {
-        if (attackSystem.slots.Count <= index) return null;
+        Refresh();
+    }
+
+    private void ResolveSpritesForSlot(int index, out Sprite topSprite, out Sprite bottomSprite, out Sprite shellSprite)
+    {
+        topSprite = null;
+        bottomSprite = null;
+        shellSprite = null;
+
+        if (attackSystem == null || attackSystem.slots == null || attackSystem.slots.Count <= index)
+        {
+            return;
+        }
+
         WeaponSlot slot = attackSystem.slots[index];
 
         if (slot.type == WeaponType.Melee)
         {
-            return meleeSprite;
+            topSprite = meleeSprite;
+            bottomSprite = null;
+            shellSprite = null;
+            return;
         }
 
         if (slot.type == WeaponType.PotionBomb && slot.equippedPotion != null && slot.equippedPotion.data != null)
         {
-            if (slot.equippedPotion.data.topIMG != null) return slot.equippedPotion.data.topIMG;
-            if (slot.equippedPotion.data.bottomIMG != null) return slot.equippedPotion.data.bottomIMG;
+            PotionVisualParts visualParts = PotionVisualResolver.Resolve(slot.equippedPotion.data);
+            topSprite = visualParts.Top;
+            bottomSprite = visualParts.Bottom;
+            shellSprite = visualParts.Frame != null ? visualParts.Frame : slot.equippedPotion.data.icon;
+
+            return;
         }
 
         if (slot.specificPrefab != null)
         {
             SpriteRenderer sr = slot.specificPrefab.GetComponentInChildren<SpriteRenderer>();
-            if (sr != null) return sr.sprite;
+            if (sr != null)
+            {
+                topSprite = sr.sprite;
+            }
+        }
+    }
+
+    private void ApplySlotVisual(int index, Sprite topSprite, Sprite bottomSprite, Sprite shellSprite)
+    {
+        if (index < 0 || index >= slotTopImages.Length)
+        {
+            return;
         }
 
-        return null;
+        Image top = slotTopImages[index];
+        Image bottom = slotBottomImages[index];
+        Image shell = slotShellImages[index];
+
+        if (bottom != null)
+        {
+            bottom.sprite = bottomSprite;
+            bottom.enabled = bottomSprite != null;
+            bottom.color = Color.white;
+        }
+
+        if (top != null)
+        {
+            top.sprite = topSprite;
+            top.enabled = topSprite != null;
+            top.color = Color.white;
+        }
+
+        if (shell != null)
+        {
+            shell.sprite = shellSprite;
+            shell.enabled = shellSprite != null;
+            shell.color = Color.white;
+        }
     }
 
     private RectTransform FindSlot(string name)
@@ -107,45 +166,47 @@ public class WeaponSlotUI : MonoBehaviour
         return t != null ? t as RectTransform : null;
     }
 
-    private Image EnsureSlotImage(RectTransform slot, string name)
+    private static Image EnsureSlotLayerImage(RectTransform slot, string name, int siblingIndex)
     {
-        if (slot == null) return null;
-
-        Image existing = slot.GetComponentInChildren<Image>();
-        if (existing != null && existing.gameObject != slot.gameObject)
+        if (slot == null)
         {
-            ConfigureImageRect(existing.rectTransform);
-            existing.preserveAspect = false;
-            existing.raycastTarget = true;
-            existing.canvasRenderer.SetAlpha(1f);
-            return existing;
+            return null;
         }
 
-        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
-        go.transform.SetParent(slot, false);
-        Image image = go.GetComponent<Image>();
+        Transform existingTransform = slot.Find(name);
+        Image image = existingTransform != null ? existingTransform.GetComponent<Image>() : null;
 
-        ConfigureImageRect(image.rectTransform);
-        image.preserveAspect = false;
-        image.raycastTarget = true;
-        image.enabled = false;
-        image.canvasRenderer.SetAlpha(1f);
+        if (image == null)
+        {
+            GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(slot, false);
+            image = go.GetComponent<Image>();
+        }
 
-        return image;
-    }
-
-    private void ConfigureImageRect(RectTransform rect)
-    {
+        RectTransform rect = image.rectTransform;
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
         rect.pivot = new Vector2(0.5f, 0.5f);
+
+        image.preserveAspect = false;
+        image.raycastTarget = false;
+        image.enabled = false;
+        image.canvasRenderer.SetAlpha(1f);
+
+        int safeIndex = Mathf.Clamp(siblingIndex, 0, slot.childCount - 1);
+        image.transform.SetSiblingIndex(safeIndex);
+
+        return image;
     }
 
     private void AttachClickHandler(RectTransform slot, int index)
     {
-        if (slot == null) return;
+        if (slot == null)
+        {
+            return;
+        }
 
         EnsureClickArea(slot);
 
@@ -160,52 +221,48 @@ public class WeaponSlotUI : MonoBehaviour
 
     public void HandleSlotClick(int index)
     {
+        HandleSlotClick(index, PointerEventData.InputButton.Left);
+    }
+
+    public void HandleSlotClick(int index, PointerEventData.InputButton button)
+    {
         TryResolveInventoryUI();
 
         if (inventoryUI != null)
         {
-            inventoryUI.OnWeaponSlotClicked(index);
+            inventoryUI.OnWeaponSlotClicked(index, button);
         }
     }
 
-    private void StartFadeSwap(int index, Sprite next)
+    private static void EnsureClickArea(RectTransform slot)
     {
-        Image img = slotImages[index];
-        if (img == null) return;
-
-        if (fadeRoutines[index] != null)
+        if (slot == null)
         {
-            StopCoroutine(fadeRoutines[index]);
+            return;
         }
 
-        fadeRoutines[index] = StartCoroutine(FadeSwapRoutine(img, next));
-    }
+        Transform existing = slot.Find("ClickArea");
+        Image clickImage = existing != null ? existing.GetComponent<Image>() : null;
 
-    private IEnumerator FadeSwapRoutine(Image img, Sprite next)
-    {
-        if (img == null) yield break;
-
-        img.CrossFadeAlpha(0f, fadeDuration, false);
-        yield return new WaitForSeconds(fadeDuration);
-
-        img.sprite = next;
-        img.enabled = next != null;
-
-        img.CrossFadeAlpha(1f, fadeDuration, false);
-        yield return new WaitForSeconds(fadeDuration);
-    }
-
-    private void EnsureClickArea(RectTransform slot)
-    {
-        Image img = slot.GetComponent<Image>();
-        if (img == null)
+        if (clickImage == null)
         {
-            img = slot.gameObject.AddComponent<Image>();
+            GameObject go = new GameObject("ClickArea", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(slot, false);
+            clickImage = go.GetComponent<Image>();
         }
 
-        img.color = new Color(1f, 1f, 1f, 0f);
-        img.raycastTarget = true;
-        img.preserveAspect = false;
+        RectTransform rect = clickImage.rectTransform;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+
+        clickImage.color = new Color(1f, 1f, 1f, 0f);
+        clickImage.raycastTarget = true;
+        clickImage.preserveAspect = false;
+
+        clickImage.transform.SetSiblingIndex(0);
     }
 
     private bool TryResolveInventoryUI()
@@ -217,5 +274,100 @@ public class WeaponSlotUI : MonoBehaviour
 
         inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
         return inventoryUI != null;
+    }
+
+    private static TextMeshProUGUI EnsureSlotCountLabel(RectTransform slot, string name)
+    {
+        if (slot == null)
+        {
+            return null;
+        }
+
+        Transform existingTransform = slot.Find(name);
+        TextMeshProUGUI existing = existingTransform != null ? existingTransform.GetComponent<TextMeshProUGUI>() : null;
+        if (existing != null)
+        {
+            ApplyCountLabelStyle(existing);
+            return existing;
+        }
+
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.transform.SetParent(slot, false);
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(1f, 0f);
+        rect.sizeDelta = new Vector2(44f, 36f);
+        rect.anchoredPosition = new Vector2(-3f, 2f);
+
+        TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
+        ApplyCountLabelStyle(text);
+
+        return text;
+    }
+
+    private static void ApplyCountLabelStyle(TextMeshProUGUI text)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        text.alignment = TextAlignmentOptions.BottomRight;
+        text.fontSize = 24f;
+        text.fontStyle = FontStyles.Bold;
+        text.color = Color.white;
+        text.outlineColor = Color.black;
+        text.outlineWidth = 0.35f;
+        text.raycastTarget = false;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Overflow;
+        if (string.IsNullOrWhiteSpace(text.text))
+        {
+            text.text = string.Empty;
+        }
+    }
+
+    private void RefreshCountLabel(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= slotCountTexts.Length)
+        {
+            return;
+        }
+
+        TextMeshProUGUI label = slotCountTexts[slotIndex];
+        if (label == null || attackSystem == null || attackSystem.slots == null || attackSystem.slots.Count <= slotIndex)
+        {
+            return;
+        }
+
+        // Show potion count only on slot 1.
+        if (slotIndex != 0)
+        {
+            label.text = string.Empty;
+            label.enabled = false;
+            return;
+        }
+
+        WeaponSlot slot = attackSystem.slots[slotIndex];
+        int count = 0;
+        if (slot.type == WeaponType.PotionBomb && slot.equippedPotion != null)
+        {
+            count = Mathf.Clamp(slot.equippedPotion.quantity, 0, 99);
+        }
+
+        if (count > 0)
+        {
+            label.text = count.ToString();
+            if (!label.enabled)
+            {
+                label.enabled = true;
+            }
+        }
+        else
+        {
+            label.text = string.Empty;
+            label.enabled = false;
+        }
     }
 }

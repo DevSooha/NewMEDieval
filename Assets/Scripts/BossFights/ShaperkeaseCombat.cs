@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
@@ -15,7 +15,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     [Header("Combat Settings")]
     public float patternInterval = 7f;
-    private bool isFighting = false;
+    private bool isFighting;
 
     [Header("Pattern 1: Bedimmed Wall Settings")]
     public Transform bedimmedWallGroup;
@@ -57,6 +57,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
             {
                 initialWallPositions[i] = bedimmedWalls[i].transform.localPosition;
             }
+
             bedimmedWallGroup.gameObject.SetActive(false);
         }
 
@@ -73,8 +74,19 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
 
     public override void StartBattle()
     {
-        Debug.Log("[Shaperkease] StartBattle() ȣ���! ���� ��ƾ ����");
         StartCoroutine(AppearRoutine());
+    }
+
+    private void OnDisable()
+    {
+        StopCombat();
+
+        if (bedimmedWallGroup != null)
+        {
+            bedimmedWallGroup.gameObject.SetActive(false);
+        }
+
+        CleanupOffensivesOnDisable();
     }
 
     public float ModifyDamageMultiplier(ElementType attackType, float baseMultiplier)
@@ -87,29 +99,30 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         return baseMultiplier;
     }
 
-    IEnumerator AppearRoutine()
+    private IEnumerator AppearRoutine()
     {
         float appearTime = 1.0f;
         yield return FadeSpriteAlpha(spriteRenderer, appearTime, 0f, 1f);
 
         if (TryResolvePlayerTransform(ref player))
         {
-            Debug.Log("[Shaperkease] 플레이어 탐색 완료, 전투 루틴 돌입");
             StartCombat();
         }
         else
         {
-            Debug.LogError("[Shaperkease] Player�� ã�� �� �����ϴ�!");
+            Debug.LogError("[Shaperkease] Player not found.");
         }
     }
 
     public void StartCombat()
     {
-        if (!isFighting)
+        if (isFighting)
         {
-            isFighting = true;
-            StartCoroutine(CombatLoop());
+            return;
         }
+
+        isFighting = true;
+        StartCoroutine(CombatLoop());
     }
 
     public void StopCombat()
@@ -118,7 +131,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         StopAllCoroutines();
     }
 
-    IEnumerator CombatLoop()
+    private IEnumerator CombatLoop()
     {
         yield return new WaitForSeconds(1.0f);
 
@@ -126,20 +139,16 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         {
             if (player == null) yield break;
 
-            Debug.Log("[Shaperkease] ���� 1, 2, 3 ���� ����!");
-
             StartCoroutine(Pattern_BedimmedWall());
             StartCoroutine(Pattern_Ray());
             StartCoroutine(Pattern_MasqueIllusion());
 
-            Debug.Log($"[Shaperkease] ��� ���� �ߵ� �Ϸ�. {patternInterval}�� ��� �� ������մϴ�.");
             yield return new WaitForSeconds(patternInterval);
         }
     }
 
-    IEnumerator Pattern_BedimmedWall()
+    private IEnumerator Pattern_BedimmedWall()
     {
-        Debug.Log("���� 1: Bedimmed Wall");
         if (!isFighting || bedimmedWallGroup == null) yield break;
 
         bedimmedWallGroup.gameObject.SetActive(true);
@@ -148,23 +157,23 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         {
             for (int i = 0; i < bedimmedWalls.Length; i++)
             {
-                if (bedimmedWalls[i] != null)
-                {
-                    bedimmedWalls[i].transform.localPosition = initialWallPositions[i];
-                    bedimmedWalls[i].Activate(targetTransform, wallSpeed, safeZoneHalfSize);
-                }
+                if (bedimmedWalls[i] == null) continue;
+
+                bedimmedWalls[i].transform.localPosition = initialWallPositions[i];
+                bedimmedWalls[i].Activate(targetTransform, wallSpeed, safeZoneHalfSize);
             }
         }
 
         yield return new WaitForSeconds(2f);
 
         if (bedimmedWallGroup != null)
+        {
             bedimmedWallGroup.gameObject.SetActive(false);
+        }
     }
 
-    IEnumerator Pattern_Ray()
+    private IEnumerator Pattern_Ray()
     {
-        Debug.Log("���� 2: Ray (Radial)");
         if (!isFighting || rayPool == null || player == null) yield break;
 
         yield return new WaitForSeconds(0.5f);
@@ -179,6 +188,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
             BossProjectile bp = rayPool.Rent();
             if (bp == null) continue;
 
+            RegisterBossOffensive(bp.gameObject);
             bp.transform.position = spawnPos;
             bp.transform.rotation = rotation;
             bp.Setup(ElementType.Light);
@@ -187,9 +197,8 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         yield return new WaitForSeconds(1.5f);
     }
 
-    IEnumerator Pattern_MasqueIllusion()
+    private IEnumerator Pattern_MasqueIllusion()
     {
-        Debug.Log("���� 3: Masque Illusion ���� �غ�!");
         if (!isFighting || trapPool == null || player == null) yield break;
 
         Vector2 gazeDir = Vector2.right;
@@ -207,6 +216,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         BossProjectile bp = trapPool.Rent();
         if (bp == null) yield break;
 
+        RegisterBossOffensive(bp.gameObject);
         bp.transform.position = spawnPos;
         bp.transform.rotation = Quaternion.identity;
         bp.Setup(ElementType.None);
@@ -218,9 +228,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         }
         else
         {
-            Debug.LogError("[Masque Illusion] trapProjectilePrefab�� MasqueIllusionProjectile ��ũ��Ʈ�� �����ϴ�!");
+            Debug.LogError("[Masque Illusion] Missing MasqueIllusionProjectile component.");
         }
     }
-}
-
-
+}

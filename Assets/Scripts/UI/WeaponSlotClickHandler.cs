@@ -15,7 +15,6 @@ public class WeaponSlotClickHandler : MonoBehaviour, IPointerClickHandler
     public void OnPointerClick(PointerEventData eventData)
     {
         if (owner == null) return;
-        if (eventData.button != PointerEventData.InputButton.Left) return;
-        owner.HandleSlotClick(slotIndex);
+        owner.HandleSlotClick(slotIndex, eventData.button);
     }
 }
