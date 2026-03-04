@@ -28,11 +28,28 @@ public class FateSeverSpearEmitterController : MonoBehaviour
 
     private void Awake()
     {
+        // 기존 코드 유지...
         if (groundTilemap == null)
         {
             var groundObj = GameObject.FindGameObjectWithTag("Ground");
             if (groundObj != null)
                 groundTilemap = groundObj.GetComponentInChildren<Tilemap>();
+        }
+
+        Debug.Log($"[EmitterCtrl] fixedYEmitters len={fixedYEmitters?.Length}, fixedXEmitters len={fixedXEmitters?.Length}");
+
+        // Y(14)
+        for (int i = 0; i < fixedYEmitters.Length; i++)
+        {
+            var t = fixedYEmitters[i];
+            Debug.Log($"[EmitterCtrl] Y[{i}]={(t ? t.name : "NULL")} pos={(t ? t.position.ToString() : "NULL")}");
+        }
+
+        // X(18)
+        for (int i = 0; i < fixedXEmitters.Length; i++)
+        {
+            var t = fixedXEmitters[i];
+            Debug.Log($"[EmitterCtrl] X[{i}]={(t ? t.name : "NULL")} pos={(t ? t.position.ToString() : "NULL")}");
         }
     }
 
@@ -121,5 +138,38 @@ public class FateSeverSpearEmitterController : MonoBehaviour
         }
 
         return sum / width;
+    }
+    
+    [ContextMenu("Auto Place Emitters (FixedY/FIxedX)")]
+    private void AutoPlaceEmitters()
+    {
+        if (groundTilemap == null)
+        {
+            var groundObj = GameObject.FindGameObjectWithTag("Ground");
+            if (groundObj != null) groundTilemap = groundObj.GetComponentInChildren<Tilemap>();
+        }
+        if (groundTilemap == null)
+        {
+            Debug.LogError("[EmitterCtrl] groundTilemap is null. Assign it first.");
+            return;
+        }
+
+        // FixedY 14개 배치: index별 앵커 좌표로 이동
+        for (int i = 0; i < fixedYEmitters.Length; i++)
+        {
+            if (fixedYEmitters[i] == null) continue;
+            Vector3 pos = GetFixedYAnchorWorld_ByIndex(i);
+            fixedYEmitters[i].position = pos;
+        }
+
+        // FixedX 18개 배치: index별 앵커 좌표로 이동
+        for (int i = 0; i < fixedXEmitters.Length; i++)
+        {
+            if (fixedXEmitters[i] == null) continue;
+            Vector3 pos = GetFixedXAnchorWorld_ByIndex(i);
+            fixedXEmitters[i].position = pos;
+        }
+
+        Debug.Log("[EmitterCtrl] Auto placement done.");
     }
 }
