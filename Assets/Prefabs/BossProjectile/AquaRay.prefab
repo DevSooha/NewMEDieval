@@ -9836,6 +9836,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AquaRay
   speed: 18
   damage: 1
+  applyKnockbackOnHit: 1
+  knockbackDistance: 1
+  knockbackDuration: 0.2
   projectileElement: 2
   extendSpeed: 18
   maxLength: 10
@@ -29263,7 +29266,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 16663b82065441842acd1dea32e33321, type: 2}
+  - {fileID: 2100000, guid: acf0320e6427cf3449a7f1a3d7c81eb8, type: 2}
   - {fileID: 2100000, guid: 32d6a2df3e56f5744b00164dc84ae474, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
