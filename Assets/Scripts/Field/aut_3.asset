@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7510a16807c40b440af27b1d0c25ec34, type: 3}
-  m_Name: win_0
+  m_Name: aut_3
   m_EditorClassIdentifier: Assembly-CSharp::RoomData
-  roomID: win_0
-  roomPrefab: {fileID: 4350292270541437146, guid: 397de72b8e2767041ad4bf5613493ccb, type: 3}
+  roomID: aut_3
+  roomPrefab: {fileID: 4350292270541437146, guid: a95adc598088c8f488c84bda6811da37, type: 3}
   north: {fileID: 0}
-  south: {fileID: 11400000, guid: 7bc810811c44c82468d3800bc527bea7, type: 2}
+  south: {fileID: 0}
   east: {fileID: 0}
   west: {fileID: 0}
-  roomCoord: {x: 1, y: 9}
+  roomCoord: {x: 1, y: 6}
