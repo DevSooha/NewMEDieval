@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: 7eb95d3a66e6d374f844eaf185dc1b71
+guid: b56143919b663b5478ef20fe2ddee283
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 588065719197531209
-    second: TX_Slice_0
+      213: -2256599991203281371
+    second: "\uC81C\uBAA9 \uC5C6\uC74C-1_0"
+  - first:
+      213: 1882935243438231651
+    second: "\uC81C\uBAA9 \uC5C6\uC74C-1_1"
+  - first:
+      213: -2191780441370642326
+    second: "\uC81C\uBAA9 \uC5C6\uC74C-1_2"
+  - first:
+      213: -8087661623911210128
+    second: "\uC81C\uBAA9 \uC5C6\uC74C-1_3"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -96,17 +105,30 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TX_Slice_0
+      name: "\uC81C\uBAA9 \uC5C6\uC74C-1_0"
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 1024
-        height: 1024
+        x: 25
+        y: 537
+        width: 460
+        height: 457
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +137,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 94c7a59e7aa392800800000000000000
-      internalID: 588065719197531209
+      spriteID: 526cd249342fea0e0800000000000000
+      internalID: -2256599991203281371
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "\uC81C\uBAA9 \uC5C6\uC74C-1_1"
+      rect:
+        serializedVersion: 2
+        x: 549
+        y: 553
+        width: 425
+        height: 433
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3601330b0a7812a10800000000000000
+      internalID: 1882935243438231651
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "\uC81C\uBAA9 \uC5C6\uC74C-1_2"
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 39
+        width: 418
+        height: 407
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6834761d4b3591e0800000000000000
+      internalID: -2191780441370642326
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "\uC81C\uBAA9 \uC5C6\uC74C-1_3"
+      rect:
+        serializedVersion: 2
+        x: 541
+        y: 17
+        width: 445
+        height: 468
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 073a6337a9ad2cf80800000000000000
+      internalID: -8087661623911210128
       vertices: []
       indices: 
       edges: []
@@ -135,7 +223,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TX_Slice_0: 588065719197531209
+      "\uC81C\uBAA9 \uC5C6\uC74C-1_0": -2256599991203281371
+      "\uC81C\uBAA9 \uC5C6\uC74C-1_1": 1882935243438231651
+      "\uC81C\uBAA9 \uC5C6\uC74C-1_2": -2191780441370642326
+      "\uC81C\uBAA9 \uC5C6\uC74C-1_3": -8087661623911210128
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

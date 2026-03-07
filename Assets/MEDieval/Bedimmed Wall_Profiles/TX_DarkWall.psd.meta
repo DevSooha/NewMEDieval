@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 7eb95d3a66e6d374f844eaf185dc1b71
+guid: 7f75f754f68acca41922a7dcdf1072fa
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 588065719197531209
-    second: TX_Slice_0
+      213: 1788221736552065153
+    second: TX_DarkWall_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -96,17 +96,30 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TX_Slice_0
+      name: TX_DarkWall_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1024
-        height: 1024
+        width: 512
+        height: 512
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 94c7a59e7aa392800800000000000000
-      internalID: 588065719197531209
+      spriteID: 18861dae13a01d810800000000000000
+      internalID: 1788221736552065153
       vertices: []
       indices: 
       edges: []
@@ -135,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TX_Slice_0: 588065719197531209
+      TX_DarkWall_0: 1788221736552065153
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
