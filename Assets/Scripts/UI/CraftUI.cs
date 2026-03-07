@@ -8,8 +8,6 @@ using System.Collections.Generic;
 
 public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    public enum PotionTemp { Failure, LowTemp, MidTemp, HighTemp }
-
     [SerializeField] private Image potSlot1Image;
     [SerializeField] private Image potSlot2Image;
     [SerializeField] private ItemData itemData;
@@ -230,8 +228,8 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         wasDraggingDuringGame = false;
         EnsureInventory();
 
-        PotionTemp potionTemp = DeterminePotionTemp(gaugeValue);
-        string resultName = GetPotionName(potionTemp);
+        CraftTemperatureBand band = PotionCraftRules.DetermineBand(gaugeValue);
+        string resultName = PotionCraftRules.GetPotionName(band);
 
         if (resultText != null)
         {
@@ -239,9 +237,9 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             resultText.gameObject.SetActive(true);
         }
 
-        if (potionTemp != PotionTemp.Failure)
+        if (band != CraftTemperatureBand.Failure)
         {
-            PotionData craftedPotion = CraftPotion(slot1Item, slot2Item, potionTemp);
+            PotionData craftedPotion = CraftPotion(slot1Item, slot2Item, band);
             if (craftedPotion != null)
             {
                 if (inventory != null)
@@ -842,49 +840,15 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (inventoryUI == null) return;
         inventoryUI.gameObject.SetActive(visible);
     }
-    public static PotionTemp DeterminePotionTemp(float gaugeValue)
-    {
-        CraftTemperatureBand band = PotionCraftRules.DetermineBand(gaugeValue);
-        return band switch
-        {
-            CraftTemperatureBand.Low => PotionTemp.LowTemp,
-            CraftTemperatureBand.Mid => PotionTemp.MidTemp,
-            CraftTemperatureBand.High => PotionTemp.HighTemp,
-            _ => PotionTemp.Failure
-        };
-    }
-    public static string GetPotionName(PotionTemp type)
-    {
-        CraftTemperatureBand band = type switch
-        {
-            PotionTemp.LowTemp => CraftTemperatureBand.Low,
-            PotionTemp.MidTemp => CraftTemperatureBand.Mid,
-            PotionTemp.HighTemp => CraftTemperatureBand.High,
-            _ => CraftTemperatureBand.Failure
-        };
-        return PotionCraftRules.GetPotionName(band);
-    }
 
-    private static PotionTemperature ToPotionTemperature(PotionTemp tempType)
-    {
-        CraftTemperatureBand band = tempType switch
-        {
-            PotionTemp.LowTemp => CraftTemperatureBand.Low,
-            PotionTemp.MidTemp => CraftTemperatureBand.Mid,
-            PotionTemp.HighTemp => CraftTemperatureBand.High,
-            _ => CraftTemperatureBand.Failure
-        };
-        return PotionCraftRules.ToPotionTemperature(band);
-    }
-
-    public PotionData CraftPotion(Item first, Item second, PotionTemp tempType)
+    public PotionData CraftPotion(Item first, Item second, CraftTemperatureBand band)
     {
         if (first == null || second == null || first.data == null || second.data == null)
         {
             return null;
         }
 
-        PotionTemperature temperature = ToPotionTemperature(tempType);
+        PotionTemperature temperature = PotionCraftRules.ToPotionTemperature(band);
         if (temperature == PotionTemperature.Failure)
         {
             return null;

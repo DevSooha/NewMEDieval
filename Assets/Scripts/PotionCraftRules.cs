@@ -43,4 +43,30 @@ public static class PotionCraftRules
             _ => PotionTemperature.Failure
         };
     }
+
+    public static CraftTemperatureBand ToBand(PotionTemperature temperature)
+    {
+        return temperature switch
+        {
+            PotionTemperature.Low => CraftTemperatureBand.Low,
+            PotionTemperature.Mid => CraftTemperatureBand.Mid,
+            PotionTemperature.High => CraftTemperatureBand.High,
+            _ => CraftTemperatureBand.Failure
+        };
+    }
+
+    public static string NormalizeKey(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return string.Empty;
+        }
+
+        string upper = raw.Trim().ToUpperInvariant();
+        upper = upper.Replace(" ", string.Empty);
+        upper = upper.Replace("_", string.Empty);
+        upper = upper.Replace("-", string.Empty);
+        upper = upper.Replace("/", string.Empty);
+        return upper;
+    }
 }

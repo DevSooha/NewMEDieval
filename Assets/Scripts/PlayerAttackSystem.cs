@@ -136,18 +136,88 @@ public class PlayerAttackSystem : MonoBehaviour
             return false;
         }
 
-        WeaponSlot slot = slots[potionSlotIndex];
+        if (!TryEquipPotionToSlot(potion, potionSlotIndex, returnPreviousToInventory: true))
+        {
+            NotifyPotionEquipFailed("Failed to equip potion to target slot.");
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool TryEquipPotionToSlot(Potion potion, int slotIndex, bool returnPreviousToInventory = true)
+    {
+        if (potion == null || potion.data == null)
+        {
+            return false;
+        }
+
+        EnsureCoreSlots();
+        if (slotIndex <= 0 || slotIndex >= slots.Count)
+        {
+            return false;
+        }
+
+        int existingSlotIndex = FindEquippedPotionSlotIndex(potion);
+        if (existingSlotIndex == slotIndex)
+        {
+            NotifyWeaponSlotsChanged(compactSlots: false);
+            return true;
+        }
+
+        if (existingSlotIndex >= 0)
+        {
+            return false;
+        }
+
+        WeaponSlot slot = slots[slotIndex];
         if (slot == null)
         {
             slot = new WeaponSlot();
+        }
+
+        if (returnPreviousToInventory && slot.type == WeaponType.PotionBomb && slot.equippedPotion != null)
+        {
+            ReturnPotionToInventory(slot.equippedPotion);
         }
 
         slot.type = WeaponType.PotionBomb;
         slot.equippedPotion = potion;
         slot.count = Mathf.Max(1, potion.quantity);
         slot.specificPrefab = null;
+        slots[slotIndex] = slot;
 
-        slots[potionSlotIndex] = slot;
+        RemovePotionFromInventory(potion);
+        NotifyWeaponSlotsChanged(compactSlots: false);
+        return true;
+    }
+
+    public bool TryUnequipPotionFromSlot(int slotIndex, bool addBackToInventory = true)
+    {
+        EnsureCoreSlots();
+        if (slotIndex < 0 || slotIndex >= slots.Count)
+        {
+            return false;
+        }
+
+        WeaponSlot slot = slots[slotIndex];
+        if (slot == null || slot.type != WeaponType.PotionBomb || slot.equippedPotion == null)
+        {
+            return false;
+        }
+
+        Potion potion = slot.equippedPotion;
+        if (addBackToInventory)
+        {
+            ReturnPotionToInventory(potion);
+        }
+
+        slot.equippedPotion = null;
+        slot.count = -1;
+        slot.specificPrefab = null;
+        slot.type = slotIndex == 0 ? WeaponType.Melee : WeaponType.None;
+        slots[slotIndex] = slot;
+
         NotifyWeaponSlotsChanged(compactSlots: false);
         return true;
     }
@@ -404,17 +474,6 @@ public class PlayerAttackSystem : MonoBehaviour
             {
                 bomb.ConfigureFromPotionData(slot.equippedPotion.data);
             }
-        }
-
-        if (slot.equippedPotion != null && slot.equippedPotion.data != null)
-        {
-            BombVisualRenderer visualRenderer = bombObj.GetComponent<BombVisualRenderer>();
-            if (visualRenderer == null)
-            {
-                visualRenderer = bombObj.AddComponent<BombVisualRenderer>();
-            }
-
-            visualRenderer.Apply(slot.equippedPotion.data);
         }
 
         return true;
@@ -752,25 +811,29 @@ public class PlayerAttackSystem : MonoBehaviour
         // Weapon status UI removed.
     }
 
-    ElementType ConvertElement(Element element)
-    {
-        switch (element)
-        {
-            case Element.Fire:
-                return ElementType.Fire;
-            case Element.Lightning:
-                return ElementType.Electric;
-            default:
-                return ElementType.Water;
-        }
-    }
-
     void RemovePotionFromInventory(Potion potion)
     {
         Inventory inv = Inventory.Instance;
         if (inv == null || potion == null) return;
 
         inv.RemovePotionCompletely(potion);
+    }
+
+    void ReturnPotionToInventory(Potion potion)
+    {
+        Inventory inv = Inventory.Instance;
+        if (inv == null || potion == null || potion.data == null)
+        {
+            return;
+        }
+
+        int qty = Mathf.Max(0, potion.quantity);
+        if (qty <= 0 || inv.ContainsPotion(potion))
+        {
+            return;
+        }
+
+        inv.AddPotion(potion.data, qty);
     }
 
     void RefreshWeaponSlotUI()

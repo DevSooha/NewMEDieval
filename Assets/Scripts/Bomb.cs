@@ -34,6 +34,7 @@ public class Bomb : MonoBehaviour
     private PotionData sourcePotionData;
     private Transform projectileOwner;
     private int bombInstanceId;
+    private bool hasExploded;
 
     private void Awake()
     {
@@ -77,6 +78,13 @@ public class Bomb : MonoBehaviour
 
     private void Explode()
     {
+        if (hasExploded)
+        {
+            return;
+        }
+
+        hasExploded = true;
+
         if (explosionEffect != null)
         {
             Instantiate(explosionEffect, transform.position, Quaternion.identity);
@@ -88,11 +96,32 @@ public class Bomb : MonoBehaviour
             return;
         }
 
-        SpawnSingleProjectile();
+        StartCoroutine(SpawnPatternSequenceThenDestroy());
+    }
+
+    private IEnumerator SpawnPatternSequenceThenDestroy()
+    {
+        PotionPhaseSpec phase = ResolveShotPhase(out _);
+
+        if (phase != null && phase.patternType == ProjectilePatternType.Fireworks)
+        {
+            SpawnProjectilePattern(0);
+            yield return new WaitForSeconds(2f);
+            SpawnProjectilePattern(1);
+            yield return new WaitForSeconds(2f);
+            SpawnProjectilePattern(2);
+            yield return new WaitForSeconds(2f);
+            SpawnProjectilePattern(3);
+        }
+        else
+        {
+            SpawnProjectilePattern();
+        }
+
         Destroy(gameObject);
     }
 
-    private void SpawnSingleProjectile()
+    private void SpawnProjectilePattern()
     {
         PotionPhaseSpec phase = ResolveShotPhase(out int phaseIndex);
         if (phase == null)
@@ -100,48 +129,57 @@ public class Bomb : MonoBehaviour
             return;
         }
 
+        float speed = ResolveProjectileSpeed(phase);
+        float lifetime = ResolveProjectileLifetime(phase);
         Vector2 baseDirection = ResolveBaseDirection();
-        Vector2 shotDirection = phaseIndex == 2 ? -baseDirection : baseDirection;
+        float offsetUnits = Mathf.Max(0f, projectileSpawnOffset);
+        Vector3 spawnCenter = transform.position + (Vector3)(baseDirection * offsetUnits);
+
+        GameObject prefabToSpawn = ResolveProjectilePrefab(phase);
+        Transform hitOwner = projectileOwner != null ? projectileOwner : transform;
+
+        BombProjectilePatternSpawner.Spawn(
+            phase.patternType,
+            phase,
+            prefabToSpawn,
+            hitOwner,
+            spawnCenter,
+            baseDirection,
+            bombInstanceId,
+            phaseIndex,
+            speed,
+            lifetime);
+    }
+
+    private void SpawnProjectilePattern(int overridePhaseIndex)
+    {
+        PotionPhaseSpec phase = ResolveShotPhase(out int phaseIndex);
+        _ = phaseIndex;
+        if (phase == null)
+        {
+            return;
+        }
 
         float speed = ResolveProjectileSpeed(phase);
         float lifetime = ResolveProjectileLifetime(phase);
+        Vector2 baseDirection = ResolveBaseDirection();
         float offsetUnits = Mathf.Max(0f, projectileSpawnOffset);
-        Vector3 spawnPosition = transform.position + (Vector3)(shotDirection * offsetUnits);
+        Vector3 spawnCenter = transform.position + (Vector3)(baseDirection * offsetUnits);
 
         GameObject prefabToSpawn = ResolveProjectilePrefab(phase);
-        GameObject projectileObj = prefabToSpawn != null
-            ? Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity)
-            : new GameObject("PotionPatternProjectile");
-
-        if (prefabToSpawn == null)
-        {
-            projectileObj.transform.position = spawnPosition;
-        }
-
-        PotionProjectileController controller = projectileObj.GetComponent<PotionProjectileController>();
-        if (controller == null)
-        {
-            controller = projectileObj.AddComponent<PotionProjectileController>();
-        }
-
         Transform hitOwner = projectileOwner != null ? projectileOwner : transform;
-        bool allowFallbackSprite = prefabToSpawn == null;
-        float lineAngleDeg = Mathf.Atan2(shotDirection.y, shotDirection.x) * Mathf.Rad2Deg;
 
-        controller.Init(
-            hitOwner,
+        BombProjectilePatternSpawner.Spawn(
+            phase.patternType,
             phase,
-            shotDirection,
-            speed,
-            lifetime,
-            0f,
-            null,
-            allowFallbackSprite,
-            false,
+            prefabToSpawn,
+            hitOwner,
+            spawnCenter,
+            baseDirection,
             bombInstanceId,
-            phaseIndex,
-            ProjectilePatternType.Fireworks,
-            lineAngleDeg);
+            overridePhaseIndex,
+            speed,
+            lifetime);
     }
 
     private PotionPhaseSpec ResolveShotPhase(out int phaseIndex)

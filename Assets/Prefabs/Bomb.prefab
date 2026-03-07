@@ -28,7 +28,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.5, y: 2, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -77,10 +77,10 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -1562799643
-  m_SortingLayer: 3
+  m_SortingLayerID: 825734181
+  m_SortingLayer: 4
   m_SortingOrder: 0
-  m_Sprite: {fileID: -1483665779731714255, guid: 5f9d8faca5f85ef4cb91053c9d5e60d7, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -88,7 +88,7 @@ SpriteRenderer:
   m_Size: {x: 0.23, y: 0.26}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!114 &-4950726596828814310
@@ -109,12 +109,12 @@ MonoBehaviour:
   explosionEffect: {fileID: 0}
   visualRenderer: {fileID: 0}
   projectilePrefab: {fileID: 0}
+  waterProjectileVfxPrefab: {fileID: 4791540778913851724, guid: 4bc1bfdb2ed432040808e68a1ecbc511, type: 3}
+  fireProjectileVfxPrefab: {fileID: 7588588366850297520, guid: 001b7578dba940349a44e9a754a8d096, type: 3}
+  electricProjectileVfxPrefab: {fileID: 1045807124205389876, guid: 12674abd401660545974933c80aabeb0, type: 3}
   defaultProjectileLifetime: 2.5
   projectileLifetimeFromPhaseDurationScale: 0.35
   minProjectileLifetime: 0.25
   projectileSpawnOffset: 0.1
   spawnProjectilePatterns: 1
   debugVisualOnlyExplosion: 0
-  waterProjectileVfxPrefab: {fileID: 4791540778913851724, guid: 4bc1bfdb2ed432040808e68a1ecbc511, type: 3}
-  fireProjectileVfxPrefab: {fileID: 7588588366850297520, guid: 001b7578dba940349a44e9a754a8d096, type: 3}
-  electricProjectileVfxPrefab: {fileID: 1045807124205389876, guid: 12674abd401660545974933c80aabeb0, type: 3}

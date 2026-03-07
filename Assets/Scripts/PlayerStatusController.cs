@@ -33,6 +33,9 @@ public class PlayerStatusController : MonoBehaviour
     public float SpeedMultiplier => speedMultiplier;
     public bool IsKnockbackImmune => knockbackImmune;
     public bool IsStunned => stunned;
+    public bool IsStealthActive =>
+        IsEffectRunning(StatusEffectType.StealthOnly) ||
+        IsEffectRunning(StatusEffectType.StealthInvulnerable);
 
     private void Awake()
     {
@@ -167,6 +170,11 @@ public class PlayerStatusController : MonoBehaviour
         }
 
         running[type] = StartCoroutine(routine);
+    }
+
+    private bool IsEffectRunning(StatusEffectType type)
+    {
+        return running.TryGetValue(type, out Coroutine routine) && routine != null;
     }
 
     private void StartOrRefreshBlind(StatusEffectType type, float duration, Color color, float overlayAlpha)

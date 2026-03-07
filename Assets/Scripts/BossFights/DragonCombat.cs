@@ -62,6 +62,7 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
     private Player player;
     private bool isBattleActive;
     private bool isStealthSkipped;
+    private bool stealthTriggerPermanentlySkipped;
     private bool battleResultHandled;
     private Vector3 baseVisualScale = Vector3.one;
     private bool hasBaseVisualScale;
@@ -106,13 +107,32 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
         isStealthSkipped = isStealthActive;
         if (!isStealthSkipped) return;
 
-        Debug.Log("[Dragon] Stealth route detected. Dragon battle skipped.");
+        MarkStealthTriggerSkipped();
+    }
+
+    public bool IsStealthBattleSkipped => isStealthSkipped || stealthTriggerPermanentlySkipped;
+
+    public void MarkStealthTriggerSkipped()
+    {
+        stealthTriggerPermanentlySkipped = true;
+        isStealthSkipped = true;
+
+        if (battleLoopRoutine != null)
+        {
+            StopCoroutine(battleLoopRoutine);
+            battleLoopRoutine = null;
+        }
+
+        isBattleActive = false;
+        SetFlyingRestrictionZoneActive(false);
+
+        Debug.Log("[Dragon] Stealth route detected. Dragon battle permanently skipped for this run.");
         gameObject.SetActive(false);
     }
 
     public override void StartBattle()
     {
-        if (isStealthSkipped)
+        if (IsStealthBattleSkipped)
         {
             Debug.Log("[Dragon] StartBattle ignored because stealth skip is active.");
             gameObject.SetActive(false);

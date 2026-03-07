@@ -346,14 +346,7 @@ public static class PotionDesignCatalog
 
     private static string Normalize(string raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
-
-        string upper = raw.Trim().ToUpperInvariant();
-        upper = upper.Replace(" ", string.Empty);
-        upper = upper.Replace("_", string.Empty);
-        upper = upper.Replace("-", string.Empty);
-        upper = upper.Replace("/", string.Empty);
-        return upper;
+        return PotionCraftRules.NormalizeKey(raw);
     }
 
     private static BulletType ToLegacyBullet(ProjectilePatternType patternType)

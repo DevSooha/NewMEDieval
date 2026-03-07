@@ -221,27 +221,11 @@ public static class PotionHitResolver
 
     private static void ApplyEffectsToEnemy(PotionPhaseSpec spec, EnemyCombat enemy, EnemyStatusController status)
     {
-        for (int i = 0; i < spec.onEnemyHitEffects.Count; i++)
-        {
-            StatusEffectSpec fx = spec.onEnemyHitEffects[i];
-            if (fx == null) continue;
-
-            switch (fx.effectType)
-            {
-                case StatusEffectType.HealEnemyCurrentHpPercent:
-                {
-                    int healAmount = Mathf.RoundToInt(enemy.CurrentHealth * (fx.magnitude / 100f));
-                    enemy.Heal(healAmount);
-                    break;
-                }
-                default:
-                    if (status != null)
-                    {
-                        status.ApplyEffect(fx);
-                    }
-                    break;
-            }
-        }
+        ApplyEnemyLikeEffects(
+            spec.onEnemyHitEffects,
+            () => enemy.CurrentHealth,
+            enemy.Heal,
+            status);
     }
 
     private static void ApplyEffectsToBoss(PotionPhaseSpec spec, BossHealth boss)
@@ -252,17 +236,36 @@ public static class PotionHitResolver
             status = boss.GetComponentInParent<EnemyStatusController>();
         }
 
-        for (int i = 0; i < spec.onEnemyHitEffects.Count; i++)
+        ApplyEnemyLikeEffects(
+            spec.onEnemyHitEffects,
+            () => boss.currentHP,
+            boss.Heal,
+            status);
+    }
+
+    private static void ApplyEnemyLikeEffects(
+        List<StatusEffectSpec> effects,
+        System.Func<int> currentHpGetter,
+        System.Action<int> heal,
+        EnemyStatusController status)
+    {
+        if (effects == null)
         {
-            StatusEffectSpec fx = spec.onEnemyHitEffects[i];
+            return;
+        }
+
+        for (int i = 0; i < effects.Count; i++)
+        {
+            StatusEffectSpec fx = effects[i];
             if (fx == null) continue;
 
             switch (fx.effectType)
             {
                 case StatusEffectType.HealEnemyCurrentHpPercent:
                 {
-                    int healAmount = Mathf.RoundToInt(boss.currentHP * (fx.magnitude / 100f));
-                    boss.Heal(healAmount);
+                    int currentHp = currentHpGetter != null ? currentHpGetter() : 0;
+                    int healAmount = Mathf.RoundToInt(currentHp * (fx.magnitude / 100f));
+                    heal?.Invoke(healAmount);
                     break;
                 }
                 default:

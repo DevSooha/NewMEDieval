@@ -531,30 +531,17 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
-        WeaponSlot slot = attackSystem.slots[slotIndex];
-
-        if (slot.equippedPotion != null && inventory != null)
+        bool equipped = attackSystem.TryEquipPotionToSlot(
+            pendingPotion,
+            slotIndex,
+            returnPreviousToInventory: true);
+        if (!equipped)
         {
-            if (!inventory.PotionItems.Contains(slot.equippedPotion))
-            {
-                inventory.AddPotion(slot.equippedPotion.data, slot.equippedPotion.quantity);
-            }
+            return;
         }
 
-        slot.type = WeaponType.PotionBomb;
-        slot.equippedPotion = pendingPotion;
-        slot.count = pendingPotion.quantity;
-        slot.specificPrefab = null;
-
-        if (inventory != null)
-        {
-            inventory.PotionItems.Remove(pendingPotion);
-        }
-
-        attackSystem.slots[slotIndex] = slot;
         ClearPendingUnequip();
         CancelWeaponSlotSelection();
-        attackSystem.NotifyWeaponSlotsChanged(compactSlots: false);
     }
 
     private void TryHandleSlotUnequip(int slotIndex)
@@ -579,19 +566,13 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
-        if (inventory != null && !inventory.PotionItems.Contains(slot.equippedPotion))
+        bool unequipped = attackSystem.TryUnequipPotionFromSlot(slotIndex, addBackToInventory: true);
+        if (!unequipped)
         {
-            inventory.AddPotion(slot.equippedPotion.data, slot.equippedPotion.quantity);
+            return;
         }
 
-        slot.equippedPotion = null;
-        slot.count = -1;
-        slot.type = slotIndex == 0 ? WeaponType.Melee : WeaponType.None;
-        slot.specificPrefab = null;
-        attackSystem.slots[slotIndex] = slot;
-
         ClearPendingUnequip();
-        attackSystem.NotifyWeaponSlotsChanged(compactSlots: false);
     }
 
     private void ClearPendingUnequip()

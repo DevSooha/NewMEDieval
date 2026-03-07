@@ -222,9 +222,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 350788919678288017, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1196693080}
-    - targetCorrespondingSourceObject: {fileID: 350788919678288017, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1196693079}
   m_SourcePrefab: {fileID: 100100000, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
 --- !u!114 &61059138 stripped
 MonoBehaviour:
@@ -675,6 +672,42 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 32
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 224
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055156252598480212, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -112
+      objectReference: {fileID: 0}
+    - target: {fileID: 2190079410643345460, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3066461670285350714, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1041,25 +1074,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 350788919678288017, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
   m_PrefabInstance: {fileID: 61059137}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1196693079
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1196693076}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7124f65f598a4de5a188ea820f1a702d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PotionTestHarness
-  grantOnStart: 0
-  quantityPerPotion: 3
-  addDuplicateForStackTest: 1
-  autoEquipFirstPotionToSlot1: 0
-  regrantHotkey: 287
-  clearAndRegrantHotkey: 288
-  logSummaryHotkey: 289
 --- !u!114 &1196693080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1076,7 +1090,8 @@ MonoBehaviour:
   resourcesFolder: ItemData
   amountPerItem: 20
   includePotionCategory: 0
-  grantOnStart: 0
+  grantOnStart: 1
+  restrictAutoGrantToTestScenes: 0
   oneShotOnStart: 1
   grantHotkey: 288
 --- !u!114 &1246557530 stripped
