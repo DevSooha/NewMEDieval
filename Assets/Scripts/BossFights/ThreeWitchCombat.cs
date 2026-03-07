@@ -230,7 +230,13 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
             GameObject rayObj = Instantiate(electricRayPrefab, spawnPos, rot);
             RegisterBossOffensive(rayObj);
-            rayObj.GetComponent<BossProjectile>()?.Setup(ElementType.Electric);
+            BossProjectile electricRay = rayObj.GetComponent<BossProjectile>();
+            if (electricRay == null)
+            {
+                electricRay = rayObj.AddComponent<ElectricLaserRay>();
+            }
+
+            electricRay.Setup(ElementType.Electric);
         }
     }
 
