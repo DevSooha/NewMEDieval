@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: baeea7f42f06cb14b8ba377deddc7112
+guid: 25639cfc34915624e80a03d7e4b609b2
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7262402201571299023
-    second: TX_Glow_01_0
+      213: 3586660165056018793
+    second: TX_Nemi_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TX_Glow_01_0
+      name: TX_Nemi_0
       rect:
         serializedVersion: 2
-        x: 6
-        y: 6
-        width: 500
-        height: 500
+        x: 0
+        y: 0
+        width: 512
+        height: 512
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 131f35feca3c63b90800000000000000
-      internalID: -7262402201571299023
+      spriteID: 969353cca6066c130800000000000000
+      internalID: 3586660165056018793
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TX_Glow_01_0: -7262402201571299023
+      TX_Nemi_0: 3586660165056018793
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

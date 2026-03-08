@@ -6,167 +6,122 @@ public class HandOfTime : MonoBehaviour
 {
     [Header("Refs")]
     [SerializeField] private Tilemap groundTilemap;
-    [SerializeField] private FateSeverSpearEmitterController emitterController; // 인덱스 계산만 써도 되고, 없어도 됨
 
-    [Header("Projectile Prefabs (2 types)")]
+    [Header("Projectile Prefabs")]
     [SerializeField] private HandOfTimeProjectile prefab1x3;
     [SerializeField] private HandOfTimeProjectile prefab2x2;
 
-    public enum ShotType { Long1x3, Square2x2 }
-    [SerializeField] private ShotType shotType = ShotType.Long1x3;
-
     [Header("Timing")]
     [SerializeField] private float castTime = 0.5f;
-    [SerializeField] private float fadeInTime = 0.5f;
 
     [Header("Speed")]
     [SerializeField] private float speedWorldPerSec = 5f;
 
-    // =========================
-    // ✅ 너가 준 “좌표 규칙” 고정값
-    // =========================
-
-    [Header("Horizontal (2x2) Layout")]
-    [SerializeField] private int hStartLeftX = -14;   // -14, -12, ... 12
-    [SerializeField] private int hStepX = 2;
-    [SerializeField] private int hCount = 14;         // 14 blocks
-    [SerializeField] private int hTopY = 8;           // 2x2의 윗줄
-    [SerializeField] private int hBottomY = 7;        // 2x2의 아랫줄
-
-    [Header("Vertical (3-wide) Layout")]
-    [SerializeField] private int vLeftX = 11;         // 11,12,13
-    [SerializeField] private int vWidth = 3;          // 3칸 폭
-    [SerializeField] private int vMinY = -8;          // -8..8
-    [SerializeField] private int vMaxY = 8;
+    // Tilemap bounds
+    private const int MIN_X = -14;
+    private const int MAX_X = 13;
+    private const int MIN_Y = -8;
+    private const int MAX_Y = 8;
 
     private void Awake()
     {
         if (groundTilemap == null)
         {
             var groundObj = GameObject.FindGameObjectWithTag("Ground");
-            if (groundObj != null) groundTilemap = groundObj.GetComponentInChildren<Tilemap>();
+            if (groundObj != null)
+                groundTilemap = groundObj.GetComponentInChildren<Tilemap>();
         }
-
-        if (emitterController == null)
-            emitterController = FindAnyObjectByType<FateSeverSpearEmitterController>();
-    }
-
-    private HandOfTimeProjectile GetPrefab()
-    {
-        return shotType == ShotType.Long1x3 ? prefab1x3 : prefab2x2;
     }
 
     public IEnumerator PlayOnce(Transform playerTF)
     {
-        Debug.Log($"[HandOfTime] groundTilemap.name={groundTilemap.name}");
-        Debug.Log($"[HandOfTime] groundTilemap path={GetPath(groundTilemap.transform)}");
-        Debug.Log($"[HandOfTime] grid={groundTilemap.layoutGrid.name} gridPos={groundTilemap.layoutGrid.transform.position}");
-        
-        Debug.Log("[HandOfTime] PlayOnce start");
+        Debug.Log("HandOfTime PlayOnce START");
 
-        if (playerTF == null)
+        if (playerTF == null || groundTilemap == null)
         {
-            Debug.LogWarning("[HandOfTime] playerTF is NULL");
+            Debug.LogError("HandOfTime: playerTF or groundTilemap NULL");
             yield break;
         }
 
-        if (groundTilemap == null)
-        {
-            Debug.LogWarning("[HandOfTime] groundTilemap is NULL");
-            yield break;
-        }
-
-        var prefab = GetPrefab();
-        if (prefab == null)
-        {
-            Debug.LogWarning("[HandOfTime] Projectile prefab is NULL");
-            yield break;
-        }
-
-        Debug.Log("[HandOfTime] Casting start");
         yield return new WaitForSeconds(castTime);
 
-        // 1) 플레이어 셀 락
-        Vector3Int lockedCell = groundTilemap.WorldToCell(playerTF.position);
-        Debug.Log($"[HandOfTime] Player cell locked = {lockedCell}");
+        // =========================
+        // 플레이어 타일 좌표
+        // =========================
 
-        // 2) ✅ 네 규칙대로 인덱스/셀 계산
-        // 가로(2x2): playerCellX -> 2칸 단위 block index(0..13) -> leftX
-        int hIdx = GetHorizontalIndexFromPlayerCellX(lockedCell.x);
-        int laneLeftX = hStartLeftX + hIdx * hStepX;
+        Vector3Int playerCell = groundTilemap.WorldToCell(playerTF.position);
 
-        // 세로(3-wide): playerCellY -> yCell (-8..8)
-        int yCell = Mathf.Clamp(lockedCell.y, vMinY, vMaxY);
+        int px = Mathf.Clamp(playerCell.x, MIN_X, MAX_X);
+        int py = Mathf.Clamp(playerCell.y, MIN_Y, MAX_Y);
 
-        // 3) 스폰 앵커 월드좌표
-        Vector3 spawnPosHorizontal = GetHorizontalAnchorWorld_2x2(laneLeftX);
-        Vector3 spawnPosVertical   = GetVerticalAnchorWorld_3wide(yCell);
+        // =========================
+        // 2x2 탄 (위에서 내려오기)
+        // =========================
 
-        Debug.Log($"[HandOfTime] hIdx={hIdx} laneLeftX={laneLeftX} -> spawnH={spawnPosHorizontal}");
-        Debug.Log($"[HandOfTime] yCell={yCell} -> spawnV={spawnPosVertical}");
+        int laneLeftX = Mathf.FloorToInt(px / 2f) * 2;
 
-        // 4) 생성 + 페이드인
-        HandOfTimeProjectile pH = Instantiate(prefab, spawnPosHorizontal, Quaternion.identity);
-        HandOfTimeProjectile pV = Instantiate(prefab, spawnPosVertical, Quaternion.identity);
+        int topY = MAX_Y;
+        int bottomY = MAX_Y - 1;
 
-        // ✅ (선택) 판정 크기를 셀 규칙대로 맞추고 싶으면 여기서 세팅 (아래 ConfigureCollider 참고)
-        // pH.ConfigureCollider(groundTilemap, 2, 2);  // 2x2 판정
-        // pV.ConfigureCollider(groundTilemap, 3, 1);  // 3x1 판정(가로 3칸, 세로 1칸)
+        // 2x2 중심 계산
+        Vector3 center2x2 =
+        (
+            groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX, topY, 0)) +
+            groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX + 1, bottomY, 0))
+        ) * 0.5f;
 
-        pH.BeginFadeIn(fadeInTime);
-        pV.BeginFadeIn(fadeInTime);
+        // spawn 위치 (맵 바로 위)
+        float spawnY =
+            groundTilemap.GetCellCenterWorld(new Vector3Int(0, MAX_Y + 1, 0)).y;
 
-        Debug.Log("[HandOfTime] FadeIn started");
-        yield return new WaitForSeconds(fadeInTime);
+        Vector3 spawn2x2 = new Vector3(center2x2.x, spawnY, 0f);
 
-        // 5) 발사 직전 플레이어 월드 좌표 재획득
-        Vector3 fireLockWorld = playerTF.position;
-        Debug.Log($"[HandOfTime] Fire target world = {fireLockWorld}");
+        // =========================
+        // 1x3 탄 (오른쪽에서 들어오기)
+        // =========================
 
-        // 6) 축 고정 발사
-        pH.BeginFire(fireLockWorld, speedWorldPerSec, HandOfTimeProjectile.Axis.Horizontal);
-        pV.BeginFire(fireLockWorld, speedWorldPerSec, HandOfTimeProjectile.Axis.Vertical);
+        Vector3 center1x3 =
+            groundTilemap.GetCellCenterWorld(new Vector3Int(px, py, 0));
 
-        Debug.Log("[HandOfTime] BeginFire called");
-    }
+        float spawnX =
+            groundTilemap.GetCellCenterWorld(new Vector3Int(MAX_X + 1, 0, 0)).x;
 
-    // =========================
-    // ✅ 인덱스 / 앵커 계산 (네 규칙 그대로)
-    // =========================
+        Vector3 spawn1x3 = new Vector3(spawnX, center1x3.y, 0f);
 
-    private int GetHorizontalIndexFromPlayerCellX(int playerCellX)
-    {
-        int idx = Mathf.FloorToInt((playerCellX - hStartLeftX) / (float)hStepX);
-        return Mathf.Clamp(idx, 0, hCount - 1);
-    }
+        // =========================
+        // Debug
+        // =========================
 
-    // 2x2 블록 중앙: [leftX,8][leftX+1,8][leftX,7][leftX+1,7] 평균
-    private Vector3 GetHorizontalAnchorWorld_2x2(int leftX)
-    {
-        Vector3 c1 = groundTilemap.GetCellCenterWorld(new Vector3Int(leftX,     hTopY, 0));
-        Vector3 c2 = groundTilemap.GetCellCenterWorld(new Vector3Int(leftX + 1, hTopY, 0));
-        Vector3 c3 = groundTilemap.GetCellCenterWorld(new Vector3Int(leftX,     hBottomY, 0));
-        Vector3 c4 = groundTilemap.GetCellCenterWorld(new Vector3Int(leftX + 1, hBottomY, 0));
-        return (c1 + c2 + c3 + c4) * 0.25f;
-    }
+        Debug.Log("spawn2x2 = " + spawn2x2);
+        Debug.Log("spawn1x3 = " + spawn1x3);
 
-    // 3칸 폭 중앙: [11,y][12,y][13,y] 평균
-    private Vector3 GetVerticalAnchorWorld_3wide(int yCell)
-    {
-        Vector3 sum = Vector3.zero;
-        for (int i = 0; i < vWidth; i++)
-            sum += groundTilemap.GetCellCenterWorld(new Vector3Int(vLeftX + i, yCell, 0));
-        return sum / Mathf.Max(1, vWidth);
-    }
-    
-    private string GetPath(Transform t)
-    {
-        string p = t.name;
-        while (t.parent != null)
-        {
-            t = t.parent;
-            p = t.name + "/" + p;
-        }
-        return p;
+        Debug.DrawLine(spawn2x2, spawn2x2 + Vector3.down * 5f, Color.red, 2f);
+        Debug.DrawLine(spawn1x3, spawn1x3 + Vector3.left * 5f, Color.green, 2f);
+
+        // =========================
+        // 생성
+        // =========================
+
+        HandOfTimeProjectile p2x2 =
+            Instantiate(prefab2x2, spawn2x2, Quaternion.identity);
+
+        HandOfTimeProjectile p1x3 =
+            Instantiate(prefab1x3, spawn1x3, Quaternion.identity);
+
+        // =========================
+        // 발사
+        // =========================
+
+        p2x2.BeginFire(
+            p2x2.transform.position + Vector3.down,
+            speedWorldPerSec,
+            HandOfTimeProjectile.Axis.Vertical
+        );
+
+        p1x3.BeginFire(
+            p1x3.transform.position + Vector3.left,
+            speedWorldPerSec,
+            HandOfTimeProjectile.Axis.Horizontal
+        );
     }
 }
