@@ -41,12 +41,12 @@ public class WorldItem : MonoBehaviour
         }
     }
 
-    public void Pickup()
+    public bool Pickup()
     {
         if (isPickingUp || !initialized)
         {
             Debug.Log("[WorldItem] Pickup failed");
-            return;
+            return false;
         }
 
         Inventory inventory = FindFirstObjectByType<Inventory>();
@@ -56,18 +56,22 @@ public class WorldItem : MonoBehaviour
             if (itemData == null)
             {
                 Destroy(gameObject);
-                return;
+                return true;
             }
 
             bool added = inventory.AddItem(itemData, quantity);
             if (added)
             {
                 StartCoroutine(PickupEffect());
+                return true;
             }
+
+            return false;
         }
         else
         {
             StartCoroutine(PickupEffect());
+            return true;
         }
     }
 

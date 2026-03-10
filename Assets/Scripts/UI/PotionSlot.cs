@@ -69,8 +69,9 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         if (potion != null && potion.data != null)
         {
             PotionVisualParts visualParts = PotionVisualResolver.Resolve(potion.data);
+            bool hasFullVisualSet = visualParts.Top != null && visualParts.Bottom != null && visualParts.Frame != null;
 
-            Sprite topSprite = visualParts.Top;
+            Sprite topSprite = hasFullVisualSet ? visualParts.Top : null;
             if (topIMG != null && topSprite != null)
             {
                 topIMG.sprite = topSprite;
@@ -82,7 +83,7 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
                 topIMG.enabled = false;
             }
             
-            Sprite bottomSprite = visualParts.Bottom;
+            Sprite bottomSprite = hasFullVisualSet ? visualParts.Bottom : null;
             if (bottomIMG != null && bottomSprite != null)
             {
                 bottomIMG.sprite = bottomSprite;
@@ -96,9 +97,10 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
             
             if (frame != null)
             {
-                if (visualParts.Frame != null)
+                frame.sprite = hasFullVisualSet ? visualParts.Frame : null;
+                if (frame.sprite != null)
                 {
-                    frame.sprite = visualParts.Frame;
+                    frame.color = Color.white;
                 }
 
                 frame.enabled = frame.sprite != null;

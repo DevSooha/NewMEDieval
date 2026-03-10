@@ -110,9 +110,15 @@ public class WeaponSlotUI : MonoBehaviour
         if (slot.type == WeaponType.PotionBomb && slot.equippedPotion != null && slot.equippedPotion.data != null)
         {
             PotionVisualParts visualParts = PotionVisualResolver.Resolve(slot.equippedPotion.data);
+            bool hasFullSet = visualParts.Top != null && visualParts.Bottom != null && visualParts.Frame != null;
+            if (!hasFullSet)
+            {
+                return;
+            }
+
             topSprite = visualParts.Top;
             bottomSprite = visualParts.Bottom;
-            shellSprite = visualParts.Frame != null ? visualParts.Frame : slot.equippedPotion.data.icon;
+            shellSprite = visualParts.Frame;
 
             return;
         }

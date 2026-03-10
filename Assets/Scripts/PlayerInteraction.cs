@@ -14,14 +14,20 @@ public class PlayerInteraction : MonoBehaviour
 
     public CraftUI craftUI;
     [SerializeField] private GameObject craftingMenu;
+    [SerializeField] private GameObject inGameMenu;
     [SerializeField] private InventoryUI inventoryUI;
 
     private bool canInteract;
     private bool isCampfire;
     private Coroutine craftingOpenTransitionRoutine;
+    private Coroutine controlRecoveryRoutine;
     private const float CraftingOpenTransitionSeconds = 0.5f;
+    private const int ControlRecoveryFrames = 3;
+    private PlayerAttackSystem playerAttackSystem;
 
-    public bool IsInteractable => canInteract || IsCraftingActive();
+    public bool IsInteractable => canInteract;
+    public bool HasImmediateInteractionTarget => currentItem != null || currentNPC != null || isCampfire;
+    public bool IsCraftingUiOpen => IsCraftingUiVisible();
 
     private void Start()
     {
@@ -35,6 +41,7 @@ public class PlayerInteraction : MonoBehaviour
 
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
+        playerAttackSystem = GetComponentInParent<PlayerAttackSystem>();
 
         EnsureUiReferences();
 
@@ -50,11 +57,21 @@ public class PlayerInteraction : MonoBehaviour
         {
             Debug.LogWarning($"[PlayerInteraction] CraftingMenu/CraftUI is not assigned on {gameObject.name}.");
         }
+
+        if (inventoryUI != null)
+        {
+            inventoryUI.gameObject.SetActive(false);
+        }
+
+        if (inGameMenu != null)
+        {
+            inGameMenu.SetActive(false);
+        }
     }
 
     private void Update()
     {
-        if (IsCraftingActive() && Input.GetKeyDown(KeyCode.X))
+        if (IsCraftingUiVisible() && Input.GetKeyDown(KeyCode.X))
         {
             if (craftUI != null)
             {
@@ -74,20 +91,24 @@ public class PlayerInteraction : MonoBehaviour
 
     public bool TryInteract()
     {
-        if (IsCraftingActive())
+        if (IsCraftingUiVisible())
         {
-            CombatInputHelper.ConsumeAttackInputThisFrame();
-            return true;
+            return false;
         }
-
-        if (!canInteract) return false;
 
         if (currentItem != null)
         {
-            PickUpItem();
-            CombatInputHelper.ConsumeAttackInputThisFrame();
-            return true;
+            bool picked = PickUpItem();
+            if (picked)
+            {
+                CombatInputHelper.ConsumeAttackInputThisFrame();
+                return true;
+            }
+
+            return false;
         }
+
+        if (!canInteract) return false;
 
         if (currentNPC != null)
         {
@@ -108,6 +129,7 @@ public class PlayerInteraction : MonoBehaviour
 
         if (isCampfire)
         {
+            ShowCampfireSelectPanelIfNeeded();
             CombatInputHelper.ConsumeAttackInputThisFrame();
             return true;
         }
@@ -115,16 +137,13 @@ public class PlayerInteraction : MonoBehaviour
         return false;
     }
 
-    private bool IsCraftingActive()
+    private bool IsCraftingUiVisible()
     {
         EnsureUiReferences();
 
-        if (craftingMenu != null)
-        {
-            return craftingMenu.activeInHierarchy;
-        }
-
-        return craftUI != null && craftUI.gameObject.activeInHierarchy;
+        return (craftingMenu != null && craftingMenu.activeInHierarchy)
+            || (inGameMenu != null && inGameMenu.activeInHierarchy)
+            || (craftUI != null && craftUI.gameObject.activeInHierarchy);
     }
 
     private void EnsureUiReferences()
@@ -170,6 +189,21 @@ public class PlayerInteraction : MonoBehaviour
             if (inventoryUI == null)
             {
                 inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+            }
+        }
+
+        if (inGameMenu == null || inGameMenu.scene != activeScene)
+        {
+            inGameMenu = null;
+
+            if (inventoryUI != null)
+            {
+                inGameMenu = FindAncestorByName(inventoryUI.transform, "InGameMenu");
+            }
+
+            if (inGameMenu == null)
+            {
+                inGameMenu = FindGameObjectInActiveScene("InGameMenu");
             }
         }
     }
@@ -233,18 +267,25 @@ public class PlayerInteraction : MonoBehaviour
         return null;
     }
 
-    private void PickUpItem()
+    private bool PickUpItem()
     {
-        if (currentItem == null) return;
+        if (currentItem == null) return false;
 
-        currentItem.Pickup();
+        bool picked = currentItem.Pickup();
+        if (!picked)
+        {
+            return false;
+        }
+
         currentItem = null;
-        canInteract = false;
+        canInteract = currentNPC != null || isCampfire;
 
         if (Player.Instance != null)
         {
             Player.Instance.OnInteractionFinished();
         }
+
+        return true;
     }
 
     private void StartDialogue()
@@ -286,13 +327,7 @@ public class PlayerInteraction : MonoBehaviour
 
             if (UIManager.Instance != null)
             {
-                UIManager.Instance.ShowSelectPanel(
-                    "Campfire?",
-                    "Yes",
-                    () => { EnterCrafting(); },
-                    "No",
-                    () => { }
-                );
+                ShowCampfireSelectPanelIfNeeded();
             }
         }
     }
@@ -300,6 +335,8 @@ public class PlayerInteraction : MonoBehaviour
     public void EnterCrafting()
     {
         EnsureUiReferences();
+        EnsureCombatStateReset();
+        CombatInputHelper.ConsumeAttackInputThisFrame();
 
         if (craftingOpenTransitionRoutine != null)
         {
@@ -318,6 +355,8 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         isCampfire = false;
+        EnsureCombatStateReset();
+        BeginControlRecovery();
 
         if (craftUI != null)
         {
@@ -326,6 +365,115 @@ public class PlayerInteraction : MonoBehaviour
         else if (craftingMenu != null)
         {
             craftingMenu.SetActive(false);
+        }
+
+        if (inventoryUI != null)
+        {
+            inventoryUI.gameObject.SetActive(false);
+        }
+
+        if (inGameMenu != null)
+        {
+            inGameMenu.SetActive(false);
+        }
+
+        if (Player.Instance != null)
+        {
+            Player.Instance.OnInteractionFinished();
+        }
+    }
+
+    private void ShowCampfireSelectPanelIfNeeded()
+    {
+        if (UIManager.Instance == null)
+        {
+            return;
+        }
+
+        if (UIManager.Instance.IsDialogueActive() || UIManager.Instance.IsSelectPanelActive())
+        {
+            return;
+        }
+
+        UIManager.Instance.ShowSelectPanel(
+            "Campfire?",
+            "Yes",
+            EnterCrafting,
+            "No",
+            () => { }
+        );
+    }
+
+    public void BeginControlRecoveryAfterCraftingClose()
+    {
+        BeginControlRecovery();
+    }
+
+    private void BeginControlRecovery()
+    {
+        if (controlRecoveryRoutine != null)
+        {
+            StopCoroutine(controlRecoveryRoutine);
+        }
+
+        controlRecoveryRoutine = StartCoroutine(ControlRecoveryRoutine());
+    }
+
+    private IEnumerator ControlRecoveryRoutine()
+    {
+        for (int i = 0; i < ControlRecoveryFrames; i++)
+        {
+            EnsureUiReferences();
+            EnsureCombatStateReset();
+
+            if (craftingMenu != null)
+            {
+                craftingMenu.SetActive(false);
+            }
+
+            if (craftUI != null)
+            {
+                craftUI.gameObject.SetActive(false);
+            }
+
+            if (inventoryUI != null)
+            {
+                inventoryUI.gameObject.SetActive(false);
+            }
+
+            if (inGameMenu != null)
+            {
+                inGameMenu.SetActive(false);
+            }
+
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.HideSelectPanel();
+            }
+
+            Time.timeScale = 1f;
+
+            if (Player.Instance != null)
+            {
+                Player.Instance.OnInteractionFinished();
+            }
+
+            yield return null;
+        }
+
+        controlRecoveryRoutine = null;
+    }
+
+    private void EnsureCombatStateReset()
+    {
+        if (playerAttackSystem == null)
+        {
+            playerAttackSystem = GetComponentInParent<PlayerAttackSystem>();
+        }
+
+        if (playerAttackSystem != null)
+        {
+            playerAttackSystem.CancelTransientInputState();
         }
     }
 
@@ -385,13 +533,23 @@ public class PlayerInteraction : MonoBehaviour
         {
             craftingMenu.SetActive(true);
         }
-        else if (craftUI != null)
+        else if (craftUI == null)
+        {
+            Debug.LogError("[PlayerInteraction] EnterCrafting failed: CraftingMenu reference is missing.");
+        }
+
+        if (craftUI != null)
         {
             craftUI.gameObject.SetActive(true);
         }
         else
         {
-            Debug.LogError("[PlayerInteraction] EnterCrafting failed: CraftingMenu reference is missing.");
+            Debug.LogError("[PlayerInteraction] EnterCrafting failed: CraftUI reference is missing.");
+        }
+
+        if (inGameMenu != null)
+        {
+            inGameMenu.SetActive(true);
         }
 
         if (inventoryUI != null)

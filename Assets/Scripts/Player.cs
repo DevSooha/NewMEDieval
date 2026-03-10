@@ -148,6 +148,13 @@ public class Player : MonoBehaviour
 
     void HandleInteractionOnly()
     {
+        if (playerInteraction != null && playerInteraction.IsCraftingUiOpen)
+        {
+            moveInput = Vector2.zero;
+            ChangeState(PlayerState.Idle);
+            return;
+        }
+
         if (IsInteractOrAttackPressed())
         {
             if (playerInteraction != null)
@@ -167,7 +174,9 @@ public class Player : MonoBehaviour
 
     void HandleMovement()
     {
-        if (UIManager.DialogueActive || UIManager.SelectionActive)
+        if (UIManager.DialogueActive
+            || UIManager.SelectionActive
+            || (playerInteraction != null && playerInteraction.IsCraftingUiOpen))
         {
             moveInput = Vector2.zero;
             ChangeState(PlayerState.Idle);
@@ -273,14 +282,21 @@ public class Player : MonoBehaviour
 
     void HandleAttack()
     {
+        if (playerInteraction != null && playerInteraction.IsCraftingUiOpen)
+        {
+            return;
+        }
+
         if (IsInteractOrAttackPressed())
         {
-            // 1. ??�????좎럩???믪눦?? ??좎럥??
-            if (playerInteraction != null && playerInteraction.TryInteract())
+            bool hasImmediateInteractionTarget = playerInteraction != null
+                                                 && playerInteraction.HasImmediateInteractionTarget;
+            if (hasImmediateInteractionTarget && playerInteraction.TryInteract())
             {
                 return;
             }
 
+            // 1. ??�????좎럩???믪눦?? ??좎럥??
             // Potion usage is handled by PlayerAttackSystem; do not play melee attack motion.
             if (IsPotionWeaponSelected())
             {
@@ -698,4 +714,3 @@ public class Player : MonoBehaviour
         Debug.Log($"??�슦�?????좎럥�? {savedPosition}");
     }
 }
-

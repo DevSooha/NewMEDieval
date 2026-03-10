@@ -525,8 +525,13 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
-        // Keep slot 1 reserved; allow direct placement only in slots 2~4.
-        if (slotIndex <= 0)
+        if (attackSystem == null || attackSystem.slots == null || slotIndex < 0 || slotIndex >= attackSystem.slots.Count)
+        {
+            return;
+        }
+
+        WeaponSlot targetSlot = attackSystem.slots[slotIndex];
+        if (targetSlot != null && targetSlot.type != WeaponType.None)
         {
             return;
         }
@@ -534,7 +539,7 @@ public class InventoryUI : MonoBehaviour
         bool equipped = attackSystem.TryEquipPotionToSlot(
             pendingPotion,
             slotIndex,
-            returnPreviousToInventory: true);
+            returnPreviousToInventory: false);
         if (!equipped)
         {
             return;
@@ -623,17 +628,13 @@ public class InventoryUI : MonoBehaviour
         float alpha = Mathf.Max(0.7f, dimmerAlpha);
         weaponSlotDimmer.color = new Color(0f, 0f, 0f, alpha);
         weaponSlotDimmer.gameObject.SetActive(active);
-        weaponSlotDimmer.raycastTarget = false;
+        weaponSlotDimmer.raycastTarget = active;
         if (active)
         {
             weaponSlotDimmer.transform.SetAsLastSibling();
             if (weaponSlotRoot != null)
             {
                 weaponSlotRoot.SetAsLastSibling();
-            }
-            if (potionInventoryRoot != null)
-            {
-                potionInventoryRoot.SetAsLastSibling();
             }
         }
     }
@@ -643,16 +644,6 @@ public class InventoryUI : MonoBehaviour
         if (weaponSlotDimmer != null && weaponSlotDimmer.gameObject.activeSelf)
         {
             weaponSlotDimmer.transform.SetAsLastSibling();
-        }
-
-        if (potionInventoryRoot == null)
-        {
-            TryResolvePotionInventoryRoot();
-        }
-
-        if (potionInventoryRoot != null)
-        {
-            potionInventoryRoot.SetAsLastSibling();
         }
 
         if (weaponSlotRoot != null)
