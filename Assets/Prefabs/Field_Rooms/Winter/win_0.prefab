@@ -921,7 +921,6 @@ MonoBehaviour:
   defaultTeleportDuration: 0.1
   damagePerHit: 1
   oneTileHitbox: {x: 1, y: 1}
-  latentThornCastPoints: []
   latentThornTimeline: {fileID: 5836599217463125615, guid: 38d58b09d38f8dc4980d86df6db91865, type: 3}
   latentThornTimelinePrefab: {fileID: 3914299661056653410, guid: 38d58b09d38f8dc4980d86df6db91865, type: 3}
   latentThornTimelineParent: {fileID: 1961005416687747872, guid: 38d58b09d38f8dc4980d86df6db91865, type: 3}
@@ -965,8 +964,11 @@ MonoBehaviour:
   handTeleportDuration: 0.5
   handPreCastDelay: 0.5
   handSwingDuration: 0.5
-  diamondFlickerOverlay: {fileID: 0}
-  hiddenSceneTransitionController: {fileID: 0}
+  diamondFlickerCalmPrefab: {fileID: 1436267325495379272, guid: b6fd2a40dfbaf9645acbe493c8aaaffd, type: 3}
+  diamondFlickerWindPrefab: {fileID: 5421618118356677949, guid: 840e0eb0149e09342a9b10a378e69943, type: 3}
+  diamondFlickerCalmDuration: 0.8
+  diamondFlickerWindDuration: 0.8
+  hiddenSceneFadeOutDuration: 0.5
   phase1LoopDelay: 0
   phase2LoopDelay: 0
 --- !u!114 &936000000000000010

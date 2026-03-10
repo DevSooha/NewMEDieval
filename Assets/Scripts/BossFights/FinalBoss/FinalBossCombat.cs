@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
 public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandler, IBossBattleResetNotifier, IBossStartPositioner
@@ -11,11 +12,30 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
     private static readonly PropertyName ThornRefId = new("c8f0a49c6655fdb45a07db761386b42c");
     private const string MagicCircleChildName = "VFX_MagicCircle";
     private const string ThornChildName = "Thorn";
+    private const string DiamondDustSystemName = "Dust";
+    private const string DiamondTwinkleSystemName = "Twinkle";
+    private const string DiamondMoodSystemName = "Mood";
+    private const string DiamondFlickerRootName = "FinalBossDiamondFlicker";
 
     private enum CombatPhase
     {
         Phase1,
         Phase2
+    }
+
+    private sealed class DiamondFlickerProfile
+    {
+        public GameObject Instance;
+        public DiamondParticleChannel Dust;
+        public DiamondParticleChannel Twinkle;
+        public DiamondParticleChannel Mood;
+        public ParticleSystem[] AllSystems;
+    }
+
+    private sealed class DiamondParticleChannel
+    {
+        public ParticleSystem System;
+        public float BaseRateOverTime;
     }
 
     [Header("Core")]
@@ -37,7 +57,6 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
     [SerializeField] private Vector2 oneTileHitbox = Vector2.one;
 
     [Header("Latent Thorn Pattern")]
-    [SerializeField] private Transform[] latentThornCastPoints;
     [SerializeField] private PlayableDirector latentThornTimeline;
     [SerializeField] private GameObject latentThornTimelinePrefab;
     [SerializeField] private Transform latentThornTimelineParent;
@@ -80,9 +99,12 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
     [SerializeField] private float handPreCastDelay = 0.5f;
     [SerializeField] private float handSwingDuration = 0.5f;
 
-    [Header("Overlay / Transition")]
-    [SerializeField] private FinalBossDiamondFlickerOverlay diamondFlickerOverlay;
-    [SerializeField] private FinalBossSceneTransitionController hiddenSceneTransitionController;
+    [Header("Diamond Flicker / Transition")]
+    [SerializeField] private GameObject diamondFlickerCalmPrefab;
+    [SerializeField] private GameObject diamondFlickerWindPrefab;
+    [SerializeField] private float diamondFlickerCalmDuration = 0.8f;
+    [SerializeField] private float diamondFlickerWindDuration = 0.8f;
+    [SerializeField] private float hiddenSceneFadeOutDuration = 0.5f;
 
     [Header("Loop Delay")]
     [SerializeField] private float phase1LoopDelay = 0f;
@@ -119,6 +141,10 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
     private readonly List<Transform> bedimmedWallSlots = new();
     private readonly List<LatentThornHitbox> latentThornHitboxes = new();
     private readonly List<PlayableDirector> latentThornTimelines = new();
+    private Coroutine diamondFlickerLoopRoutine;
+    private GameObject diamondFlickerRoot;
+    private DiamondFlickerProfile diamondFlickerCalmProfile;
+    private DiamondFlickerProfile diamondFlickerWindProfile;
 
     public event Action OnBattleReset;
 
@@ -158,6 +184,18 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         PlayerHealth.OnPlayerDeath -= HandlePlayerDeath;
         StopBattleRoutines();
         ClearOffensives();
+    }
+
+    private void OnDestroy()
+    {
+        DestroyDiamondFlickerProfile(ref diamondFlickerCalmProfile);
+        DestroyDiamondFlickerProfile(ref diamondFlickerWindProfile);
+
+        if (diamondFlickerRoot != null)
+        {
+            Destroy(diamondFlickerRoot);
+            diamondFlickerRoot = null;
+        }
     }
 
     public override void StartBattle()
@@ -379,7 +417,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         ActivateCarmaTrueHitbox(trueHitCenter, carmaTrueHitboxDuration);
         if (carmaTrueHitboxDuration > 0f) yield return new WaitForSeconds(carmaTrueHitboxDuration);
 
-        float endDelay = carmaPhase1EndDelay > 0f ? carmaPhase1EndDelay : carmaPhase2EndDelay;
+        float endDelay = currentPhase == CombatPhase.Phase1 ? carmaPhase1EndDelay : carmaPhase2EndDelay;
         if (endDelay > 0f) yield return new WaitForSeconds(endDelay);
     }
 
@@ -390,11 +428,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         FacePlayerHorizontal();
         yield return AttackSCast(bedimmedSwingDuration, true);
 
-        diamondFlickerOverlay = EnsureDiamondFlickerOverlay();
-        if (diamondFlickerOverlay != null)
-        {
-            diamondFlickerOverlay.BeginLoop();
-        }
+        BeginDiamondFlickerLoop();
 
         List<FinalBossBedimmedWallProjectile> projectiles = new();
         List<Vector2> launchDirections = new();
@@ -791,13 +825,244 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         return handOfTimeController;
     }
 
-    private FinalBossDiamondFlickerOverlay EnsureDiamondFlickerOverlay()
+    private void BeginDiamondFlickerLoop()
     {
-        if (diamondFlickerOverlay != null) return diamondFlickerOverlay;
+        if (!EnsureDiamondFlickerProfiles())
+        {
+            return;
+        }
 
-        GameObject go = new GameObject("FinalBossDiamondFlickerOverlay");
-        diamondFlickerOverlay = go.AddComponent<FinalBossDiamondFlickerOverlay>();
-        return diamondFlickerOverlay;
+        if (diamondFlickerLoopRoutine != null)
+        {
+            return;
+        }
+
+        ActivateDiamondFlickerProfiles();
+        ApplyDiamondFlickerBlend(1f, 0f);
+        diamondFlickerLoopRoutine = StartCoroutine(DiamondFlickerRoutine());
+    }
+
+    private void StopDiamondFlickerLoop()
+    {
+        if (diamondFlickerLoopRoutine != null)
+        {
+            StopCoroutine(diamondFlickerLoopRoutine);
+            diamondFlickerLoopRoutine = null;
+        }
+
+        StopAndClearDiamondProfile(diamondFlickerCalmProfile);
+        StopAndClearDiamondProfile(diamondFlickerWindProfile);
+    }
+
+    private IEnumerator DiamondFlickerRoutine()
+    {
+        while (true)
+        {
+            yield return CrossFadeDiamondFlicker(1f, 0f, 0f, 1f, Mathf.Max(0.01f, diamondFlickerCalmDuration));
+            yield return CrossFadeDiamondFlicker(0f, 1f, 1f, 0f, Mathf.Max(0.01f, diamondFlickerWindDuration));
+        }
+    }
+
+    private IEnumerator CrossFadeDiamondFlicker(float calmStart, float windStart, float calmEnd, float windEnd, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float smooth = Mathf.SmoothStep(0f, 1f, t);
+            float calmWeight = Mathf.Lerp(calmStart, calmEnd, smooth);
+            float windWeight = Mathf.Lerp(windStart, windEnd, smooth);
+            ApplyDiamondFlickerBlend(calmWeight, windWeight);
+            yield return null;
+        }
+
+        ApplyDiamondFlickerBlend(calmEnd, windEnd);
+    }
+
+    private bool EnsureDiamondFlickerProfiles()
+    {
+        if (diamondFlickerCalmProfile == null)
+        {
+            diamondFlickerCalmProfile = CreateDiamondFlickerProfile(diamondFlickerCalmPrefab, "DiamondFlicker_Calm");
+        }
+
+        if (diamondFlickerWindProfile == null)
+        {
+            diamondFlickerWindProfile = CreateDiamondFlickerProfile(diamondFlickerWindPrefab, "DiamondFlicker_Wind");
+        }
+
+        if (diamondFlickerCalmProfile == null || diamondFlickerWindProfile == null)
+        {
+            Debug.LogWarning("FinalBossCombat: Diamond flicker calm/wind prefabs are required to run the effect.", this);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ActivateDiamondFlickerProfiles()
+    {
+        PlayDiamondFlickerProfile(diamondFlickerCalmProfile);
+        PlayDiamondFlickerProfile(diamondFlickerWindProfile);
+    }
+
+    private void ApplyDiamondFlickerBlend(float calmWeight, float windWeight)
+    {
+        ApplyDiamondChannelWeight(diamondFlickerCalmProfile != null ? diamondFlickerCalmProfile.Dust : null, calmWeight);
+        ApplyDiamondChannelWeight(diamondFlickerCalmProfile != null ? diamondFlickerCalmProfile.Twinkle : null, calmWeight);
+        ApplyDiamondChannelWeight(diamondFlickerWindProfile != null ? diamondFlickerWindProfile.Dust : null, windWeight);
+        ApplyDiamondChannelWeight(diamondFlickerWindProfile != null ? diamondFlickerWindProfile.Twinkle : null, windWeight);
+
+        // Mood is duplicated between both prefabs, so keep one shared layer active.
+        ApplyDiamondChannelWeight(diamondFlickerCalmProfile != null ? diamondFlickerCalmProfile.Mood : null, 1f);
+        ApplyDiamondChannelWeight(diamondFlickerWindProfile != null ? diamondFlickerWindProfile.Mood : null, 0f);
+    }
+
+    private DiamondFlickerProfile CreateDiamondFlickerProfile(GameObject prefab, string fallbackName)
+    {
+        if (prefab == null)
+        {
+            return null;
+        }
+
+        Transform parent = EnsureDiamondFlickerRoot();
+        GameObject instance = parent != null
+            ? Instantiate(prefab, parent)
+            : Instantiate(prefab);
+        instance.name = fallbackName;
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        instance.transform.localScale = Vector3.one;
+
+        ParticleSystem[] systems = instance.GetComponentsInChildren<ParticleSystem>(true);
+        Dictionary<string, ParticleSystem> systemsByName = new();
+        for (int i = 0; i < systems.Length; i++)
+        {
+            ParticleSystem system = systems[i];
+            if (system == null) continue;
+
+            string systemName = system.gameObject.name;
+            if (!systemsByName.ContainsKey(systemName))
+            {
+                systemsByName.Add(systemName, system);
+            }
+        }
+
+        DiamondFlickerProfile profile = new()
+        {
+            Instance = instance,
+            AllSystems = systems,
+            Dust = CreateDiamondParticleChannel(systemsByName, DiamondDustSystemName),
+            Twinkle = CreateDiamondParticleChannel(systemsByName, DiamondTwinkleSystemName),
+            Mood = CreateDiamondParticleChannel(systemsByName, DiamondMoodSystemName)
+        };
+
+        StopAndClearDiamondProfile(profile);
+        return profile;
+    }
+
+    private Transform EnsureDiamondFlickerRoot()
+    {
+        if (diamondFlickerRoot != null)
+        {
+            return diamondFlickerRoot.transform;
+        }
+
+        diamondFlickerRoot = new GameObject(DiamondFlickerRootName);
+        diamondFlickerRoot.transform.position = Vector3.zero;
+        return diamondFlickerRoot.transform;
+    }
+
+    private static DiamondParticleChannel CreateDiamondParticleChannel(Dictionary<string, ParticleSystem> systemsByName, string channelName)
+    {
+        if (systemsByName == null || !systemsByName.TryGetValue(channelName, out ParticleSystem system) || system == null)
+        {
+            return null;
+        }
+
+        return new DiamondParticleChannel
+        {
+            System = system,
+            BaseRateOverTime = system.emission.rateOverTimeMultiplier
+        };
+    }
+
+    private static void PlayDiamondFlickerProfile(DiamondFlickerProfile profile)
+    {
+        if (profile == null || profile.Instance == null)
+        {
+            return;
+        }
+
+        if (!profile.Instance.activeSelf)
+        {
+            profile.Instance.SetActive(true);
+        }
+
+        PlayDiamondChannel(profile.Dust);
+        PlayDiamondChannel(profile.Twinkle);
+        PlayDiamondChannel(profile.Mood);
+    }
+
+    private static void StopAndClearDiamondProfile(DiamondFlickerProfile profile)
+    {
+        if (profile == null)
+        {
+            return;
+        }
+
+        ApplyDiamondChannelWeight(profile.Dust, 0f);
+        ApplyDiamondChannelWeight(profile.Twinkle, 0f);
+        ApplyDiamondChannelWeight(profile.Mood, 0f);
+
+        if (profile.AllSystems != null)
+        {
+            for (int i = 0; i < profile.AllSystems.Length; i++)
+            {
+                ParticleSystem system = profile.AllSystems[i];
+                if (system == null) continue;
+
+                system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+
+        if (profile.Instance != null && profile.Instance.activeSelf)
+        {
+            profile.Instance.SetActive(false);
+        }
+    }
+
+    private static void ApplyDiamondChannelWeight(DiamondParticleChannel channel, float weight)
+    {
+        if (channel == null || channel.System == null)
+        {
+            return;
+        }
+
+        ParticleSystem.EmissionModule emission = channel.System.emission;
+        emission.enabled = weight > 0.001f;
+        emission.rateOverTimeMultiplier = channel.BaseRateOverTime * Mathf.Clamp01(weight);
+    }
+
+    private static void PlayDiamondChannel(DiamondParticleChannel channel)
+    {
+        if (channel == null || channel.System == null)
+        {
+            return;
+        }
+
+        channel.System.Play(true);
+    }
+
+    private static void DestroyDiamondFlickerProfile(ref DiamondFlickerProfile profile)
+    {
+        if (profile != null && profile.Instance != null)
+        {
+            Destroy(profile.Instance);
+        }
+
+        profile = null;
     }
 
     private bool TryDamagePlayerInBox(Vector2 center, Vector2 size, int damage, Vector2 attackerPosition)
@@ -1072,23 +1337,18 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
             BossManager.Instance.EndBossBattle();
         }
 
-        hiddenSceneTransitionController = EnsureSceneTransitionController();
-        if (hiddenSceneTransitionController != null)
+        if (string.IsNullOrWhiteSpace(hiddenSceneName))
         {
-            yield return hiddenSceneTransitionController.TransitionToHiddenScene(hiddenSceneName);
+            Debug.LogWarning("FinalBossCombat: hiddenSceneName is empty.", this);
+            yield break;
         }
-    }
 
-    private FinalBossSceneTransitionController EnsureSceneTransitionController()
-    {
-        if (hiddenSceneTransitionController != null) return hiddenSceneTransitionController;
+        if (UIManager.Instance != null)
+        {
+            yield return UIManager.Instance.FadeOut(hiddenSceneFadeOutDuration);
+        }
 
-        hiddenSceneTransitionController = FindFirstObjectByType<FinalBossSceneTransitionController>();
-        if (hiddenSceneTransitionController != null) return hiddenSceneTransitionController;
-
-        GameObject go = new GameObject("FinalBossSceneTransitionController");
-        hiddenSceneTransitionController = go.AddComponent<FinalBossSceneTransitionController>();
-        return hiddenSceneTransitionController;
+        SceneManager.LoadScene(hiddenSceneName);
     }
 
     private void ResetBattleForRetry()
@@ -1156,14 +1416,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
     private void ClearOffensives()
     {
         ClearHazards();
-        if (diamondFlickerOverlay != null)
-        {
-            diamondFlickerOverlay.StopLoop();
-        }
-        else
-        {
-            diamondFlickerOverlay = null;
-        }
+        StopDiamondFlickerLoop();
         StopLatentThornTimelines();
 
         if (activeCarmaHitbox != null)
