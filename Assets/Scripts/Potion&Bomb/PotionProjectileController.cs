@@ -7,6 +7,7 @@ public class PotionProjectileController : MonoBehaviour
     [Header("Rendering")]
     [SerializeField] private string sortingLayerName = "EnemyBullet";
     [SerializeField] private int sortingOrder = 50;
+    [SerializeField] private bool logRenderWarnings = true;
     private static Sprite fallbackSprite;
 
     private Vector2 moveDirection;
@@ -96,6 +97,7 @@ public class PotionProjectileController : MonoBehaviour
             renderer.enabled = true;
         }
 
+        EnsureVisibleRenderer();
         ApplySortingToRenderers();
 
         initialized = true;
@@ -160,8 +162,9 @@ public class PotionProjectileController : MonoBehaviour
 
     private void ApplySortingToRenderers()
     {
-        int sortingLayerId = SortingLayer.NameToID(sortingLayerName);
-        bool hasValidLayer = sortingLayerId != 0 || sortingLayerName == "Default";
+        string resolvedSortingLayerName = ResolveSortingLayerName(sortingLayerName);
+        int sortingLayerId = SortingLayer.NameToID(resolvedSortingLayerName);
+        bool hasValidLayer = sortingLayerId != 0 || resolvedSortingLayerName == "Default";
 
         SpriteRenderer[] spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
         for (int i = 0; i < spriteRenderers.Length; i++)
@@ -171,6 +174,7 @@ public class PotionProjectileController : MonoBehaviour
             if (hasValidLayer)
             {
                 sr.sortingLayerID = sortingLayerId;
+                sr.sortingLayerName = resolvedSortingLayerName;
             }
             sr.sortingOrder = sortingOrder;
         }
@@ -183,8 +187,74 @@ public class PotionProjectileController : MonoBehaviour
             if (hasValidLayer)
             {
                 psr.sortingLayerID = sortingLayerId;
+                psr.sortingLayerName = resolvedSortingLayerName;
             }
             psr.sortingOrder = sortingOrder;
         }
+    }
+
+    private void EnsureVisibleRenderer()
+    {
+        if (HasAnyEnabledRenderer())
+        {
+            return;
+        }
+
+        SpriteRenderer renderer = GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            renderer = gameObject.AddComponent<SpriteRenderer>();
+        }
+
+        renderer.sprite = GetFallbackSprite();
+        renderer.color = new Color(0.3f, 0.9f, 1f, 0.75f);
+        renderer.enabled = true;
+
+        if (logRenderWarnings)
+        {
+            Debug.LogWarning($"[PotionProjectile] No enabled renderers found on '{name}'. Applied fallback sprite.", this);
+        }
+    }
+
+    private bool HasAnyEnabledRenderer()
+    {
+        SpriteRenderer[] spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < spriteRenderers.Length; i++)
+        {
+            SpriteRenderer renderer = spriteRenderers[i];
+            if (renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+        }
+
+        ParticleSystemRenderer[] particleRenderers = GetComponentsInChildren<ParticleSystemRenderer>(true);
+        for (int i = 0; i < particleRenderers.Length; i++)
+        {
+            ParticleSystemRenderer renderer = particleRenderers[i];
+            if (renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private string ResolveSortingLayerName(string requestedLayer)
+    {
+        string requested = string.IsNullOrWhiteSpace(requestedLayer) ? "Default" : requestedLayer;
+        int requestedId = SortingLayer.NameToID(requested);
+        if (requestedId != 0 || requested == "Default")
+        {
+            return requested;
+        }
+
+        if (logRenderWarnings)
+        {
+            Debug.LogWarning($"[PotionProjectile] Sorting layer '{requested}' not found. Falling back to 'Default'.", this);
+        }
+
+        return "Default";
     }
 }

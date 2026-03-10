@@ -3,14 +3,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.SceneManagement;
 
 public class Bomb : MonoBehaviour
 {
     private const float PixelsPerUnit = 32f;
     private const float DesignFramesPerSecond = 60f;
-    private const float FireworksSpeedPxPerFrame = 160f;
+    private const float FireworksSpeedPxPerFrame = 120f;
     private const float AfterimageSpeedPxPerFrame = 64f;
+
+    private const float AfterimageFirstShotTime = 0f;
+    private const float AfterimageSecondShotTime = 3f;
+    private const float AfterimageThirdShotTime = 6f;
     private const float AfterimageExplosionDelaySeconds = 8f;
+
     private const float AfterimageExplosionSizePx = 64f;
     private const float AfterimageExplosionLifetimeSeconds = 0.08f;
 
@@ -34,6 +40,7 @@ public class Bomb : MonoBehaviour
     [SerializeField] private float minProjectileLifetime = 0.25f;
     [FormerlySerializedAs("projectileSpawnOffset")]
     [SerializeField] private float projectileSpawnOffset = 0.1f;
+    [SerializeField] private float projectileSpeedMultiplier = 0.04f;
 
     [Header("Debug")]
     [FormerlySerializedAs("debugDisablePatternSpawn")]
@@ -47,6 +54,7 @@ public class Bomb : MonoBehaviour
     private bool hasForcedBaseDirection;
     private int bombInstanceId;
     private bool hasExploded;
+
     private readonly List<PotionProjectileController> trackedAfterimageProjectiles = new();
 
     private void Awake()
@@ -113,12 +121,15 @@ public class Bomb : MonoBehaviour
 
         if (explosionEffect != null)
         {
-            Instantiate(explosionEffect, transform.position, Quaternion.identity);
+            GameObject explosionObj = Instantiate(explosionEffect, transform.position, Quaternion.identity);
+            ApplyFieldVisualScaleIfNeeded(explosionObj);
         }
+
+        HideBombVisual();
 
         if (debugVisualOnlyExplosion || !spawnProjectilePatterns)
         {
-            Destroy(gameObject);
+            DestroyBombObject();
             return;
         }
 
@@ -142,15 +153,17 @@ public class Bomb : MonoBehaviour
                 break;
 
             default:
+            {
                 int defaultPhaseIndex = phase1 != null ? 1 : (phase2 != null ? 2 : 1);
                 SpawnProjectilePattern(
                     drivingPhase.patternType,
                     drivingPhase,
                     defaultPhaseIndex);
                 break;
+            }
         }
 
-        Destroy(gameObject);
+        DestroyBombObject();
     }
 
     private IEnumerator RunFireworksPatternSequence(PotionPhaseSpec phase1, PotionPhaseSpec phase2)
@@ -176,21 +189,36 @@ public class Bomb : MonoBehaviour
             ResolveMaterialPhase(phase1, phase2, 1),
             1,
             RegisterAfterimageProjectile);
-        yield return new WaitForSeconds(3f);
+
+        float waitToSecond = Mathf.Max(0f, AfterimageSecondShotTime - AfterimageFirstShotTime);
+        if (waitToSecond > 0f)
+        {
+            yield return new WaitForSeconds(waitToSecond);
+        }
 
         SpawnProjectilePattern(
             ProjectilePatternType.AfterimageBomb,
             ResolveMaterialPhase(phase1, phase2, 2),
             2,
             RegisterAfterimageProjectile);
-        yield return new WaitForSeconds(3f);
+
+        float waitToThird = Mathf.Max(0f, AfterimageThirdShotTime - AfterimageSecondShotTime);
+        if (waitToThird > 0f)
+        {
+            yield return new WaitForSeconds(waitToThird);
+        }
 
         SpawnProjectilePattern(
             ProjectilePatternType.AfterimageBomb,
             ResolveMaterialPhase(phase1, phase2, 1),
             1,
             RegisterAfterimageProjectile);
-        yield return new WaitForSeconds(AfterimageExplosionDelaySeconds - 6f);
+
+        float waitToExplosion = Mathf.Max(0f, AfterimageExplosionDelaySeconds - AfterimageThirdShotTime);
+        if (waitToExplosion > 0f)
+        {
+            yield return new WaitForSeconds(waitToExplosion);
+        }
 
         ExplodeRemainingAfterimageProjectiles();
         trackedAfterimageProjectiles.Clear();
@@ -239,20 +267,24 @@ public class Bomb : MonoBehaviour
 
     private float ResolveProjectileSpeed(ProjectilePatternType patternType, PotionPhaseSpec phase)
     {
+        float resolvedSpeed;
         switch (patternType)
         {
             case ProjectilePatternType.Fireworks:
-                return ConvertPixelsPerFrameToUnitsPerSecond(FireworksSpeedPxPerFrame);
+                resolvedSpeed = ConvertPixelsPerFrameToUnitsPerSecond(FireworksSpeedPxPerFrame);
+                break;
+
             case ProjectilePatternType.AfterimageBomb:
-                return ConvertPixelsPerFrameToUnitsPerSecond(AfterimageSpeedPxPerFrame);
+                resolvedSpeed = ConvertPixelsPerFrameToUnitsPerSecond(AfterimageSpeedPxPerFrame);
+                break;
+
+            default:
+                resolvedSpeed = phase != null && phase.projectileSpeed > 0f ? phase.projectileSpeed : 6f;
+                break;
         }
 
-        if (phase == null)
-        {
-            return 6f;
-        }
-
-        return phase.projectileSpeed > 0f ? phase.projectileSpeed : 6f;
+        float multiplier = Mathf.Max(0.01f, projectileSpeedMultiplier);
+        return Mathf.Max(0.1f, resolvedSpeed * multiplier);
     }
 
     private float ResolveProjectileLifetime(ProjectilePatternType patternType, PotionPhaseSpec phase)
@@ -281,12 +313,14 @@ public class Bomb : MonoBehaviour
     {
         if (projectilePrefab != null)
         {
-            if (!ContainsBombComponent(projectilePrefab))
+            if (ContainsBombComponent(projectilePrefab))
+            {
+                Debug.LogWarning($"[Bomb] projectilePrefab '{projectilePrefab.name}' contains Bomb component. Falling back to element projectile.");
+            }
+            else
             {
                 return projectilePrefab;
             }
-
-            Debug.LogWarning($"[Bomb] projectilePrefab '{projectilePrefab.name}' contains Bomb component. Falling back to element projectile.");
         }
 
         ElementType element = phase != null ? NormalizeElement(phase.primaryElement) : NormalizeElement(bombElement);
@@ -328,7 +362,7 @@ public class Bomb : MonoBehaviour
             baseDamage = Mathf.Max(1, baseDamage),
             primaryElement = NormalizeElement(bombElement),
             subElement = ElementType.None,
-            damageTarget = DamageTargetType.EnemyOnly
+            damageTarget = DamageTargetType.Both
         };
     }
 
@@ -393,7 +427,10 @@ public class Bomb : MonoBehaviour
             return;
         }
 
-        trackedAfterimageProjectiles.Add(controller);
+        if (!trackedAfterimageProjectiles.Contains(controller))
+        {
+            trackedAfterimageProjectiles.Add(controller);
+        }
     }
 
     private void ExplodeRemainingAfterimageProjectiles()
@@ -452,7 +489,7 @@ public class Bomb : MonoBehaviour
         PotionPhaseSpec explosion = new PotionPhaseSpec
         {
             ingredientId = source.ingredientId,
-            patternType = source.patternType,
+            patternType = ProjectilePatternType.AfterimageBomb,
             useCardinalDirections = source.useCardinalDirections,
             duration = source.duration,
             fireInterval = source.fireInterval,
@@ -494,5 +531,79 @@ public class Bomb : MonoBehaviour
                 interval = effect.interval
             });
         }
+    }
+
+    private static void ApplyFieldVisualScaleIfNeeded(GameObject target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        bool isFieldScene = IsFieldSceneContext(target);
+        if (!isFieldScene)
+        {
+            return;
+        }
+
+        target.transform.localScale *= 0.25f;
+    }
+
+    private static bool IsFieldSceneContext(GameObject target)
+    {
+        if (target != null && IsFieldSceneName(target.scene.name))
+        {
+            return true;
+        }
+
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (IsFieldSceneName(activeScene.name))
+        {
+            return true;
+        }
+
+        int loadedSceneCount = SceneManager.sceneCount;
+        for (int i = 0; i < loadedSceneCount; i++)
+        {
+            Scene loadedScene = SceneManager.GetSceneAt(i);
+            if (IsFieldSceneName(loadedScene.name))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsFieldSceneName(string sceneName)
+    {
+        return string.Equals(sceneName, "FIeld", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(sceneName, "Field", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void HideBombVisual()
+    {
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                renderers[i].enabled = false;
+            }
+        }
+
+        Collider2D[] colliders = GetComponentsInChildren<Collider2D>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i] != null)
+            {
+                colliders[i].enabled = false;
+            }
+        }
+    }
+
+    private void DestroyBombObject()
+    {
+        Destroy(gameObject);
     }
 }

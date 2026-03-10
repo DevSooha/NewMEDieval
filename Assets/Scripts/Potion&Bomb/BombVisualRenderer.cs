@@ -11,10 +11,21 @@ public class BombVisualRenderer : MonoBehaviour
     [SerializeField] private bool forceSorting = true;
     [SerializeField] private string sortingLayerName = "EnemyBullet";
     [SerializeField] private int sortingOrder = 40;
+    [Header("Fallback")]
+    [SerializeField] private bool useBaseRendererAsFallback = true;
+    [SerializeField] private bool logFallbackWarnings = true;
+    [Header("Visual Scale")]
+    [SerializeField] private bool applyVisualScale = true;
+    [SerializeField] private float visualScaleMultiplier = 0.25f;
+
+    private Vector3 initialLocalScale;
+    private bool initialLocalScaleCaptured;
 
     private void Awake()
     {
+        CaptureInitialScaleIfNeeded();
         EnsureLayers();
+        ApplyVisualScaleIfNeeded();
     }
 
     public void Apply(PotionData potionData)
@@ -25,14 +36,12 @@ public class BombVisualRenderer : MonoBehaviour
     public void Apply(PotionVisualParts parts)
     {
         EnsureLayers();
+        ApplyVisualScaleIfNeeded();
+        DisableAllVisualLayers();
 
         if (!parts.HasAny)
         {
-            SetLayerEnabled(false);
-            if (baseRenderer != null)
-            {
-                baseRenderer.enabled = true;
-            }
+            ApplyFallbackVisual();
             return;
         }
 
@@ -46,6 +55,29 @@ public class BombVisualRenderer : MonoBehaviour
         SetRenderer(frameRenderer, parts.Frame);
     }
 
+    private void CaptureInitialScaleIfNeeded()
+    {
+        if (initialLocalScaleCaptured)
+        {
+            return;
+        }
+
+        initialLocalScale = transform.localScale;
+        initialLocalScaleCaptured = true;
+    }
+
+    private void ApplyVisualScaleIfNeeded()
+    {
+        if (!applyVisualScale)
+        {
+            return;
+        }
+
+        CaptureInitialScaleIfNeeded();
+        float safeMultiplier = Mathf.Max(0.01f, visualScaleMultiplier);
+        transform.localScale = initialLocalScale * safeMultiplier;
+    }
+
     private void EnsureLayers()
     {
         if (baseRenderer == null)
@@ -53,39 +85,58 @@ public class BombVisualRenderer : MonoBehaviour
             baseRenderer = GetComponent<SpriteRenderer>();
         }
 
-        int sortingLayerId = SortingLayer.NameToID(sortingLayerName);
-        bool hasValidSortingLayer = sortingLayerId != 0 || sortingLayerName == "Default";
+        string resolvedSortingLayer = ResolveSortingLayerName(sortingLayerName, "Default");
+        int sortingLayerId = SortingLayer.NameToID(resolvedSortingLayer);
+        bool hasValidSortingLayer = sortingLayerId != 0 || resolvedSortingLayer == "Default";
 
-        string resolvedSortingLayer = baseRenderer != null ? baseRenderer.sortingLayerName : "Default";
+        string inheritedSortingLayer = baseRenderer != null ? baseRenderer.sortingLayerName : "Default";
         int resolvedBaseOrder = baseRenderer != null ? baseRenderer.sortingOrder : 0;
 
         if (forceSorting)
         {
             if (hasValidSortingLayer)
             {
-                resolvedSortingLayer = sortingLayerName;
+                inheritedSortingLayer = resolvedSortingLayer;
             }
 
             resolvedBaseOrder = sortingOrder;
-            ApplySorting(baseRenderer, hasValidSortingLayer, sortingLayerId, resolvedSortingLayer, resolvedBaseOrder);
+            ApplySorting(baseRenderer, hasValidSortingLayer, sortingLayerId, inheritedSortingLayer, resolvedBaseOrder);
         }
 
-        bottomRenderer = EnsureLayerRenderer(bottomRenderer, "BottomLayer", resolvedBaseOrder, resolvedSortingLayer);
-        topRenderer = EnsureLayerRenderer(topRenderer, "TopLayer", resolvedBaseOrder + 1, resolvedSortingLayer);
-        frameRenderer = EnsureLayerRenderer(frameRenderer, "FrameLayer", resolvedBaseOrder + 2, resolvedSortingLayer);
+        if (baseRenderer != null)
+        {
+            baseRenderer.enabled = false;
+        }
+
+        bottomRenderer = EnsureLayerRenderer(bottomRenderer, "BottomImageRenderer", "BottomLayer", resolvedBaseOrder, inheritedSortingLayer);
+        topRenderer = EnsureLayerRenderer(topRenderer, "TopImageRenderer", "TopLayer", resolvedBaseOrder + 1, inheritedSortingLayer);
+        frameRenderer = EnsureLayerRenderer(frameRenderer, "FrameRenderer", "FrameLayer", resolvedBaseOrder + 2, inheritedSortingLayer);
     }
 
-    private SpriteRenderer EnsureLayerRenderer(SpriteRenderer renderer, string childName, int sortingOrder, string sortingLayer)
+    private SpriteRenderer EnsureLayerRenderer(
+        SpriteRenderer renderer,
+        string preferredChildName,
+        string legacyChildName,
+        int sortingOrder,
+        string sortingLayer)
     {
         if (renderer == null)
         {
-            Transform existing = transform.Find(childName);
+            Transform existing = transform.Find(preferredChildName);
+            if (existing == null && !string.IsNullOrEmpty(legacyChildName))
+            {
+                existing = transform.Find(legacyChildName);
+            }
 
             if (existing == null)
             {
-                GameObject layerObject = new GameObject(childName);
+                GameObject layerObject = new GameObject(preferredChildName);
                 layerObject.transform.SetParent(transform, false);
                 existing = layerObject.transform;
+            }
+            else
+            {
+                existing.name = preferredChildName;
             }
 
             renderer = existing.GetComponent<SpriteRenderer>();
@@ -118,6 +169,69 @@ public class BombVisualRenderer : MonoBehaviour
         renderer.sprite = sprite;
         renderer.color = Color.white;
         renderer.enabled = sprite != null;
+    }
+
+    private void DisableAllVisualLayers()
+    {
+        if (baseRenderer != null)
+        {
+            baseRenderer.enabled = false;
+        }
+
+        SetLayerEnabled(false);
+    }
+
+    private void ApplyFallbackVisual()
+    {
+        if (!useBaseRendererAsFallback)
+        {
+            if (logFallbackWarnings)
+            {
+                Debug.LogWarning("[BombVisual] No potion visual parts resolved. Bomb visual layers are hidden.", this);
+            }
+
+            return;
+        }
+
+        if (baseRenderer != null && baseRenderer.sprite != null)
+        {
+            baseRenderer.color = Color.white;
+            baseRenderer.enabled = true;
+            return;
+        }
+
+        if (logFallbackWarnings)
+        {
+            Debug.LogWarning("[BombVisual] Fallback requested but baseRenderer sprite is missing.", this);
+        }
+    }
+
+    private string ResolveSortingLayerName(string requestedName, string fallbackName)
+    {
+        string candidate = string.IsNullOrWhiteSpace(requestedName) ? fallbackName : requestedName;
+        int candidateId = SortingLayer.NameToID(candidate);
+        if (candidateId != 0 || candidate == "Default")
+        {
+            return candidate;
+        }
+
+        int fallbackId = SortingLayer.NameToID(fallbackName);
+        if (fallbackId != 0 || fallbackName == "Default")
+        {
+            if (logFallbackWarnings)
+            {
+                Debug.LogWarning($"[BombVisual] Sorting layer '{candidate}' not found. Falling back to '{fallbackName}'.", this);
+            }
+
+            return fallbackName;
+        }
+
+        if (logFallbackWarnings)
+        {
+            Debug.LogWarning($"[BombVisual] Sorting layer '{candidate}' not found. Falling back to 'Default'.", this);
+        }
+
+        return "Default";
     }
 
     private static void ApplySorting(
