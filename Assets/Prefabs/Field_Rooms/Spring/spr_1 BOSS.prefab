@@ -5217,7 +5217,7 @@ Tilemap:
   - m_RefCount: 2
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   - m_RefCount: 79
-    m_Data: {r: 0.8557837, g: 0.4234283, b: 0.532463, a: 1}
+    m_Data: {r: 0.73942286, g: 0.4006134, b: 0.46664366, a: 1}
   - m_RefCount: 0
     m_Data: {r: 1.65e-43, g: 1.65e-43, b: 1.65e-43, a: 1.65e-43}
   m_TileObjectToInstantiateArray: []
@@ -7209,11 +7209,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6329473483291571757, guid: 4b7c70940470e2e4f8c8cb99a925fe0f, type: 3}
       propertyPath: playOnAwake
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6329473483291571757, guid: 4b7c70940470e2e4f8c8cb99a925fe0f, type: 3}
       propertyPath: moveWithTransform
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6329473483291571757, guid: 4b7c70940470e2e4f8c8cb99a925fe0f, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6329473483291571757, guid: 4b7c70940470e2e4f8c8cb99a925fe0f, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 6329473483291571757, guid: 4b7c70940470e2e4f8c8cb99a925fe0f, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8849240214753671896, guid: 4b7c70940470e2e4f8c8cb99a925fe0f, type: 3}
       propertyPath: m_SortingLayer
@@ -7271,11 +7283,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4635947565780555291, guid: a28919595902b4b4ba2944b2d08707a0, type: 3}
       propertyPath: playOnAwake
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4635947565780555291, guid: a28919595902b4b4ba2944b2d08707a0, type: 3}
       propertyPath: moveWithTransform
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4635947565780555291, guid: a28919595902b4b4ba2944b2d08707a0, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4635947565780555291, guid: a28919595902b4b4ba2944b2d08707a0, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 4635947565780555291, guid: a28919595902b4b4ba2944b2d08707a0, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6473505956087606951, guid: a28919595902b4b4ba2944b2d08707a0, type: 3}
       propertyPath: m_LocalScale.x
@@ -7475,11 +7499,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5829548557917990815, guid: 515751f932a12d2488bd87d91a7ad345, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 11.88
+      value: 18.65
       objectReference: {fileID: 0}
     - target: {fileID: 5829548557917990815, guid: 515751f932a12d2488bd87d91a7ad345, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.28
+      value: -2.41
       objectReference: {fileID: 0}
     - target: {fileID: 5829548557917990815, guid: 515751f932a12d2488bd87d91a7ad345, type: 3}
       propertyPath: m_LocalPosition.z
@@ -7604,11 +7628,23 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5207078498668984337, guid: 2b45707a1886cb44bb5a8746c5bdd7cc, type: 3}
       propertyPath: playOnAwake
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5207078498668984337, guid: 2b45707a1886cb44bb5a8746c5bdd7cc, type: 3}
       propertyPath: moveWithTransform
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5207078498668984337, guid: 2b45707a1886cb44bb5a8746c5bdd7cc, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5207078498668984337, guid: 2b45707a1886cb44bb5a8746c5bdd7cc, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 5207078498668984337, guid: 2b45707a1886cb44bb5a8746c5bdd7cc, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6109641620278300118, guid: 2b45707a1886cb44bb5a8746c5bdd7cc, type: 3}
       propertyPath: m_LocalScale.x
@@ -7782,11 +7818,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5823580082056587868, guid: 155babe5aa9671f4d9a04ccc1ab47d29, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.04
+      value: 17.64
       objectReference: {fileID: 0}
     - target: {fileID: 5823580082056587868, guid: 155babe5aa9671f4d9a04ccc1ab47d29, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.63
+      value: 2.09
       objectReference: {fileID: 0}
     - target: {fileID: 5823580082056587868, guid: 155babe5aa9671f4d9a04ccc1ab47d29, type: 3}
       propertyPath: m_LocalPosition.z
@@ -8006,11 +8042,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7765038181443682086, guid: 037b33664d048fe4fa27c83ad3007141, type: 3}
       propertyPath: playOnAwake
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7765038181443682086, guid: 037b33664d048fe4fa27c83ad3007141, type: 3}
       propertyPath: moveWithTransform
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7765038181443682086, guid: 037b33664d048fe4fa27c83ad3007141, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7765038181443682086, guid: 037b33664d048fe4fa27c83ad3007141, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 7765038181443682086, guid: 037b33664d048fe4fa27c83ad3007141, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8159620803208866245, guid: 037b33664d048fe4fa27c83ad3007141, type: 3}
       propertyPath: m_Name
