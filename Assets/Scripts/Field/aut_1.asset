@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: aut_1
   m_EditorClassIdentifier: Assembly-CSharp::RoomData
   roomID: aut_1
-  roomPrefab: {fileID: 4350292270541437146, guid: 823ebd83b24d705458f4f2d2da98a934, type: 3}
+  roomPrefab: {fileID: 881981590789280275, guid: 76c59ccf53f909243aa9ab2e6853cd3d, type: 3}
   north: {fileID: 11400000, guid: c7f36f3ced0638c43bda10e785f9c36f, type: 2}
   south: {fileID: 0}
   east: {fileID: 0}

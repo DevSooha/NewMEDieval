@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 899436873626c02478f118c25b8ba6df
+guid: 9e4c314297c47144baa14dc4328c9e65
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5097907477483533093
-    second: "\uAC00\uC744_1_\uB300\uAC01\uC120_\uACC4\uB2E8_0"
+      213: 2570088844366885628
+    second: "\uACA8\uC6B8_3\uACC4\uB2E8_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 32
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: "\uAC00\uC744_1_\uB300\uAC01\uC120_\uACC4\uB2E8_0"
+      name: "\uACA8\uC6B8_3\uACC4\uB2E8_0"
       rect:
         serializedVersion: 2
         x: 0
-        y: 26
-        width: 122
-        height: 38
+        y: 0
+        width: 384
+        height: 576
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 523b63547d76fb640800000000000000
-      internalID: 5097907477483533093
+      spriteID: cf2bea1ef2acaa320800000000000000
+      internalID: 2570088844366885628
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 41f24a00ff5af7f438d77905785fb356
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -133,11 +133,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries:
-      - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
+      entries: []
     nameFileIdTable:
-      "\uAC00\uC744_1_\uB300\uAC01\uC120_\uACC4\uB2E8_0": 5097907477483533093
+      "\uACA8\uC6B8_3\uACC4\uB2E8_0": 2570088844366885628
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

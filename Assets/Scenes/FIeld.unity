@@ -578,7 +578,7 @@ PrefabInstance:
     - target: {fileID: 6755694373369558612, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startingRoom
       value: 
-      objectReference: {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
+      objectReference: {fileID: 11400000, guid: 1465ed0872820f54f998940c6bbe967a, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: player
       value: 
@@ -590,7 +590,7 @@ PrefabInstance:
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startRoomData
       value: 
-      objectReference: {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
+      objectReference: {fileID: 11400000, guid: 1465ed0872820f54f998940c6bbe967a, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: currentRoomData
       value: 
@@ -1074,6 +1074,26 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 350788919678288017, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
   m_PrefabInstance: {fileID: 61059137}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1196693079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1196693076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7124f65f598a4de5a188ea820f1a702d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PotionTestHarness
+  grantOnStart: 0
+  quantityPerPotion: 3
+  addDuplicateForStackTest: 1
+  autoEquipFirstPotionToSlot1: 0
+  restrictAutoGrantToTestScenes: 1
+  regrantHotkey: 287
+  clearAndRegrantHotkey: 288
+  logSummaryHotkey: 289
 --- !u!114 &1196693080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1090,6 +1110,8 @@ MonoBehaviour:
   resourcesFolder: ItemData
   amountPerItem: 20
   includePotionCategory: 0
+  grantOnStart: 0
+  restrictAutoGrantToTestScenes: 1
   grantOnStart: 1
   restrictAutoGrantToTestScenes: 0
   oneShotOnStart: 1
