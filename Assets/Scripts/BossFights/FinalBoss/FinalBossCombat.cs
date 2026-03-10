@@ -112,6 +112,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
     private bool isPhase2Queued;
     private bool isVictoryHandled;
     private Vector2 facingDirection = Vector2.right;
+    private Vector3 initialBossPosition;
     private CarmaExcisionTrueHitbox activeCarmaHitbox;
     private readonly List<GameObject> spawnedHazards = new();
     private readonly List<Transform> latentThornSpawnPoints = new();
@@ -125,6 +126,8 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     private void Awake()
     {
+        initialBossPosition = transform.position;
+
         if (bossHealth == null) bossHealth = GetComponent<BossHealth>();
         if (bossAnimator == null) bossAnimator = GetComponentInChildren<Animator>();
         ResolveGroundTilemap();
@@ -199,17 +202,14 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
         Vector3 target = overridePoint != null
             ? overridePoint.position
-            : (startPoint != null ? startPoint.position : transform.position);
+            : ResolveBossStartPosition();
         transform.position = ClampToRoom(target);
         SetPreplacedLayoutObjectsActive(false);
     }
 
     public void SetToPointAImmediate()
     {
-        if (startPoint != null)
-        {
-            transform.position = ClampToRoom(startPoint.position);
-        }
+        transform.position = ClampToRoom(ResolveBossStartPosition());
     }
 
     public void OnBeamHit(Player player, Transform beamTransform)
@@ -356,26 +356,26 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
         if (!ResolvePlayerTransform()) yield break;
 
-        // P0 is frozen once and all teleports/true-hit calculations are based on this cell-space anchor.
-        Vector3 p0 = playerTransform.position;
-        Vector3 leftCell = ClampToRoom(p0 + Vector3.left);
-        Vector3 rightCell = ClampToRoom(p0 + Vector3.right);
-
         if (carmaTeleportDelay1 > 0f) yield return new WaitForSeconds(carmaTeleportDelay1);
+        if (!TryGetPlayerSideWorldPosition(-1, out Vector3 leftCell)) yield break;
         transform.position = leftCell;
 
         if (carmaTeleportDelay2 > 0f) yield return new WaitForSeconds(carmaTeleportDelay2);
+        if (!TryGetPlayerSideWorldPosition(1, out Vector3 rightCell)) yield break;
         transform.position = rightCell;
 
         if (carmaTeleportDelay3 > 0f) yield return new WaitForSeconds(carmaTeleportDelay3);
+        if (!TryGetPlayerSideWorldPosition(-1, out leftCell)) yield break;
         transform.position = leftCell;
 
         // Fake attack: Attack_S is intentionally empty and canceled at 0.4s.
         if (carmaFakeAttackDuration > 0f) yield return new WaitForSeconds(carmaFakeAttackDuration);
+        if (!TryGetPlayerSideWorldPosition(1, out rightCell)) yield break;
         transform.position = rightCell;
         if (carmaFinalTeleportDuration > 0f) yield return new WaitForSeconds(carmaFinalTeleportDuration);
 
-        Vector2 trueHitCenter = ClampToRoom((Vector2)transform.position + Vector2.left);
+        float cellWidth = ResolveGroundCellWidth();
+        Vector2 trueHitCenter = ClampToRoom(transform.position + Vector3.left * cellWidth);
         ActivateCarmaTrueHitbox(trueHitCenter, carmaTrueHitboxDuration);
         if (carmaTrueHitboxDuration > 0f) yield return new WaitForSeconds(carmaTrueHitboxDuration);
 
@@ -512,12 +512,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     private IEnumerator MoveToStart(float duration)
     {
-        if (startPoint == null)
-        {
-            yield break;
-        }
-
-        yield return TeleportSmooth(startPoint.position, duration);
+        yield return TeleportSmooth(ResolveBossStartPosition(), duration);
     }
 
     private IEnumerator AttackSCast(float duration, bool applyDamage)
@@ -909,6 +904,16 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         return new Bounds(transform.position, new Vector3(28f, 18f, 1f));
     }
 
+    private Vector3 ResolveBossStartPosition()
+    {
+        if (startPoint != null)
+        {
+            return startPoint.position;
+        }
+
+        return initialBossPosition;
+    }
+
     // Teleport rule: unwalkable tile is allowed, but room-outside position is forbidden.
     private Vector3 ClampToRoom(Vector3 position)
     {
@@ -917,6 +922,29 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         position.y = Mathf.Clamp(position.y, roomBounds.min.y + teleportInset, roomBounds.max.y - teleportInset);
         position.z = 0f;
         return position;
+    }
+
+    private float ResolveGroundCellWidth()
+    {
+        ResolveGroundTilemap();
+        if (groundTilemap != null)
+        {
+            return Mathf.Max(0.01f, Mathf.Abs(groundTilemap.cellSize.x));
+        }
+
+        return 1f;
+    }
+
+    private bool TryGetPlayerSideWorldPosition(int horizontalSign, out Vector3 result)
+    {
+        result = default;
+        if (!ResolvePlayerTransform()) return false;
+
+        float sign = horizontalSign < 0 ? -1f : 1f;
+        float cellWidth = ResolveGroundCellWidth();
+        Vector3 target = playerTransform.position + Vector3.right * (cellWidth * sign);
+        result = ClampToRoom(target);
+        return true;
     }
 
     private void HandlePlayerDeath()
