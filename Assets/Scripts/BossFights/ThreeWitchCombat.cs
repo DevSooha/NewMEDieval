@@ -10,6 +10,17 @@ public enum BossState
 
 public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 {
+    private enum FacingDirection
+    {
+        W,
+        S,
+        E
+    }
+
+    private const float PixelsPerUnit = 32f;
+    private const float RangedAttackDistancePx = 96f;
+    private const float RangedAttackRetrySeconds = 8f;
+
     public BossState currentState;
     public int phase = 1;
     public Transform playerTF;
@@ -24,6 +35,8 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     [SerializeField] private Animator threeWitchAnimator;
     [SerializeField] private int animatorLayerIndex = 0;
     [SerializeField] private float directionEpsilon = 0.05f;
+    [SerializeField] private float southEnterRatio = 1.1f;
+    [SerializeField] private float southExitRatio = 0.85f;
 
     public GameObject fireStartEffect;
     public GameObject fireWallPrefab;
@@ -34,6 +47,9 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     private SpriteRenderer spriteRenderer;
     private string lastPlayedStateName;
     private int lastHorizontalFacing = 1;
+    private FacingDirection currentFacingDirection = FacingDirection.E;
+    private bool hasTriggeredFarAttackInCurrentWindow;
+    private bool hasPlayedAttackAnimationInCurrentAttack;
 
     private void Awake()
     {
@@ -92,28 +108,35 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         while (true)
         {
             if (playerTF == null) yield break;
-            float currentDistance = Vector2.Distance(transform.position, playerTF.position);
+            float currentDistanceUnits = Vector2.Distance(transform.position, playerTF.position);
+            float currentDistancePx = currentDistanceUnits * PixelsPerUnit;
+
+            if (currentState != BossState.Attack)
+            {
+                UpdateAnimatorForState(currentState, playerTF.position - transform.position);
+            }
 
             if (currentState == BossState.Move)
             {
-                UpdateAnimatorForState(BossState.Move, playerTF.position - transform.position);
-                transform.position = Vector2.MoveTowards(transform.position, playerTF.position, moveSpeed * Time.deltaTime);
-
-                if (currentDistance > 3.0f)
-                {
-                    keepCloseTimer = 0;
-                    currentState = BossState.Attack;
-                    StartCoroutine(AttackRoutine());
-                }
-                else
+                bool isOutOfRange = currentDistancePx >= RangedAttackDistancePx;
+                if (isOutOfRange)
                 {
                     keepCloseTimer += Time.deltaTime;
-                    if (keepCloseTimer > 8.0f)
+
+                    bool shouldAttackImmediately = !hasTriggeredFarAttackInCurrentWindow;
+                    bool shouldAttackByTimeout = keepCloseTimer >= RangedAttackRetrySeconds;
+                    if (shouldAttackImmediately || shouldAttackByTimeout)
                     {
-                        keepCloseTimer = 0;
+                        hasTriggeredFarAttackInCurrentWindow = true;
+                        keepCloseTimer = 0f;
                         currentState = BossState.Attack;
                         StartCoroutine(AttackRoutine());
                     }
+                }
+                else
+                {
+                    keepCloseTimer = 0f;
+                    hasTriggeredFarAttackInCurrentWindow = false;
                 }
             }
             yield return null;
@@ -123,7 +146,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     private IEnumerator AttackRoutine()
     {
         Debug.Log("공격!");
-        UpdateAnimatorForState(BossState.Attack, playerTF != null ? (playerTF.position - transform.position) : Vector2.right);
+        hasPlayedAttackAnimationInCurrentAttack = false;
 
         switch (phase)
         {
@@ -152,6 +175,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         if (playerTF == null) yield break;
         Debug.Log("파이어월 매직!");
         Vector2 dir = playerTF.position - transform.position;
+        TryPlayAttackAnimationAtFireTime(dir);
 
         for (int i = 0; i < 2; i++)
         {
@@ -181,6 +205,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         if (playerTF == null) yield break;
         Debug.Log("아쿠아레이 매직!");
         Vector2 dir = playerTF.position - transform.position;
+        TryPlayAttackAnimationAtFireTime(dir);
         float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
         for (int i = 0; i < 6; i++)
@@ -203,6 +228,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         Debug.Log("판도라의 전기 매직!");
 
         Vector2 dir = playerTF.position - transform.position;
+        TryPlayAttackAnimationAtFireTime(dir);
         float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
         for (int i = -2; i <= 2; i++)
@@ -280,24 +306,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     {
         if (dirToPlayer.sqrMagnitude <= directionEpsilon * directionEpsilon)
         {
-            return lastHorizontalFacing >= 0 ? "E" : "W";
-        }
-
-        if (Mathf.Abs(dirToPlayer.x) >= Mathf.Abs(dirToPlayer.y))
-        {
-            if (dirToPlayer.x >= 0f)
-            {
-                lastHorizontalFacing = 1;
-                return "E";
-            }
-
-            lastHorizontalFacing = -1;
-            return "W";
-        }
-
-        if (dirToPlayer.y < 0f)
-        {
-            return "S";
+            return FacingToSuffix(currentFacingDirection);
         }
 
         if (dirToPlayer.x >= directionEpsilon)
@@ -309,6 +318,42 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             lastHorizontalFacing = -1;
         }
 
-        return lastHorizontalFacing >= 0 ? "E" : "W";
+        float absX = Mathf.Abs(dirToPlayer.x);
+        float absY = Mathf.Abs(dirToPlayer.y);
+        bool isPlayerBelow = dirToPlayer.y < -directionEpsilon;
+        if (isPlayerBelow)
+        {
+            float ratio = currentFacingDirection == FacingDirection.S ? southExitRatio : southEnterRatio;
+            if (absY >= Mathf.Max(directionEpsilon, absX * ratio))
+            {
+                currentFacingDirection = FacingDirection.S;
+                return FacingToSuffix(currentFacingDirection);
+            }
+        }
+
+        currentFacingDirection = lastHorizontalFacing >= 0 ? FacingDirection.E : FacingDirection.W;
+        return FacingToSuffix(currentFacingDirection);
+    }
+
+    private static string FacingToSuffix(FacingDirection direction)
+    {
+        return direction switch
+        {
+            FacingDirection.W => "W",
+            FacingDirection.S => "S",
+            _ => "E"
+        };
+    }
+
+    private void TryPlayAttackAnimationAtFireTime(Vector2 dirToPlayer)
+    {
+        if (hasPlayedAttackAnimationInCurrentAttack)
+        {
+            return;
+        }
+
+        hasPlayedAttackAnimationInCurrentAttack = true;
+        Vector2 resolvedDir = dirToPlayer.sqrMagnitude > 0.0001f ? dirToPlayer : Vector2.right;
+        UpdateAnimatorForState(BossState.Attack, resolvedDir);
     }
 }
