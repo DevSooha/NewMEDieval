@@ -60,7 +60,7 @@ public class MapNode : MonoBehaviour
         if (UIManager.DialogueActive || UIManager.SelectionActive) return;
         if (RoomManager.Instance == null) return;
 
-        if (IsBossBattleLocked())
+        if (IsBossBattleLocked(forceRefresh: true))
         {
             TryShowBlockedMessage(lockedMessage);
             return;
@@ -100,32 +100,33 @@ public class MapNode : MonoBehaviour
         }
     }
 
-    private bool IsBossBattleLocked()
+    private bool IsBossBattleLocked(bool forceRefresh = false)
     {
         if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
         {
             return true;
         }
 
-        if (Time.time >= nextBossScanTime)
+        // Force a fresh scan when trying to use the node so battle-start frames cannot slip through.
+        if (forceRefresh || Time.time >= nextBossScanTime)
         {
-            GameObject[] activeBosses = GameObject.FindGameObjectsWithTag("Boss");
-            bool hasTaggedBoss = activeBosses != null && activeBosses.Length > 0;
-
-            if (hasTaggedBoss)
-            {
-                cachedHasActiveBoss = true;
-            }
-            else
-            {
-                BossCombatBase[] activeBossCombats = FindObjectsByType<BossCombatBase>(FindObjectsSortMode.None);
-                cachedHasActiveBoss = activeBossCombats != null && activeBossCombats.Length > 0;
-            }
-
+            cachedHasActiveBoss = HasAnyActiveBossInScene();
             nextBossScanTime = Time.time + bossScanInterval;
         }
 
         return cachedHasActiveBoss;
+    }
+
+    private bool HasAnyActiveBossInScene()
+    {
+        GameObject[] activeBosses = GameObject.FindGameObjectsWithTag("Boss");
+        if (activeBosses != null && activeBosses.Length > 0)
+        {
+            return true;
+        }
+
+        BossCombatBase[] activeBossCombats = FindObjectsByType<BossCombatBase>(FindObjectsSortMode.None);
+        return activeBossCombats != null && activeBossCombats.Length > 0;
     }
 
     private bool IsPlayerBodyCollider(Collider2D col)
@@ -144,7 +145,7 @@ public class MapNode : MonoBehaviour
             return;
         }
 
-        if (IsBossBattleLocked())
+        if (IsBossBattleLocked(forceRefresh: true))
         {
             TryShowBlockedMessage(lockedMessage);
         }

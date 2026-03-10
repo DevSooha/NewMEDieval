@@ -247,18 +247,19 @@ public class RoomManager : MonoBehaviour
 
     public void RequestMove(Vector2 direction, RoomData nextRoom, float distanceOverride = 0f)
     {
+        bool hasActiveBossInScene = HasActiveBossInScene();
+
         // Fail-safe: clear stale boss-lock state if no active boss object exists.
         if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
         {
-            GameObject[] activeBosses = GameObject.FindGameObjectsWithTag("Boss");
-            if (activeBosses == null || activeBosses.Length == 0)
+            if (!hasActiveBossInScene)
             {
                 Debug.LogWarning("[RoomManager] Boss lock was active without an active Boss-tag object. Auto-ending boss battle.");
                 BossManager.Instance.EndBossBattle();
             }
         }
 
-        if (isTransitioning || (BossManager.Instance != null && BossManager.Instance.IsBossActive)) return;
+        if (isTransitioning || (BossManager.Instance != null && BossManager.Instance.IsBossActive) || hasActiveBossInScene) return;
         if (isCoolingDown) return;
         if (nextRoom == null) return;
         EnsureMainCamera();
@@ -288,6 +289,18 @@ public class RoomManager : MonoBehaviour
         }
 
         StartCoroutine(TransitionRoutine(direction, nextRoom, distanceOverride));
+    }
+
+    private bool HasActiveBossInScene()
+    {
+        GameObject[] activeBosses = GameObject.FindGameObjectsWithTag("Boss");
+        if (activeBosses != null && activeBosses.Length > 0)
+        {
+            return true;
+        }
+
+        BossCombatBase[] activeBossCombats = FindObjectsByType<BossCombatBase>(FindObjectsSortMode.None);
+        return activeBossCombats != null && activeBossCombats.Length > 0;
     }
 
     public void SyncCameraToPlayer()
@@ -732,11 +745,4 @@ public class RoomManager : MonoBehaviour
         if (debugLogs) Debug.LogWarning($"[RoomManager] {msg}");
     }
 }
-
-
-
-
-
-
-
 

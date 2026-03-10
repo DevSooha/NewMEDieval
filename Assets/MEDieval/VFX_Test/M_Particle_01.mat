@@ -38,7 +38,6 @@ Material:
     - _DissolveThreshold: 0
     - _DistortSpeed: 0
     - _DistortStrength: 0
-    - _GrabMix: 0.5
     - _NoiseScale: 4
     m_Colors:
     - _EdgeColor: {r: 1, g: 0.6, b: 0, a: 1}

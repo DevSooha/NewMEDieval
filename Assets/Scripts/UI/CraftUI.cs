@@ -8,8 +8,6 @@ using System.Collections.Generic;
 
 public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    public enum PotionTemp { Failure, LowTemp, MidTemp, HighTemp }
-
     [SerializeField] private Image potSlot1Image;
     [SerializeField] private Image potSlot2Image;
     [SerializeField] private ItemData itemData;
@@ -46,6 +44,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private bool wasDraggingDuringGame = false;
 
     private const float GAUGE_HEIGHT = 224f;
+    private const float NEEDLE_TOP_BLOCK_PIXELS = 1f;
     private const float GAUGE_UP_SPEED = 28f;
     private const float GAUGE_DOWN_SPEED = 10f;
     private const float DRAG_THRESHOLD_PIXELS = 2f;
@@ -219,6 +218,8 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private void UpdateGaugeUI()
     {
         float needleY = (gaugeValue / 100f) * GAUGE_HEIGHT - GAUGE_HEIGHT / 2f;
+        float maxNeedleY = (GAUGE_HEIGHT / 2f) - NEEDLE_TOP_BLOCK_PIXELS;
+        needleY = Mathf.Min(needleY, maxNeedleY);
         needleMarker.rectTransform.localPosition = new Vector3(27.5f, needleY, 0);
     }
 
@@ -230,8 +231,8 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         wasDraggingDuringGame = false;
         EnsureInventory();
 
-        PotionTemp potionTemp = DeterminePotionTemp(gaugeValue);
-        string resultName = GetPotionName(potionTemp);
+        CraftTemperatureBand band = PotionCraftRules.DetermineBand(gaugeValue);
+        string resultName = PotionCraftRules.GetPotionName(band);
 
         if (resultText != null)
         {
@@ -239,9 +240,9 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             resultText.gameObject.SetActive(true);
         }
 
-        if (potionTemp != PotionTemp.Failure)
+        if (band != CraftTemperatureBand.Failure)
         {
-            PotionData craftedPotion = CraftPotion(slot1Item, slot2Item, potionTemp);
+            PotionData craftedPotion = CraftPotion(slot1Item, slot2Item, band);
             if (craftedPotion != null)
             {
                 if (inventory != null)
@@ -324,9 +325,49 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         gaugeValue = 0f;
         gameTimer = 6f;
 
+        if (inventoryUI != null)
+        {
+            inventoryUI.gameObject.SetActive(false);
+
+            GameObject inGameMenu = FindAncestorByName(inventoryUI.transform, "InGameMenu");
+            if (inGameMenu != null)
+            {
+                inGameMenu.SetActive(false);
+            }
+        }
+
         SetCloseButtonVisible(false);
         SetResetButtonVisible(false);
-        gameObject.SetActive(false);
+
+        GameObject craftingMenu = FindAncestorByName(transform, "CraftingMenu");
+        if (craftingMenu != null)
+        {
+            craftingMenu.SetActive(false);
+        }
+        else
+        {
+            gameObject.SetActive(false);
+        }
+
+        if (Player.Instance != null)
+        {
+            PlayerAttackSystem attackSystem = Player.Instance.GetComponent<PlayerAttackSystem>();
+            if (attackSystem != null)
+            {
+                attackSystem.CancelTransientInputState();
+            }
+
+            PlayerInteraction interaction = Player.Instance.GetComponentInChildren<PlayerInteraction>(true);
+            if (interaction != null)
+            {
+                interaction.BeginControlRecoveryAfterCraftingClose();
+            }
+        }
+
+        if (Player.Instance != null)
+        {
+            Player.Instance.OnInteractionFinished();
+        }
     }
 
     private void EnsureCloseButton()
@@ -837,54 +878,36 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         return null;
     }
 
+    private static GameObject FindAncestorByName(Transform start, string targetName)
+    {
+        Transform current = start;
+        while (current != null)
+        {
+            if (string.Equals(current.name, targetName, StringComparison.OrdinalIgnoreCase))
+            {
+                return current.gameObject;
+            }
+
+            current = current.parent;
+        }
+
+        return null;
+    }
+
     private void SetInventoryVisible(bool visible)
     {
         if (inventoryUI == null) return;
         inventoryUI.gameObject.SetActive(visible);
     }
-    public static PotionTemp DeterminePotionTemp(float gaugeValue)
-    {
-        CraftTemperatureBand band = PotionCraftRules.DetermineBand(gaugeValue);
-        return band switch
-        {
-            CraftTemperatureBand.Low => PotionTemp.LowTemp,
-            CraftTemperatureBand.Mid => PotionTemp.MidTemp,
-            CraftTemperatureBand.High => PotionTemp.HighTemp,
-            _ => PotionTemp.Failure
-        };
-    }
-    public static string GetPotionName(PotionTemp type)
-    {
-        CraftTemperatureBand band = type switch
-        {
-            PotionTemp.LowTemp => CraftTemperatureBand.Low,
-            PotionTemp.MidTemp => CraftTemperatureBand.Mid,
-            PotionTemp.HighTemp => CraftTemperatureBand.High,
-            _ => CraftTemperatureBand.Failure
-        };
-        return PotionCraftRules.GetPotionName(band);
-    }
 
-    private static PotionTemperature ToPotionTemperature(PotionTemp tempType)
-    {
-        CraftTemperatureBand band = tempType switch
-        {
-            PotionTemp.LowTemp => CraftTemperatureBand.Low,
-            PotionTemp.MidTemp => CraftTemperatureBand.Mid,
-            PotionTemp.HighTemp => CraftTemperatureBand.High,
-            _ => CraftTemperatureBand.Failure
-        };
-        return PotionCraftRules.ToPotionTemperature(band);
-    }
-
-    public PotionData CraftPotion(Item first, Item second, PotionTemp tempType)
+    public PotionData CraftPotion(Item first, Item second, CraftTemperatureBand band)
     {
         if (first == null || second == null || first.data == null || second.data == null)
         {
             return null;
         }
 
-        PotionTemperature temperature = ToPotionTemperature(tempType);
+        PotionTemperature temperature = PotionCraftRules.ToPotionTemperature(band);
         if (temperature == PotionTemperature.Failure)
         {
             return null;

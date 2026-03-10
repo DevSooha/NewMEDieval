@@ -47,6 +47,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
   interactionRadius: 1
   craftUI: {fileID: 0}
+  craftingMenu: {fileID: 0}
+  inventoryUI: {fileID: 0}
 --- !u!58 &6646073668113243694
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -268,14 +270,19 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   meleeForwardOffset: 0
-  meleeSideOffset: -0.5
   debugDrawMeleeGizmo: 1
   floorTilemap: {fileID: 0}
-  defaultBombPrefab: {fileID: 0}
-  stackMarkerPrefab: {fileID: 6652526710824270206, guid: 4442b947abc6a644a82dacfb70dbb613, type: 3}
+  defaultBombPrefab: {fileID: 2931351287853390478, guid: 79943309dfa9d8f4ba9c81c2b69e4dbd, type: 3}
+  stackMarkerPrefab: {fileID: 6652526710824270206, guid: f168273fd8a6f124db400eaaa1a2f28f, type: 3}
+  bombVisualScaleMultiplier: 0.25
+  bombShortPressThreshold: 0.5
+  bombSecondStackThreshold: 1.05
+  bombThirdStackThreshold: 1.5
+  bombBlockLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  bombBlockCheckRadius: 0.2
   slots: []
-  bottomPadding: 12
-  rightPadding: 100
 --- !u!70 &477969116217681799
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

@@ -73,8 +73,6 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 baseCol = tex2D(_MainTex, i.uv) * i.color;
-
                 // noise (animate)
                 float2 noiseUV = i.uvNoise + float2(_DistortSpeed * _Time.y, 0);
                 float noise = tex2D(_NoiseTex, noiseUV).r;
@@ -83,6 +81,16 @@
                                         _DissolveThreshold + _DissolveEdgeWidth, noise);
 
                 float keep = step(_DissolveThreshold, noise);
+
+                // distortion offset (screen-space)
+                float2 distortOffset = 0;
+                if (_DistortStrength > 0.0001)
+                {
+                    float2 n = (tex2D(_NoiseTex, i.uvNoise + _Time.y * _DistortSpeed).rg - 0.5) * 2.0;
+                    distortOffset = n * (_DistortStrength * (0.01 + _GrabMix * 0.01));
+                }
+
+                fixed4 baseCol = tex2D(_MainTex, i.uv + distortOffset) * i.color;
                 float alpha = edge * baseCol.a;
 
                 fixed4 edgeCol = _EdgeColor * (1.0 - edge);

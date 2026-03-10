@@ -44,6 +44,12 @@ public class InstantBossBattleTrigger : MonoBehaviour
         if (hasTriggered) return;
         if (!other.CompareTag("Player") || other.isTrigger) return;
 
+        if (TryHandleDragonStealthSkip(other))
+        {
+            hasTriggered = true;
+            return;
+        }
+
         hasTriggered = true;
         StartCoroutine(BeginBattleRoutine(other));
     }
@@ -104,6 +110,42 @@ public class InstantBossBattleTrigger : MonoBehaviour
         {
             bossCombat.StartBattle();
         }
+    }
+
+    private bool TryHandleDragonStealthSkip(Collider2D playerCollider)
+    {
+        DragonCombat dragonCombat = bossCombat as DragonCombat;
+        if (dragonCombat == null)
+        {
+            return false;
+        }
+
+        if (dragonCombat.IsStealthBattleSkipped)
+        {
+            return true;
+        }
+
+        PlayerStatusController status = playerCollider.GetComponent<PlayerStatusController>();
+        if (status == null)
+        {
+            status = playerCollider.GetComponentInParent<PlayerStatusController>();
+        }
+        if (status == null)
+        {
+            Player player = playerCollider.GetComponent<Player>();
+            if (player != null)
+            {
+                status = player.GetComponent<PlayerStatusController>();
+            }
+        }
+
+        if (status == null || !status.IsStealthActive)
+        {
+            return false;
+        }
+
+        dragonCombat.MarkStealthTriggerSkipped();
+        return true;
     }
 
     private void HandleBattleReset()

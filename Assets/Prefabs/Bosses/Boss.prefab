@@ -82,7 +82,7 @@ MonoBehaviour:
   fireWallPrefab: {fileID: 5762954718026793789, guid: 7170702f1fe709b478faf49db476777e, type: 3}
   aquaRayPrefab: {fileID: 1923558505251598138, guid: 9cf16bd79f37cfd4996905cc23ce9122, type: 3}
   electricWallPrefab: {fileID: 6385034172263839984, guid: 6b7542faeae28584aa62b30101bd4609, type: 3}
-  electricRayPrefab: {fileID: 1923558505251598138, guid: 9cf16bd79f37cfd4996905cc23ce9122, type: 3}
+  electricRayPrefab: {fileID: 6378122758447652572, guid: bb324723805c4ef41941d0fe976d1015, type: 3}
 --- !u!61 &6600475405553238365
 BoxCollider2D:
   m_ObjectHideFlags: 0

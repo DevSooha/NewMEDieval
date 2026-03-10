@@ -525,36 +525,28 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
-        // Keep slot 1 reserved; allow direct placement only in slots 2~4.
-        if (slotIndex <= 0)
+        if (attackSystem == null || attackSystem.slots == null || slotIndex < 0 || slotIndex >= attackSystem.slots.Count)
         {
             return;
         }
 
-        WeaponSlot slot = attackSystem.slots[slotIndex];
-
-        if (slot.equippedPotion != null && inventory != null)
+        WeaponSlot targetSlot = attackSystem.slots[slotIndex];
+        if (targetSlot != null && targetSlot.type != WeaponType.None)
         {
-            if (!inventory.PotionItems.Contains(slot.equippedPotion))
-            {
-                inventory.AddPotion(slot.equippedPotion.data, slot.equippedPotion.quantity);
-            }
+            return;
         }
 
-        slot.type = WeaponType.PotionBomb;
-        slot.equippedPotion = pendingPotion;
-        slot.count = pendingPotion.quantity;
-        slot.specificPrefab = null;
-
-        if (inventory != null)
+        bool equipped = attackSystem.TryEquipPotionToSlot(
+            pendingPotion,
+            slotIndex,
+            returnPreviousToInventory: false);
+        if (!equipped)
         {
-            inventory.PotionItems.Remove(pendingPotion);
+            return;
         }
 
-        attackSystem.slots[slotIndex] = slot;
         ClearPendingUnequip();
         CancelWeaponSlotSelection();
-        attackSystem.NotifyWeaponSlotsChanged(compactSlots: false);
     }
 
     private void TryHandleSlotUnequip(int slotIndex)
@@ -579,19 +571,13 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
-        if (inventory != null && !inventory.PotionItems.Contains(slot.equippedPotion))
+        bool unequipped = attackSystem.TryUnequipPotionFromSlot(slotIndex, addBackToInventory: true);
+        if (!unequipped)
         {
-            inventory.AddPotion(slot.equippedPotion.data, slot.equippedPotion.quantity);
+            return;
         }
 
-        slot.equippedPotion = null;
-        slot.count = -1;
-        slot.type = slotIndex == 0 ? WeaponType.Melee : WeaponType.None;
-        slot.specificPrefab = null;
-        attackSystem.slots[slotIndex] = slot;
-
         ClearPendingUnequip();
-        attackSystem.NotifyWeaponSlotsChanged(compactSlots: false);
     }
 
     private void ClearPendingUnequip()
@@ -642,17 +628,13 @@ public class InventoryUI : MonoBehaviour
         float alpha = Mathf.Max(0.7f, dimmerAlpha);
         weaponSlotDimmer.color = new Color(0f, 0f, 0f, alpha);
         weaponSlotDimmer.gameObject.SetActive(active);
-        weaponSlotDimmer.raycastTarget = false;
+        weaponSlotDimmer.raycastTarget = active;
         if (active)
         {
             weaponSlotDimmer.transform.SetAsLastSibling();
             if (weaponSlotRoot != null)
             {
                 weaponSlotRoot.SetAsLastSibling();
-            }
-            if (potionInventoryRoot != null)
-            {
-                potionInventoryRoot.SetAsLastSibling();
             }
         }
     }
@@ -662,16 +644,6 @@ public class InventoryUI : MonoBehaviour
         if (weaponSlotDimmer != null && weaponSlotDimmer.gameObject.activeSelf)
         {
             weaponSlotDimmer.transform.SetAsLastSibling();
-        }
-
-        if (potionInventoryRoot == null)
-        {
-            TryResolvePotionInventoryRoot();
-        }
-
-        if (potionInventoryRoot != null)
-        {
-            potionInventoryRoot.SetAsLastSibling();
         }
 
         if (weaponSlotRoot != null)

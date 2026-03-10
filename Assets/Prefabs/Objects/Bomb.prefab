@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6833054165216709064}
   - component: {fileID: -4950726596828814310}
+  - component: {fileID: 7987009580948404825}
   - component: {fileID: 1165381254583271831}
   m_Layer: 0
   m_Name: Bomb
@@ -48,18 +49,38 @@ MonoBehaviour:
   bombElement: 2
   baseDamage: 200
   timeToExplode: 2
-  explosionEffect: {fileID: 2106239423698665555, guid: 05f624f3da07fc8459f1a479f0ea3212, type: 3}
-  visualRenderer: {fileID: 0}
+  explosionEffect: {fileID: 0}
+  visualRenderer: {fileID: 7987009580948404825}
   projectilePrefab: {fileID: 0}
+  waterProjectileVfxPrefab: {fileID: 4791540778913851724, guid: 220a305aebea2e8409881ca0fea17d68, type: 3}
+  fireProjectileVfxPrefab: {fileID: 7588588366850297520, guid: 7ddf5f5638291db438d65877aa015564, type: 3}
+  electricProjectileVfxPrefab: {fileID: 1045807124205389876, guid: a19882c081c5d62409d2eab8ea1d1131, type: 3}
   defaultProjectileLifetime: 2.5
   projectileLifetimeFromPhaseDurationScale: 0.35
   minProjectileLifetime: 0.25
   projectileSpawnOffset: 0.1
+  projectileSpeedMultiplier: 0.04
   spawnProjectilePatterns: 1
   debugVisualOnlyExplosion: 0
-  waterProjectileVfxPrefab: {fileID: 4791540778913851724, guid: 4bc1bfdb2ed432040808e68a1ecbc511, type: 3}
-  fireProjectileVfxPrefab: {fileID: 7588588366850297520, guid: 001b7578dba940349a44e9a754a8d096, type: 3}
-  electricProjectileVfxPrefab: {fileID: 1045807124205389876, guid: 12674abd401660545974933c80aabeb0, type: 3}
+--- !u!114 &7987009580948404825
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2931351287853390478}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f73e5dbcd1f98ad42ae6b45570a7d378, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BombVisualRenderer
+  baseRenderer: {fileID: 1165381254583271831}
+  bottomRenderer: {fileID: 0}
+  topRenderer: {fileID: 0}
+  frameRenderer: {fileID: 0}
+  forceSorting: 1
+  sortingLayerName: EnemyBullet
+  sortingOrder: 40
 --- !u!212 &1165381254583271831
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -104,8 +125,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 825734181
-  m_SortingLayer: 4
+  m_SortingLayerID: 578985339
+  m_SortingLayer: 9
   m_SortingOrder: 10
   m_Sprite: {fileID: -1483665779731714255, guid: 5f9d8faca5f85ef4cb91053c9d5e60d7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
