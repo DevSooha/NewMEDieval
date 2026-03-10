@@ -438,28 +438,25 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
         IReadOnlyList<Transform> slots = ResolveBedimmedWallSlots();
         bool hasConfiguredSlots = slots.Count > 0;
+        SetBedimmedWallLayoutActive(hasConfiguredSlots);
         if (hasConfiguredSlots)
         {
             foreach (Transform slot in slots)
             {
                 if (slot == null) continue;
 
-                Vector2 spawnPos = ClampToRoom(slot.position);
-                TryDamagePlayerInBox(spawnPos, oneTileHitbox, damagePerHit, spawnPos);
-
-                FinalBossBedimmedWallProjectile projectile = CreateWallProjectile(spawnPos);
-                projectiles.Add(projectile);
-                // "Front" in this fight is local right for placed BedimmedWall prefabs.
-                Vector2 fireDir = ((Vector2)slot.right).sqrMagnitude < 0.001f
-                    ? ((Vector2)slot.up).normalized
-                    : ((Vector2)slot.right).normalized;
-                if (fireDir.sqrMagnitude < 0.001f)
+                foreach (Transform launchPoint in EnumerateBedimmedWallLaunchPoints(slot))
                 {
-                    fireDir = Vector2.right;
-                }
+                    if (launchPoint == null) continue;
 
-                launchDirections.Add(fireDir);
-                spawnedHazards.Add(projectile.gameObject);
+                    Vector2 spawnPos = ClampToRoom(launchPoint.position);
+                    TryDamagePlayerInBox(spawnPos, oneTileHitbox, damagePerHit, spawnPos);
+
+                    FinalBossBedimmedWallProjectile projectile = CreateWallProjectile(spawnPos, launchPoint);
+                    projectiles.Add(projectile);
+                    launchDirections.Add(ResolveBedimmedWallDirection(launchPoint, slot));
+                    spawnedHazards.Add(projectile.gameObject);
+                }
             }
         }
         else
@@ -469,7 +466,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
                 Vector2 spawnPos = ClampToRoom((Vector2)transform.position + dir * bedimmedSpawnRadius);
                 TryDamagePlayerInBox(spawnPos, oneTileHitbox, damagePerHit, spawnPos);
 
-                FinalBossBedimmedWallProjectile projectile = CreateWallProjectile(spawnPos);
+                FinalBossBedimmedWallProjectile projectile = CreateWallProjectile(spawnPos, null);
                 projectiles.Add(projectile);
                 launchDirections.Add(dir);
                 spawnedHazards.Add(projectile.gameObject);
@@ -488,6 +485,8 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
             Vector2 fireDir = i < launchDirections.Count ? launchDirections[i] : Vector2.up;
             projectile.Launch(fireDir, bedimmedProjectileSpeed, oneTileHitbox, damagePerHit, ElementType.Electric);
         }
+
+        SetBedimmedWallLayoutActive(false);
 
         if (bedimmedPostDelay > 0f) yield return new WaitForSeconds(bedimmedPostDelay);
     }
@@ -525,6 +524,43 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         }
 
         return bedimmedWallSlots;
+    }
+
+    private static IEnumerable<Transform> EnumerateBedimmedWallLaunchPoints(Transform slotRoot)
+    {
+        if (slotRoot == null)
+        {
+            yield break;
+        }
+
+        bool yieldedChild = false;
+        foreach (Transform child in slotRoot)
+        {
+            if (child == null) continue;
+            yieldedChild = true;
+            yield return child;
+        }
+
+        if (!yieldedChild)
+        {
+            yield return slotRoot;
+        }
+    }
+
+    private static Vector2 ResolveBedimmedWallDirection(Transform launchPoint, Transform fallbackRoot)
+    {
+        Transform basis = fallbackRoot != null ? fallbackRoot : launchPoint;
+        if (basis == null)
+        {
+            return Vector2.right;
+        }
+
+        // "Front" in this fight is local right for placed Bedimmed Wall prefabs.
+        Vector2 fireDir = ((Vector2)basis.right).sqrMagnitude < 0.001f
+            ? ((Vector2)basis.up).normalized
+            : ((Vector2)basis.right).normalized;
+
+        return fireDir.sqrMagnitude < 0.001f ? Vector2.right : fireDir;
     }
 
     private IEnumerator PatternHandOfTime()
@@ -824,21 +860,33 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         }
     }
 
-    private FinalBossBedimmedWallProjectile CreateWallProjectile(Vector2 worldPosition)
+    private FinalBossBedimmedWallProjectile CreateWallProjectile(Vector2 worldPosition, Transform visualTemplate)
     {
+        FinalBossBedimmedWallProjectile projectile;
         if (bedimmedWallProjectilePrefab != null)
         {
-            FinalBossBedimmedWallProjectile projectile = Instantiate(bedimmedWallProjectilePrefab, worldPosition, Quaternion.identity);
-            RegisterBossOffensive(projectile.gameObject);
-            return projectile;
+            projectile = Instantiate(bedimmedWallProjectilePrefab, worldPosition, Quaternion.identity);
+        }
+        else
+        {
+            GameObject go = new GameObject("FinalBossBedimmedWallProjectile");
+            go.transform.position = worldPosition;
+            go.AddComponent<BoxCollider2D>();
+            projectile = go.AddComponent<FinalBossBedimmedWallProjectile>();
         }
 
-        GameObject go = new GameObject("FinalBossBedimmedWallProjectile");
-        go.transform.position = worldPosition;
-        go.AddComponent<BoxCollider2D>();
-        FinalBossBedimmedWallProjectile fallbackProjectile = go.AddComponent<FinalBossBedimmedWallProjectile>();
-        RegisterBossOffensive(fallbackProjectile.gameObject);
-        return fallbackProjectile;
+        if (visualTemplate != null && !ProjectileAlreadyHasVisuals(projectile))
+        {
+            projectile.AttachVisualTemplate(visualTemplate.gameObject);
+        }
+
+        RegisterBossOffensive(projectile.gameObject);
+        return projectile;
+    }
+
+    private static bool ProjectileAlreadyHasVisuals(FinalBossBedimmedWallProjectile projectile)
+    {
+        return projectile != null && projectile.GetComponentsInChildren<ParticleSystem>(true).Length > 0;
     }
 
     private FinalBossHandOfTimeBurstController EnsureHandOfTimeController()
@@ -996,7 +1044,18 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         }
 
         diamondFlickerRoot = new GameObject(DiamondFlickerRootName);
-        diamondFlickerRoot.transform.position = Vector3.zero;
+        Transform parent = transform.root != null ? transform.root : null;
+        if (parent != null)
+        {
+            diamondFlickerRoot.transform.SetParent(parent, false);
+            diamondFlickerRoot.transform.localPosition = Vector3.zero;
+            diamondFlickerRoot.transform.localRotation = Quaternion.identity;
+            diamondFlickerRoot.transform.localScale = Vector3.one;
+        }
+        else
+        {
+            diamondFlickerRoot.transform.position = transform.position;
+        }
         return diamondFlickerRoot.transform;
     }
 
@@ -1459,20 +1518,24 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     private void SetPreplacedLayoutObjectsActive(bool active)
     {
-        if (bedimmedWallsParent != null)
-        {
-            foreach (Transform child in bedimmedWallsParent)
-            {
-                if (child != null && child.gameObject.activeSelf != active)
-                {
-                    child.gameObject.SetActive(active);
-                }
-            }
-        }
+        SetBedimmedWallLayoutActive(active);
 
         if (handOfTimeController != null)
         {
             handOfTimeController.SetLayoutObjectsActive(active);
+        }
+    }
+
+    private void SetBedimmedWallLayoutActive(bool active)
+    {
+        if (bedimmedWallsParent == null) return;
+
+        foreach (Transform child in bedimmedWallsParent)
+        {
+            if (child != null && child.gameObject.activeSelf != active)
+            {
+                child.gameObject.SetActive(active);
+            }
         }
     }
 

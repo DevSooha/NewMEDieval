@@ -846,7 +846,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossHealth
   bossName: ???
   maxHP: 5400
-  currentHP: 5400
+  currentHP: 2400
   currentElement: 0
 --- !u!61 &5993491392409483037
 BoxCollider2D:
@@ -943,7 +943,7 @@ MonoBehaviour:
   carmaPhase1EndDelay: 3
   carmaPhase2EndDelay: 2
   phase2HpThreshold: 2500
-  bedimmedWallProjectilePrefab: {fileID: 2814031633503269448, guid: 7a09ac800154eeb49a4edb89f758c50e, type: 3}
+  bedimmedWallProjectilePrefab: {fileID: 2701000000000000002, guid: ba48c61bacfb95a43957a7b8ffb812ae, type: 3}
   bedimmedWallsParent: {fileID: 7146412840334378010}
   bedimmedWallSpawnPoints:
   - {fileID: 4510338629514927907}
@@ -983,7 +983,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e81541731cd6406fbe8dd6a8b9f38ac4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FinalBossHandOfTimeBurstController
-  projectilePrefab: {fileID: 2814031633503269448, guid: 7a09ac800154eeb49a4edb89f758c50e, type: 3}
+  projectilePrefab: {fileID: 0}
   groupsParent: {fileID: 6245872371980282608}
   groupDirections: 01000000010000000100000000000000000000000000000000000000010000000100000000000000
   fallbackHitboxSize: {x: 1, y: 1}
