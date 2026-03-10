@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: win_3
   m_EditorClassIdentifier: Assembly-CSharp::RoomData
   roomID: win_3
-  roomPrefab: {fileID: 5091463693180939243, guid: 1f6842d624b30ab45a0b402ab73ae4f5, type: 3}
+  roomPrefab: {fileID: 5091463693180939243, guid: 588bff8a6aed3e245b5d316855db4a26, type: 3}
   north: {fileID: 11400000, guid: df844122793586b4fac58eb0067ea489, type: 2}
   south: {fileID: 0}
   east: {fileID: 0}

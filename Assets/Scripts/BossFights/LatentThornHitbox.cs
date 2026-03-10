@@ -7,22 +7,30 @@ public class LatentThornHitbox : MonoBehaviour
 {
     [SerializeField] private int damage = 1;
     [SerializeField] private float multiHitCooldown = 0.2f;
+    [SerializeField] private float durationScale = 1f;
+    [SerializeField] private float additionalDuration = 0f;
+    [SerializeField] private float baseWidth = 1f;
+    [SerializeField] private float maxHeight = 2.5f;
+    [SerializeField] private float verticalOffset = 0f;
     [SerializeField] private bool drawHitboxGizmo = true;
 
     private Collider2D hitboxCollider;
+    private PolygonCollider2D polygonCollider;
     private bool canDamage = true;
 
     private void Awake()
     {
         hitboxCollider = GetComponent<Collider2D>();
+        polygonCollider = hitboxCollider as PolygonCollider2D;
         hitboxCollider.isTrigger = true;
         hitboxCollider.enabled = false;
+        ApplyConfiguredShape();
     }
 
     public void ActivateForSeconds(float duration)
     {
         StopAllCoroutines();
-        StartCoroutine(ActivationRoutine(duration));
+        StartCoroutine(ActivationRoutine(GetAdjustedDuration(duration)));
     }
 
     public void ResetState()
@@ -34,6 +42,7 @@ public class LatentThornHitbox : MonoBehaviour
             hitboxCollider.enabled = false;
         }
 
+        ApplyConfiguredShape();
         gameObject.SetActive(true);
     }
 
@@ -62,6 +71,7 @@ public class LatentThornHitbox : MonoBehaviour
     {
         gameObject.SetActive(true);
         canDamage = true;
+        ApplyConfiguredShape();
 
         if (hitboxCollider != null)
         {
@@ -85,6 +95,52 @@ public class LatentThornHitbox : MonoBehaviour
     private void OnTriggerStay2D(Collider2D other)
     {
         TryApplyElementHit(other);
+        TryDamagePlayer(other);
+    }
+
+    private float GetAdjustedDuration(float requestedDuration)
+    {
+        float scaledDuration = Mathf.Max(0f, requestedDuration) * Mathf.Max(0f, durationScale);
+        return Mathf.Max(0.01f, scaledDuration + additionalDuration);
+    }
+
+    private void ApplyConfiguredShape()
+    {
+        if (polygonCollider != null)
+        {
+            float halfWidth = Mathf.Max(0.01f, baseWidth) * 0.5f;
+            float height = Mathf.Max(0.01f, maxHeight);
+            float bottomY = verticalOffset;
+            float topY = verticalOffset + height;
+            polygonCollider.points = new[]
+            {
+                new Vector2(-halfWidth, bottomY),
+                new Vector2(halfWidth, bottomY),
+                new Vector2(0f, topY)
+            };
+            return;
+        }
+
+        if (hitboxCollider is BoxCollider2D box)
+        {
+            Vector2 size = box.size;
+            size.y = Mathf.Max(0.01f, maxHeight);
+            box.size = size;
+            Vector2 offset = box.offset;
+            offset.y = verticalOffset + size.y * 0.5f;
+            box.offset = offset;
+            return;
+        }
+
+        if (hitboxCollider is CapsuleCollider2D capsule)
+        {
+            Vector2 size = capsule.size;
+            size.y = Mathf.Max(0.01f, maxHeight);
+            capsule.size = size;
+            Vector2 offset = capsule.offset;
+            offset.y = verticalOffset + size.y * 0.5f;
+            capsule.offset = offset;
+        }
     }
 
     private void TryApplyElementHit(Collider2D other)

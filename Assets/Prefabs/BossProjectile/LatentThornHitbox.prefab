@@ -97,8 +97,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LatentThornHitbox
   damage: 1
   multiHitCooldown: 0.2
-  growDuration: 0.5
-  holdDuration: 1
-  shrinkDuration: 0.6
-  baseWidth: 1
-  maxHeight: 2.5
+  durationScale: 1
+  additionalDuration: 0
+  baseWidth: 0.8
+  maxHeight: 2.2
+  verticalOffset: 0
+  drawHitboxGizmo: 1
