@@ -363,6 +363,8 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     private IEnumerator HandleLatentThorn()
     {
+        float timelineDuration = ResolveConfiguredLatentThornTimelineDuration();
+
         if (latentWarningDuration > 0f)
         {
             yield return new WaitForSeconds(latentWarningDuration);
@@ -370,7 +372,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
         EnsureLatentThornSetup();
 
-        float activeDuration = Mathf.Max(0f, latentRiseDuration + latentHoldDuration + latentDespawnDuration);
+        float activeDuration = Mathf.Max(0f, timelineDuration - latentWarningDuration);
         foreach (LatentThornHitbox thorn in latentThornHitboxes)
         {
             if (thorn != null)
@@ -393,26 +395,27 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         if (openingDelay > 0f) yield return new WaitForSeconds(openingDelay);
 
         if (!ResolvePlayerTransform()) yield break;
+        Vector3 playerSnapshot = playerTransform.position;
+        float cellWidth = ResolveGroundCellWidth();
 
         if (carmaTeleportDelay1 > 0f) yield return new WaitForSeconds(carmaTeleportDelay1);
-        if (!TryGetPlayerSideWorldPosition(-1, out Vector3 leftCell)) yield break;
+        Vector3 leftCell = GetPlayerSideWorldPosition(playerSnapshot, cellWidth, -1);
         transform.position = leftCell;
 
         if (carmaTeleportDelay2 > 0f) yield return new WaitForSeconds(carmaTeleportDelay2);
-        if (!TryGetPlayerSideWorldPosition(1, out Vector3 rightCell)) yield break;
+        Vector3 rightCell = GetPlayerSideWorldPosition(playerSnapshot, cellWidth, 1);
         transform.position = rightCell;
 
         if (carmaTeleportDelay3 > 0f) yield return new WaitForSeconds(carmaTeleportDelay3);
-        if (!TryGetPlayerSideWorldPosition(-1, out leftCell)) yield break;
+        leftCell = GetPlayerSideWorldPosition(playerSnapshot, cellWidth, -1);
         transform.position = leftCell;
 
         // Fake attack: Attack_S is intentionally empty and canceled at 0.4s.
         if (carmaFakeAttackDuration > 0f) yield return new WaitForSeconds(carmaFakeAttackDuration);
-        if (!TryGetPlayerSideWorldPosition(1, out rightCell)) yield break;
+        rightCell = GetPlayerSideWorldPosition(playerSnapshot, cellWidth, 1);
         transform.position = rightCell;
         if (carmaFinalTeleportDuration > 0f) yield return new WaitForSeconds(carmaFinalTeleportDuration);
 
-        float cellWidth = ResolveGroundCellWidth();
         Vector2 trueHitCenter = ClampToRoom(transform.position + Vector3.left * cellWidth);
         ActivateCarmaTrueHitbox(trueHitCenter, carmaTrueHitboxDuration);
         if (carmaTrueHitboxDuration > 0f) yield return new WaitForSeconds(carmaTrueHitboxDuration);
@@ -707,6 +710,16 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
             return;
         }
 
+        for (int i = latentThornTimelines.Count - 1; i >= 0; i--)
+        {
+            if (latentThornTimelines[i] != null)
+            {
+                continue;
+            }
+
+            latentThornTimelines.RemoveAt(i);
+        }
+
         while (latentThornTimelines.Count > latentThornSpawnPoints.Count)
         {
             int last = latentThornTimelines.Count - 1;
@@ -763,6 +776,10 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         foreach (PlayableDirector director in latentThornTimelines)
         {
             if (director == null) continue;
+            if (!director.gameObject.activeSelf)
+            {
+                director.gameObject.SetActive(true);
+            }
             director.Stop();
             director.time = 0;
             director.Play();
@@ -776,7 +793,16 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
             if (director == null) continue;
             director.Stop();
             director.time = 0;
+            if (director.gameObject.activeSelf)
+            {
+                director.gameObject.SetActive(false);
+            }
         }
+    }
+
+    private float ResolveConfiguredLatentThornTimelineDuration()
+    {
+        return Mathf.Max(0f, latentWarningDuration + latentRiseDuration + latentHoldDuration + latentDespawnDuration);
     }
 
     private void BindLatentThornTimelineReferences(PlayableDirector director)
@@ -1200,16 +1226,11 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         return 1f;
     }
 
-    private bool TryGetPlayerSideWorldPosition(int horizontalSign, out Vector3 result)
+    private Vector3 GetPlayerSideWorldPosition(Vector3 playerWorldPosition, float cellWidth, int horizontalSign)
     {
-        result = default;
-        if (!ResolvePlayerTransform()) return false;
-
         float sign = horizontalSign < 0 ? -1f : 1f;
-        float cellWidth = ResolveGroundCellWidth();
-        Vector3 target = playerTransform.position + Vector3.right * (cellWidth * sign);
-        result = ClampToRoom(target);
-        return true;
+        Vector3 target = playerWorldPosition + Vector3.right * (cellWidth * sign);
+        return ClampToRoom(target);
     }
 
     private void HandlePlayerDeath()
