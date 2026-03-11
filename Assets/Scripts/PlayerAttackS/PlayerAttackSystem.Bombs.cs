@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
 public partial class PlayerAttackSystem
@@ -220,7 +219,7 @@ public partial class PlayerAttackSystem
             return false;
         }
 
-        ApplyFieldVisualScaleIfNeeded(bombObj);
+        FieldSceneScaleUtility.ApplyIfNeeded(bombObj);
 
         Bomb bomb = bombObj.GetComponent<Bomb>();
         if (bomb != null && slot.equippedPotion != null && slot.equippedPotion.data != null)
@@ -576,53 +575,5 @@ public partial class PlayerAttackSystem
         }
 
         Debug.LogWarning($"[AttackSystem] {message}", this);
-    }
-
-    private void ApplyFieldVisualScaleIfNeeded(GameObject obj)
-    {
-        if (obj == null)
-        {
-            return;
-        }
-
-        bool isFieldScene = IsFieldSceneContext(obj);
-        if (!isFieldScene)
-        {
-            return;
-        }
-
-        obj.transform.localScale *= 0.25f;
-    }
-
-    private static bool IsFieldSceneContext(GameObject obj)
-    {
-        if (obj != null && IsFieldSceneName(obj.scene.name))
-        {
-            return true;
-        }
-
-        Scene activeScene = SceneManager.GetActiveScene();
-        if (IsFieldSceneName(activeScene.name))
-        {
-            return true;
-        }
-
-        int loadedSceneCount = SceneManager.sceneCount;
-        for (int i = 0; i < loadedSceneCount; i++)
-        {
-            Scene loadedScene = SceneManager.GetSceneAt(i);
-            if (IsFieldSceneName(loadedScene.name))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsFieldSceneName(string sceneName)
-    {
-        return string.Equals(sceneName, "FIeld", StringComparison.OrdinalIgnoreCase)
-               || string.Equals(sceneName, "Field", StringComparison.OrdinalIgnoreCase);
     }
 }

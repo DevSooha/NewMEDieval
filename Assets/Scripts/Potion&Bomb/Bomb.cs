@@ -1,9 +1,7 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
-using UnityEngine.SceneManagement;
 
 public class Bomb : MonoBehaviour
 {
@@ -11,14 +9,7 @@ public class Bomb : MonoBehaviour
     private const float DesignFramesPerSecond = 60f;
     private const float FireworksSpeedPxPerFrame = 120f;
     private const float AfterimageSpeedPxPerFrame = 64f;
-
-    private const float AfterimageFirstShotTime = 0f;
-    private const float AfterimageSecondShotTime = 3f;
-    private const float AfterimageThirdShotTime = 6f;
     private const float AfterimageExplosionDelaySeconds = 8f;
-
-    private const float AfterimageExplosionSizePx = 64f;
-    private const float AfterimageExplosionLifetimeSeconds = 0.08f;
 
     [Header("Bomb Settings")]
     public ElementType bombElement = ElementType.Water;
@@ -49,13 +40,8 @@ public class Bomb : MonoBehaviour
     [SerializeField] private bool debugVisualOnlyExplosion;
 
     private PotionData sourcePotionData;
-    private Transform projectileOwner;
-    private Vector2 forcedBaseDirection;
-    private bool hasForcedBaseDirection;
     private int bombInstanceId;
     private bool hasExploded;
-
-    private readonly List<PotionProjectileController> trackedAfterimageProjectiles = new();
 
     private void Awake()
     {
@@ -78,24 +64,6 @@ public class Bomb : MonoBehaviour
         }
 
         ApplyPotionVisual();
-    }
-
-    public void SetProjectileOwner(Transform ownerTransform)
-    {
-        projectileOwner = ownerTransform;
-    }
-
-    public void SetPatternBaseDirection(Vector2 direction)
-    {
-        if (direction.sqrMagnitude <= 0.0001f)
-        {
-            hasForcedBaseDirection = false;
-            forcedBaseDirection = Vector2.zero;
-            return;
-        }
-
-        forcedBaseDirection = direction.normalized;
-        hasForcedBaseDirection = true;
     }
 
     private void Start()
@@ -122,7 +90,7 @@ public class Bomb : MonoBehaviour
         if (explosionEffect != null)
         {
             GameObject explosionObj = Instantiate(explosionEffect, transform.position, Quaternion.identity);
-            ApplyFieldVisualScaleIfNeeded(explosionObj);
+            FieldSceneScaleUtility.ApplyIfNeeded(explosionObj);
         }
 
         HideBombVisual();
@@ -140,88 +108,15 @@ public class Bomb : MonoBehaviour
     {
         PotionPhaseSpec phase1 = sourcePotionData != null ? sourcePotionData.GetPhase(0) : null;
         PotionPhaseSpec phase2 = sourcePotionData != null ? sourcePotionData.GetPhase(1) : null;
-        PotionPhaseSpec drivingPhase = phase1 ?? phase2 ?? BuildFallbackPhase();
+        BombPatternExecutionContext executionContext = new(
+            phase1,
+            phase2,
+            bombInstanceId,
+            BuildFallbackPhase,
+            SpawnProjectilePattern);
 
-        switch (drivingPhase.patternType)
-        {
-            case ProjectilePatternType.Fireworks:
-                yield return RunFireworksPatternSequence(phase1, phase2);
-                break;
-
-            case ProjectilePatternType.AfterimageBomb:
-                yield return RunAfterimageBombPatternSequence(phase1, phase2);
-                break;
-
-            default:
-            {
-                int defaultPhaseIndex = phase1 != null ? 1 : (phase2 != null ? 2 : 1);
-                SpawnProjectilePattern(
-                    drivingPhase.patternType,
-                    drivingPhase,
-                    defaultPhaseIndex);
-                break;
-            }
-        }
-
+        yield return BombPatternSequenceRunner.Run(executionContext);
         DestroyBombObject();
-    }
-
-    private IEnumerator RunFireworksPatternSequence(PotionPhaseSpec phase1, PotionPhaseSpec phase2)
-    {
-        SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(phase1, phase2, 1), 1);
-        yield return new WaitForSeconds(2f);
-
-        SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(phase1, phase2, 2), 2);
-        yield return new WaitForSeconds(2f);
-
-        SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(phase1, phase2, 1), 1);
-        yield return new WaitForSeconds(2f);
-
-        SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(phase1, phase2, 2), 2);
-    }
-
-    private IEnumerator RunAfterimageBombPatternSequence(PotionPhaseSpec phase1, PotionPhaseSpec phase2)
-    {
-        trackedAfterimageProjectiles.Clear();
-
-        SpawnProjectilePattern(
-            ProjectilePatternType.AfterimageBomb,
-            ResolveMaterialPhase(phase1, phase2, 1),
-            1,
-            RegisterAfterimageProjectile);
-
-        float waitToSecond = Mathf.Max(0f, AfterimageSecondShotTime - AfterimageFirstShotTime);
-        if (waitToSecond > 0f)
-        {
-            yield return new WaitForSeconds(waitToSecond);
-        }
-
-        SpawnProjectilePattern(
-            ProjectilePatternType.AfterimageBomb,
-            ResolveMaterialPhase(phase1, phase2, 2),
-            2,
-            RegisterAfterimageProjectile);
-
-        float waitToThird = Mathf.Max(0f, AfterimageThirdShotTime - AfterimageSecondShotTime);
-        if (waitToThird > 0f)
-        {
-            yield return new WaitForSeconds(waitToThird);
-        }
-
-        SpawnProjectilePattern(
-            ProjectilePatternType.AfterimageBomb,
-            ResolveMaterialPhase(phase1, phase2, 1),
-            1,
-            RegisterAfterimageProjectile);
-
-        float waitToExplosion = Mathf.Max(0f, AfterimageExplosionDelaySeconds - AfterimageThirdShotTime);
-        if (waitToExplosion > 0f)
-        {
-            yield return new WaitForSeconds(waitToExplosion);
-        }
-
-        ExplodeRemainingAfterimageProjectiles();
-        trackedAfterimageProjectiles.Clear();
     }
 
     private void SpawnProjectilePattern(
@@ -234,18 +129,17 @@ public class Bomb : MonoBehaviour
 
         float speed = ResolveProjectileSpeed(patternType, resolvedPhase);
         float lifetime = ResolveProjectileLifetime(patternType, resolvedPhase);
-        Vector2 baseDirection = ResolveBaseDirection();
+        Vector2 baseDirection = Vector2.up;
         float offsetUnits = Mathf.Max(0f, projectileSpawnOffset);
         Vector3 spawnCenter = transform.position + (Vector3)(baseDirection * offsetUnits);
 
         GameObject prefabToSpawn = ResolveProjectilePrefab(resolvedPhase);
-        Transform hitOwner = projectileOwner != null ? projectileOwner : transform;
 
         BombProjectilePatternSpawner.Spawn(
             patternType,
             resolvedPhase,
             prefabToSpawn,
-            hitOwner,
+            transform,
             spawnCenter,
             baseDirection,
             bombInstanceId,
@@ -253,16 +147,6 @@ public class Bomb : MonoBehaviour
             speed,
             lifetime,
             onProjectileSpawn);
-    }
-
-    private static PotionPhaseSpec ResolveMaterialPhase(PotionPhaseSpec phase1, PotionPhaseSpec phase2, int materialIndex)
-    {
-        if (materialIndex == 2)
-        {
-            return phase2 ?? phase1;
-        }
-
-        return phase1 ?? phase2;
     }
 
     private float ResolveProjectileSpeed(ProjectilePatternType patternType, PotionPhaseSpec phase)
@@ -394,191 +278,9 @@ public class Bomb : MonoBehaviour
         return element == ElementType.None ? ElementType.Water : element;
     }
 
-    private Vector2 ResolveBaseDirection()
-    {
-        if (hasForcedBaseDirection)
-        {
-            return forcedBaseDirection;
-        }
-
-        if (projectileOwner == null)
-        {
-            return Vector2.up;
-        }
-
-        Vector2 dir = (Vector2)projectileOwner.position - (Vector2)transform.position;
-        if (dir.sqrMagnitude < 0.0001f)
-        {
-            return Vector2.up;
-        }
-
-        return dir.normalized;
-    }
-
     private static float ConvertPixelsPerFrameToUnitsPerSecond(float pixelsPerFrame)
     {
         return pixelsPerFrame * DesignFramesPerSecond / Mathf.Max(1f, PixelsPerUnit);
-    }
-
-    private void RegisterAfterimageProjectile(PotionProjectileController controller)
-    {
-        if (controller == null)
-        {
-            return;
-        }
-
-        if (!trackedAfterimageProjectiles.Contains(controller))
-        {
-            trackedAfterimageProjectiles.Add(controller);
-        }
-    }
-
-    private void ExplodeRemainingAfterimageProjectiles()
-    {
-        Camera cam = Camera.main;
-        float explosionSizeUnits = AfterimageExplosionSizePx / Mathf.Max(1f, PixelsPerUnit);
-
-        for (int i = 0; i < trackedAfterimageProjectiles.Count; i++)
-        {
-            PotionProjectileController projectile = trackedAfterimageProjectiles[i];
-            if (projectile == null)
-            {
-                continue;
-            }
-
-            if (cam != null && !IsOnScreen(cam, projectile.transform.position))
-            {
-                continue;
-            }
-
-            SpawnAfterimageExplosion(
-                projectile.transform.position,
-                BuildExplosionSpec(projectile.PhaseSpec),
-                projectile.PhaseIndex,
-                explosionSizeUnits);
-
-            Destroy(projectile.gameObject);
-        }
-    }
-
-    private static bool IsOnScreen(Camera cam, Vector3 position)
-    {
-        Vector3 viewport = cam.WorldToViewportPoint(position);
-        return viewport.z > 0f
-               && viewport.x >= 0f && viewport.x <= 1f
-               && viewport.y >= 0f && viewport.y <= 1f;
-    }
-
-    private void SpawnAfterimageExplosion(Vector3 worldPosition, PotionPhaseSpec sourcePhase, int phaseIndex, float explosionSizeUnits)
-    {
-        GameObject hazardObject = new GameObject("AfterimageExplosionHazard");
-        hazardObject.transform.position = worldPosition;
-
-        PotionAreaHazard hazard = hazardObject.AddComponent<PotionAreaHazard>();
-        hazard.Init(
-            sourcePhase,
-            new Vector2(explosionSizeUnits, explosionSizeUnits),
-            AfterimageExplosionLifetimeSeconds,
-            bombInstanceId,
-            phaseIndex);
-    }
-
-    private PotionPhaseSpec BuildExplosionSpec(PotionPhaseSpec sourcePhase)
-    {
-        PotionPhaseSpec source = sourcePhase ?? BuildFallbackPhase();
-        PotionPhaseSpec explosion = new PotionPhaseSpec
-        {
-            ingredientId = source.ingredientId,
-            patternType = ProjectilePatternType.AfterimageBomb,
-            useCardinalDirections = source.useCardinalDirections,
-            duration = source.duration,
-            fireInterval = source.fireInterval,
-            projectileSpeed = source.projectileSpeed,
-            rotationSpeedDegPerSec = source.rotationSpeedDegPerSec,
-            baseDamage = source.baseDamage,
-            primaryElement = source.primaryElement,
-            subElement = source.subElement,
-            damageTarget = DamageTargetType.Both,
-            healsPlayerOnSelfHit = source.healsPlayerOnSelfHit,
-            ignoreSelfHitPenalty = source.ignoreSelfHitPenalty
-        };
-
-        CopyEffects(source.onPlayerHitEffects, explosion.onPlayerHitEffects);
-        CopyEffects(source.onEnemyHitEffects, explosion.onEnemyHitEffects);
-        return explosion;
-    }
-
-    private static void CopyEffects(List<StatusEffectSpec> source, List<StatusEffectSpec> destination)
-    {
-        if (source == null || destination == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < source.Count; i++)
-        {
-            StatusEffectSpec effect = source[i];
-            if (effect == null)
-            {
-                continue;
-            }
-
-            destination.Add(new StatusEffectSpec
-            {
-                effectType = effect.effectType,
-                duration = effect.duration,
-                magnitude = effect.magnitude,
-                interval = effect.interval
-            });
-        }
-    }
-
-    private static void ApplyFieldVisualScaleIfNeeded(GameObject target)
-    {
-        if (target == null)
-        {
-            return;
-        }
-
-        bool isFieldScene = IsFieldSceneContext(target);
-        if (!isFieldScene)
-        {
-            return;
-        }
-
-        target.transform.localScale *= 0.25f;
-    }
-
-    private static bool IsFieldSceneContext(GameObject target)
-    {
-        if (target != null && IsFieldSceneName(target.scene.name))
-        {
-            return true;
-        }
-
-        Scene activeScene = SceneManager.GetActiveScene();
-        if (IsFieldSceneName(activeScene.name))
-        {
-            return true;
-        }
-
-        int loadedSceneCount = SceneManager.sceneCount;
-        for (int i = 0; i < loadedSceneCount; i++)
-        {
-            Scene loadedScene = SceneManager.GetSceneAt(i);
-            if (IsFieldSceneName(loadedScene.name))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsFieldSceneName(string sceneName)
-    {
-        return string.Equals(sceneName, "FIeld", StringComparison.OrdinalIgnoreCase)
-               || string.Equals(sceneName, "Field", StringComparison.OrdinalIgnoreCase);
     }
 
     private void HideBombVisual()
