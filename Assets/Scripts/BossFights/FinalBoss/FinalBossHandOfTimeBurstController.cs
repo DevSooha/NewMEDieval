@@ -56,6 +56,8 @@ public class FinalBossHandOfTimeBurstController : MonoBehaviour
             yield break;
         }
 
+        SetLayoutObjectsActive(true);
+
         float elapsed = 0f;
         while (elapsed < fadeInDuration)
         {
@@ -68,8 +70,12 @@ public class FinalBossHandOfTimeBurstController : MonoBehaviour
         {
             SpawnGroupProjectiles(pair.a, damage, spawnedObjects);
             SpawnGroupProjectiles(pair.b, damage, spawnedObjects);
+            SetGroupActive(pair.a, false);
+            SetGroupActive(pair.b, false);
             yield return new WaitForSeconds(pairInterval);
         }
+
+        SetLayoutObjectsActive(false);
     }
 
     private bool HasValidGroups()
@@ -107,7 +113,7 @@ public class FinalBossHandOfTimeBurstController : MonoBehaviour
             if (slot == null) continue;
 
             Vector2 hitboxSize = ResolveHitboxSize(slot);
-            FinalBossBedimmedWallProjectile projectile = CreateProjectile(slot.position);
+            FinalBossBedimmedWallProjectile projectile = CreateProjectile(slot.position, slot);
             projectile.Launch(direction, projectileSpeed, hitboxSize, damage, ElementType.None);
             spawnedObjects?.Add(projectile.gameObject);
         }
@@ -160,17 +166,41 @@ public class FinalBossHandOfTimeBurstController : MonoBehaviour
         return new Vector2(Mathf.Max(0.01f, fallbackHitboxSize.x), Mathf.Max(0.01f, fallbackHitboxSize.y));
     }
 
-    private FinalBossBedimmedWallProjectile CreateProjectile(Vector2 position)
+    private void SetGroupActive(int groupIndex, bool active)
     {
+        Transform groupRoot = GetGroupRoot(groupIndex);
+        if (groupRoot != null && groupRoot.gameObject.activeSelf != active)
+        {
+            groupRoot.gameObject.SetActive(active);
+        }
+    }
+
+    private FinalBossBedimmedWallProjectile CreateProjectile(Vector2 position, Transform visualTemplate)
+    {
+        FinalBossBedimmedWallProjectile projectile;
         if (projectilePrefab != null)
         {
-            return Instantiate(projectilePrefab, position, Quaternion.identity);
+            projectile = Instantiate(projectilePrefab, position, Quaternion.identity);
+        }
+        else
+        {
+            GameObject go = new GameObject("HandOfTimeBurstProjectile");
+            go.transform.position = position;
+            go.AddComponent<BoxCollider2D>();
+            projectile = go.AddComponent<FinalBossBedimmedWallProjectile>();
         }
 
-        GameObject go = new GameObject("HandOfTimeBurstProjectile");
-        go.transform.position = position;
-        go.AddComponent<BoxCollider2D>();
-        return go.AddComponent<FinalBossBedimmedWallProjectile>();
+        if (visualTemplate != null && !ProjectileAlreadyHasVisuals(projectile))
+        {
+            projectile.AttachVisualTemplate(visualTemplate.gameObject);
+        }
+
+        return projectile;
+    }
+
+    private static bool ProjectileAlreadyHasVisuals(FinalBossBedimmedWallProjectile projectile)
+    {
+        return projectile != null && projectile.GetComponentsInChildren<ParticleSystem>(true).Length > 0;
     }
 
     private static void TryDamagePlayerAtArea(Transform playerTransform, Vector2 center, Vector2 size, int damage)

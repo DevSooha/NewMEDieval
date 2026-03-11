@@ -220,13 +220,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 920751261}
     - target: {fileID: 6696863456291412850, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
+      propertyPath: inGameMenu
+      value: 
+      objectReference: {fileID: 1427416281}
+    - target: {fileID: 6696863456291412850, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
       propertyPath: inventoryUI
       value: 
       objectReference: {fileID: 920751260}
     - target: {fileID: 6696863456291412850, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
       propertyPath: craftingMenu
       value: 
-      objectReference: {fileID: 1427416281}
+      objectReference: {fileID: 0}
     - target: {fileID: 8131824563140431785, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
       propertyPath: m_Name
       value: NewPlayer
@@ -988,7 +992,7 @@ PrefabInstance:
     - target: {fileID: 6755694373369558612, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startingRoom
       value: 
-      objectReference: {fileID: 11400000, guid: d153c3b905d4bde428d051a24f53b523, type: 2}
+      objectReference: {fileID: 11400000, guid: df844122793586b4fac58eb0067ea489, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: player
       value: 
@@ -1000,10 +1004,10 @@ PrefabInstance:
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startRoomData
       value: 
-      objectReference: {fileID: 11400000, guid: d153c3b905d4bde428d051a24f53b523, type: 2}
+      objectReference: {fileID: 11400000, guid: df844122793586b4fac58eb0067ea489, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: allMapRooms.Array.size
-      value: 12
+      value: 13
       objectReference: {fileID: 0}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: 'allMapRooms.Array.data[7]'
@@ -1025,6 +1029,10 @@ PrefabInstance:
       propertyPath: 'allMapRooms.Array.data[11]'
       value: 
       objectReference: {fileID: 11400000, guid: 7bc810811c44c82468d3800bc527bea7, type: 2}
+    - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
+      propertyPath: 'allMapRooms.Array.data[12]'
+      value: 
+      objectReference: {fileID: 11400000, guid: df844122793586b4fac58eb0067ea489, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

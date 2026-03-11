@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Playables;
 
 // 이 스크립트는 아무데도 붙이지 마세요. 파일만 존재하면 됩니다.
 public abstract class BossCombatBase : MonoBehaviour
@@ -13,9 +14,15 @@ public abstract class BossCombatBase : MonoBehaviour
         BattleReset
     }
 
+    private sealed class TrackedOffensive
+    {
+        public GameObject GameObject;
+        public bool IsVisualOnly;
+    }
+
     [SerializeField, Min(0)] private int collisionContactDamage = 0;
     private const string PlayerTag = "Player";
-    private readonly HashSet<GameObject> trackedOffensives = new();
+    private readonly Dictionary<GameObject, TrackedOffensive> trackedOffensives = new();
     private bool isCleaningUpOffensives;
 
     [Header("Default Knockback Settings")]
@@ -50,8 +57,6 @@ public abstract class BossCombatBase : MonoBehaviour
 
     protected void RegisterBossOffensive(GameObject offensive, bool isVisualOnly = false)
     {
-        _ = isVisualOnly;
-
         if (offensive == null || offensive == gameObject)
         {
             return;
@@ -59,10 +64,14 @@ public abstract class BossCombatBase : MonoBehaviour
 
         if (trackedOffensives.Count >= 32 && trackedOffensives.Count % 16 == 0)
         {
-            trackedOffensives.RemoveWhere(item => item == null);
+            CleanupNullTrackedOffensives();
         }
 
-        trackedOffensives.Add(offensive);
+        trackedOffensives[offensive] = new TrackedOffensive
+        {
+            GameObject = offensive,
+            IsVisualOnly = isVisualOnly
+        };
     }
 
     protected void UnregisterBossOffensive(GameObject offensive)
@@ -88,20 +97,20 @@ public abstract class BossCombatBase : MonoBehaviour
 
         try
         {
-            List<GameObject> snapshot = new(trackedOffensives);
-            foreach (GameObject offensive in snapshot)
+            List<TrackedOffensive> snapshot = new(trackedOffensives.Values);
+            foreach (TrackedOffensive offensive in snapshot)
             {
-                if (offensive == null)
+                if (offensive == null || offensive.GameObject == null)
                 {
                     continue;
                 }
 
-                CleanupTrackedOffensive(offensive);
+                CleanupTrackedOffensive(offensive, reason);
             }
         }
         finally
         {
-            trackedOffensives.RemoveWhere(item => item == null);
+            CleanupNullTrackedOffensives();
             isCleaningUpOffensives = false;
         }
     }
@@ -130,10 +139,42 @@ public abstract class BossCombatBase : MonoBehaviour
         );
     }
 
-    private static void CleanupTrackedOffensive(GameObject offensive)
+    private void CleanupNullTrackedOffensives()
     {
+        List<GameObject> keysToRemove = null;
+        foreach (KeyValuePair<GameObject, TrackedOffensive> pair in trackedOffensives)
+        {
+            if (pair.Key != null && pair.Value != null && pair.Value.GameObject != null)
+            {
+                continue;
+            }
+
+            keysToRemove ??= new List<GameObject>();
+            keysToRemove.Add(pair.Key);
+        }
+
+        if (keysToRemove == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < keysToRemove.Count; i++)
+        {
+            trackedOffensives.Remove(keysToRemove[i]);
+        }
+    }
+
+    private static void CleanupTrackedOffensive(TrackedOffensive tracked, BossOffensiveCleanupReason reason)
+    {
+        GameObject offensive = tracked != null ? tracked.GameObject : null;
         if (offensive == null)
         {
+            return;
+        }
+
+        if (tracked.IsVisualOnly)
+        {
+            CleanupVisualOnlyOffensive(offensive, reason);
             return;
         }
 
@@ -169,6 +210,44 @@ public abstract class BossCombatBase : MonoBehaviour
         if (offensive.scene.IsValid())
         {
             UnityEngine.Object.Destroy(offensive);
+        }
+    }
+
+    private static void CleanupVisualOnlyOffensive(GameObject offensive, BossOffensiveCleanupReason reason)
+    {
+        if (offensive == null)
+        {
+            return;
+        }
+
+        if (reason == BossOffensiveCleanupReason.BossDead)
+        {
+            if (offensive.scene.IsValid())
+            {
+                UnityEngine.Object.Destroy(offensive);
+            }
+
+            return;
+        }
+
+        PlayableDirector director = offensive.GetComponent<PlayableDirector>();
+        if (director != null)
+        {
+            director.Stop();
+            director.time = 0;
+        }
+
+        ParticleSystem[] particleSystems = offensive.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem system = particleSystems[i];
+            if (system == null) continue;
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        if (offensive.activeSelf)
+        {
+            offensive.SetActive(false);
         }
     }
 
