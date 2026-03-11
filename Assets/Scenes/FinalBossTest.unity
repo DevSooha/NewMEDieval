@@ -260,6 +260,11 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1261807552248979541, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
   m_PrefabInstance: {fileID: 101696555}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &343299435 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 350788919678288017, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
+  m_PrefabInstance: {fileID: 1056177955}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &417347133
 GameObject:
   m_ObjectHideFlags: 0
@@ -992,7 +997,7 @@ PrefabInstance:
     - target: {fileID: 6755694373369558612, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startingRoom
       value: 
-      objectReference: {fileID: 11400000, guid: c9f16b7c770149442a1867ccc698f5dc, type: 2}
+      objectReference: {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: player
       value: 
@@ -1004,7 +1009,7 @@ PrefabInstance:
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startRoomData
       value: 
-      objectReference: {fileID: 11400000, guid: c9f16b7c770149442a1867ccc698f5dc, type: 2}
+      objectReference: {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: allMapRooms.Array.size
       value: 13
@@ -1141,19 +1146,42 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 350788919678288017, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1056177957}
   m_SourcePrefab: {fileID: 100100000, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
 --- !u!114 &1056177956 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3205105243500157674, guid: fe042a4b6047e844a8ca9f8e1dc3c872, type: 3}
   m_PrefabInstance: {fileID: 1056177955}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 343299435}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e8067c3be0202ad478706690db98c7c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
+--- !u!114 &1056177957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 343299435}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d3e192843ba4bf3805dfb49cac3d283, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GrantAllItemDataToInventoryTest
+  inventory: {fileID: 1056177956}
+  resourcesFolder: ItemData
+  amountPerItem: 20
+  includePotionCategory: 1
+  grantOnStart: 1
+  restrictAutoGrantToTestScenes: 0
+  oneShotOnStart: 1
+  grantHotkey: 288
 --- !u!1 &1427416281 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 98817344863583559, guid: 07e6cb4b6fdc9ba48af129a5183aafe1, type: 3}
