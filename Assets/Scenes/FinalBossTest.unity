@@ -997,7 +997,7 @@ PrefabInstance:
     - target: {fileID: 6755694373369558612, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startingRoom
       value: 
-      objectReference: {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
+      objectReference: {fileID: 11400000, guid: 21a547241fef03d49a55ec8d4c20f949, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: player
       value: 
@@ -1009,7 +1009,7 @@ PrefabInstance:
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: startRoomData
       value: 
-      objectReference: {fileID: 11400000, guid: fbbd2e3951040b5419404b52a8e9c837, type: 2}
+      objectReference: {fileID: 11400000, guid: 21a547241fef03d49a55ec8d4c20f949, type: 2}
     - target: {fileID: 8611837701661957879, guid: 322d41df4ef0bb84b80408438b14807f, type: 3}
       propertyPath: allMapRooms.Array.size
       value: 13

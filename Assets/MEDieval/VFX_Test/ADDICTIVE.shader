@@ -24,6 +24,9 @@
         Blend One One
         Lighting Off
 
+        // ✅ 이름 변경: _GrabTexture → _FXGrabTex
+        GrabPass { "_FXGrabTex" }
+
         Pass
         {
             CGPROGRAM
@@ -33,6 +36,7 @@
 
             sampler2D _MainTex;
             sampler2D _NoiseTex;
+            sampler2D _FXGrabTex;
 
             float4 _MainTex_ST;
             float4 _Tint;
@@ -58,6 +62,7 @@
                 float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float2 uvNoise : TEXCOORD1;
+                float4 grabPos : TEXCOORD2;   // ✅ grab screen pos
                 fixed4 color : COLOR;
             };
 
@@ -67,12 +72,15 @@
                 o.pos = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.uvNoise = v.uv * _NoiseScale;
+                o.grabPos = ComputeGrabScreenPos(o.pos); // ✅ built-in grabpos helper
                 o.color = v.color * _Tint;
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
+                fixed4 baseCol = tex2D(_MainTex, i.uv) * i.color;
+
                 // noise (animate)
                 float2 noiseUV = i.uvNoise + float2(_DistortSpeed * _Time.y, 0);
                 float noise = tex2D(_NoiseTex, noiseUV).r;
@@ -81,23 +89,27 @@
                                         _DissolveThreshold + _DissolveEdgeWidth, noise);
 
                 float keep = step(_DissolveThreshold, noise);
+                float alpha = edge * baseCol.a;
 
                 // distortion offset (screen-space)
                 float2 distortOffset = 0;
                 if (_DistortStrength > 0.0001)
                 {
                     float2 n = (tex2D(_NoiseTex, i.uvNoise + _Time.y * _DistortSpeed).rg - 0.5) * 2.0;
-                    distortOffset = n * (_DistortStrength * (0.01 + _GrabMix * 0.01));
+                    distortOffset = n * (_DistortStrength * 0.001); // tiny UV offset
                 }
 
-                fixed4 baseCol = tex2D(_MainTex, i.uv + distortOffset) * i.color;
-                float alpha = edge * baseCol.a;
+                // ✅ proj sample grab (stable)
+                float4 grabPos = i.grabPos;
+                grabPos.xy += distortOffset * grabPos.w;
+                fixed4 bg = tex2Dproj(_FXGrabTex, UNITY_PROJ_COORD(grabPos));
 
                 fixed4 edgeCol = _EdgeColor * (1.0 - edge);
 
                 fixed4 outCol;
                 outCol.rgb = baseCol.rgb * alpha
-                           + edgeCol.rgb * (1.0 - keep);
+                           + edgeCol.rgb * (1.0 - keep)
+                           + bg.rgb * (_GrabMix * _DistortStrength);
                 outCol.a = alpha;
 
                 clip(outCol.a - _AlphaCut);

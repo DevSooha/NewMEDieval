@@ -31,6 +31,11 @@ public class BossProjectilePool
             BossProjectile projectile = pool.Dequeue();
             if (projectile == null) continue;
 
+            if (root != null && projectile.transform.parent != root)
+            {
+                projectile.transform.SetParent(root, false);
+            }
+
             projectile.gameObject.SetActive(true);
             return projectile;
         }
@@ -38,6 +43,11 @@ public class BossProjectilePool
         BossProjectile created = CreateNew();
         if (created != null)
         {
+            if (root != null && created.transform.parent != root)
+            {
+                created.transform.SetParent(root, false);
+            }
+
             created.gameObject.SetActive(true);
         }
 
@@ -63,7 +73,6 @@ public class BossProjectilePool
     {
         if (projectile == null) return;
 
-        projectile.transform.SetParent(root);
         projectile.gameObject.SetActive(false);
         pool.Enqueue(projectile);
     }
