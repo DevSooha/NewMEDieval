@@ -214,7 +214,7 @@ PrefabInstance:
     - target: {fileID: 4395408561452145397, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
       propertyPath: stackMarkerPrefab
       value: 
-      objectReference: {fileID: 6652526710824270206, guid: f168273fd8a6f124db400eaaa1a2f28f, type: 3}
+      objectReference: {fileID: 6652526710824270206, guid: 4442b947abc6a644a82dacfb70dbb613, type: 3}
     - target: {fileID: 6696863456291412850, guid: 2e01bcffbcc0b6445836140b6b5d2340, type: 3}
       propertyPath: craftUI
       value: 
