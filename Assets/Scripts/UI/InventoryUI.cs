@@ -46,6 +46,7 @@ public class InventoryUI : MonoBehaviour
     private float pendingUnequipExpireTime;
     private const float UnequipConfirmWindowSeconds = 1f;
     private bool slotsInitialized;
+    private Inventory subscribedInventory;
 
     private void Start()
     {
@@ -69,11 +70,13 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
+        SyncInventorySubscription();
         RefreshUI();
     }
 
     private void OnDisable()
     {
+        UnsubscribeFromInventory();
         CancelWeaponSlotSelection();
     }
 
@@ -93,11 +96,6 @@ public class InventoryUI : MonoBehaviour
         {
             CancelWeaponSlotSelection();
         }
-    }
-
-    private void FixedUpdate()
-    {
-        RefreshUI();
     }
 
     private void InitializeMaterialSlots()
@@ -141,6 +139,7 @@ public class InventoryUI : MonoBehaviour
     private void EnsureInitialized()
     {
         EnsureRuntimeReferences();
+        SyncInventorySubscription();
 
         if (!slotsInitialized)
         {
@@ -214,6 +213,38 @@ public class InventoryUI : MonoBehaviour
             WeaponSlotUI ui = FindFirstObjectByType<WeaponSlotUI>(FindObjectsInactive.Include);
             if (ui != null) weaponSlotRoot = ui.transform as RectTransform;
         }
+    }
+
+    private void SyncInventorySubscription()
+    {
+        if (inventory == subscribedInventory)
+        {
+            return;
+        }
+
+        UnsubscribeFromInventory();
+
+        if (inventory != null)
+        {
+            inventory.Changed += HandleInventoryChanged;
+            subscribedInventory = inventory;
+        }
+    }
+
+    private void UnsubscribeFromInventory()
+    {
+        if (subscribedInventory == null)
+        {
+            return;
+        }
+
+        subscribedInventory.Changed -= HandleInventoryChanged;
+        subscribedInventory = null;
+    }
+
+    private void HandleInventoryChanged()
+    {
+        RefreshUI();
     }
 
     private void BindPageButtons()
