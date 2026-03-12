@@ -6,10 +6,17 @@ public static class BombProjectilePatternSpawner
     private const int FireworksPatternIndex = 1;
     private const int FireworksBulletCountPerDirection = 3;
     private const float FireworksSpacingPx = 32f;
+    private const int TornadoBulletCountPerDirection = 4;
+    private const float TornadoSpacingPx = 64f;
+    private const float TornadoLinearDurationSeconds = 2f;
+    private const float TornadoOrbitDurationSeconds = 6f;
+    private const float TornadoOrbitAngularSpeedDegPerSec = 30f;
     private const float AfterimageSpacingPx = 64f;
     private const int AfterimageBulletCountPerDirection = 3;
     private const float PixelsPerUnit = 32f;
 
+    private static readonly float[] TornadoMaterial1AnglesDeg = { 60f, 180f, -120f };
+    private static readonly float[] TornadoMaterial2AnglesDeg = { 0f, 120f, -60f };
     private static readonly float[] AfterimageMaterial1AnglesDeg = { 60f, 180f, -120f };
     private static readonly float[] AfterimageMaterial2AnglesDeg = { 0f, 120f, -60f };
 
@@ -103,7 +110,7 @@ public static class BombProjectilePatternSpawner
         float projectileLifetime,
         Action<PotionProjectileController> onProjectileSpawn)
     {
-        bool useCardinal = phaseIndex % 2 == 0;
+        bool useCardinal = phase != null && phase.useCardinalDirections;
         Vector2[] directions = GetFireworksDirections(useCardinal);
         float spacingUnits = FireworksSpacingPx / Mathf.Max(1f, PixelsPerUnit);
 
@@ -144,16 +151,13 @@ public static class BombProjectilePatternSpawner
         float projectileLifetime,
         Action<PotionProjectileController> onProjectileSpawn)
     {
-        Vector2 normalizedBase = baseDirection.sqrMagnitude > 0.0001f ? baseDirection.normalized : Vector2.up;
-        float baseAngleDeg = Mathf.Atan2(normalizedBase.y, normalizedBase.x) * Mathf.Rad2Deg;
         float[] angleOffsets = phaseIndex == 2 ? AfterimageMaterial2AnglesDeg : AfterimageMaterial1AnglesDeg;
         float spacingUnits = AfterimageSpacingPx / Mathf.Max(1f, PixelsPerUnit);
 
         for (int d = 0; d < angleOffsets.Length; d++)
         {
-            float angleDeg = baseAngleDeg + angleOffsets[d];
-            float radians = angleDeg * Mathf.Deg2Rad;
-            Vector2 direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
+            float radians = angleOffsets[d] * Mathf.Deg2Rad;
+            Vector2 direction = new Vector2(Mathf.Sin(radians), Mathf.Cos(radians)).normalized;
 
             for (int i = 0; i < AfterimageBulletCountPerDirection; i++)
             {
@@ -187,6 +191,21 @@ public static class BombProjectilePatternSpawner
         float projectileLifetime,
         Action<PotionProjectileController> onProjectileSpawn)
     {
+        if (patternType == ProjectilePatternType.Tornado)
+        {
+            SpawnPattern3Tornado(
+                phase,
+                projectilePrefab,
+                hitOwner,
+                explosionCenter,
+                sourceBombId,
+                phaseIndex,
+                projectileSpeed,
+                projectileLifetime,
+                onProjectileSpawn);
+            return;
+        }
+
         Vector2 direction = baseDirection.sqrMagnitude > 0.0001f ? baseDirection.normalized : Vector2.up;
         if (phaseIndex == 2)
         {
@@ -205,6 +224,53 @@ public static class BombProjectilePatternSpawner
             projectileSpeed,
             projectileLifetime,
             onProjectileSpawn);
+    }
+
+    private static void SpawnPattern3Tornado(
+        PotionPhaseSpec phase,
+        GameObject projectilePrefab,
+        Transform hitOwner,
+        Vector3 explosionCenter,
+        int sourceBombId,
+        int phaseIndex,
+        float projectileSpeed,
+        float projectileLifetime,
+        Action<PotionProjectileController> onProjectileSpawn)
+    {
+        float[] angleSet = phaseIndex == 2 ? TornadoMaterial2AnglesDeg : TornadoMaterial1AnglesDeg;
+        float spacingUnits = TornadoSpacingPx / Mathf.Max(1f, PixelsPerUnit);
+        float resolvedLifetime = Mathf.Max(projectileLifetime, TornadoLinearDurationSeconds + TornadoOrbitDurationSeconds);
+
+        for (int d = 0; d < angleSet.Length; d++)
+        {
+            float radians = angleSet[d] * Mathf.Deg2Rad;
+            Vector2 direction = new Vector2(Mathf.Sin(radians), Mathf.Cos(radians)).normalized;
+
+            for (int i = 0; i < TornadoBulletCountPerDirection; i++)
+            {
+                Vector3 spawnPos = explosionCenter - (Vector3)(direction * spacingUnits * i);
+                SpawnProjectile(
+                    ProjectilePatternType.Tornado,
+                    phase,
+                    projectilePrefab,
+                    hitOwner,
+                    spawnPos,
+                    direction,
+                    sourceBombId,
+                    phaseIndex,
+                    projectileSpeed,
+                    resolvedLifetime,
+                    controller =>
+                    {
+                        float orbitStartDelay = phaseIndex == 2 ? 0f : TornadoLinearDurationSeconds;
+                        controller?.ConfigureTornadoOrbit(
+                            hitOwner,
+                            orbitStartDelay,
+                            TornadoOrbitAngularSpeedDegPerSec);
+                        onProjectileSpawn?.Invoke(controller);
+                    });
+            }
+        }
     }
 
     private static void SpawnProjectile(

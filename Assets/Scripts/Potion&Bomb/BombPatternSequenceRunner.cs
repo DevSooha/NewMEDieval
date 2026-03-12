@@ -28,113 +28,166 @@ internal sealed class BombPatternExecutionContext
 
 internal static class BombPatternSequenceRunner
 {
-    private const float FireworksStepDelaySeconds = 2f;
-    private const float AfterimageFirstShotTime = 0f;
-    private const float AfterimageSecondShotTime = 3f;
-    private const float AfterimageThirdShotTime = 6f;
+    private const float FireworksPhase1FirstShotTime = 0f;
+    private const float FireworksPhase2FirstShotTime = 2f;
+    private const float FireworksPhase1SecondShotTime = 4f;
+    private const float FireworksPhase2SecondShotTime = 6f;
+    private const float AfterimagePhase1FirstShotTime = 0f;
+    private const float AfterimagePhase2FirstShotTime = 3f;
+    private const float AfterimagePhase1SecondShotTime = 6f;
+    private const float DefaultPhase1ShotTime = 0f;
+    private const float DefaultPhase2ShotTime = 2f;
     private const float AfterimageExplosionDelaySeconds = 8f;
+
+    private readonly struct ScheduledSpawn
+    {
+        public ScheduledSpawn(
+            float timeSeconds,
+            ProjectilePatternType patternType,
+            PotionPhaseSpec phase,
+            int phaseIndex,
+            Action<PotionProjectileController> onProjectileSpawn)
+        {
+            TimeSeconds = timeSeconds;
+            PatternType = patternType;
+            Phase = phase;
+            PhaseIndex = phaseIndex;
+            OnProjectileSpawn = onProjectileSpawn;
+        }
+
+        public float TimeSeconds { get; }
+        public ProjectilePatternType PatternType { get; }
+        public PotionPhaseSpec Phase { get; }
+        public int PhaseIndex { get; }
+        public Action<PotionProjectileController> OnProjectileSpawn { get; }
+    }
 
     public static IEnumerator Run(BombPatternExecutionContext context)
     {
-        PotionPhaseSpec drivingPhase = context.Phase1 ?? context.Phase2 ?? context.BuildFallbackPhase();
-        switch (drivingPhase.patternType)
+        List<PotionProjectileController> trackedAfterimageProjectiles = new();
+        Action<PotionProjectileController> registerAfterimageProjectile = controller =>
         {
-            case ProjectilePatternType.Fireworks:
-                yield return RunFireworks(context);
-                break;
-
-            case ProjectilePatternType.AfterimageBomb:
-                yield return RunAfterimageBomb(context);
-                break;
-
-            default:
+            if (controller != null && !trackedAfterimageProjectiles.Contains(controller))
             {
-                int defaultPhaseIndex = context.Phase1 != null ? 1 : (context.Phase2 != null ? 2 : 1);
-                context.SpawnProjectilePattern(
-                    drivingPhase.patternType,
-                    drivingPhase,
-                    defaultPhaseIndex,
-                    null);
-                break;
-            }
-        }
-    }
-
-    private static IEnumerator RunFireworks(BombPatternExecutionContext context)
-    {
-        context.SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(context.Phase1, context.Phase2, 1), 1, null);
-        yield return new WaitForSeconds(FireworksStepDelaySeconds);
-
-        context.SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(context.Phase1, context.Phase2, 2), 2, null);
-        yield return new WaitForSeconds(FireworksStepDelaySeconds);
-
-        context.SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(context.Phase1, context.Phase2, 1), 1, null);
-        yield return new WaitForSeconds(FireworksStepDelaySeconds);
-
-        context.SpawnProjectilePattern(ProjectilePatternType.Fireworks, ResolveMaterialPhase(context.Phase1, context.Phase2, 2), 2, null);
-    }
-
-    private static IEnumerator RunAfterimageBomb(BombPatternExecutionContext context)
-    {
-        List<PotionProjectileController> trackedProjectiles = new();
-        Action<PotionProjectileController> registerProjectile = controller =>
-        {
-            if (controller != null && !trackedProjectiles.Contains(controller))
-            {
-                trackedProjectiles.Add(controller);
+                trackedAfterimageProjectiles.Add(controller);
             }
         };
 
-        context.SpawnProjectilePattern(
-            ProjectilePatternType.AfterimageBomb,
-            ResolveMaterialPhase(context.Phase1, context.Phase2, 1),
-            1,
-            registerProjectile);
-
-        float waitToSecond = Mathf.Max(0f, AfterimageSecondShotTime - AfterimageFirstShotTime);
-        if (waitToSecond > 0f)
+        List<ScheduledSpawn> schedule = BuildSchedule(context, registerAfterimageProjectile);
+        if (schedule.Count == 0)
         {
-            yield return new WaitForSeconds(waitToSecond);
+            PotionPhaseSpec fallbackPhase = context.BuildFallbackPhase();
+            schedule.Add(new ScheduledSpawn(
+                DefaultPhase1ShotTime,
+                fallbackPhase.patternType,
+                fallbackPhase,
+                1,
+                fallbackPhase.patternType == ProjectilePatternType.AfterimageBomb ? registerAfterimageProjectile : null));
         }
 
-        context.SpawnProjectilePattern(
-            ProjectilePatternType.AfterimageBomb,
-            ResolveMaterialPhase(context.Phase1, context.Phase2, 2),
-            2,
-            registerProjectile);
+        schedule.Sort((left, right) => left.TimeSeconds.CompareTo(right.TimeSeconds));
 
-        float waitToThird = Mathf.Max(0f, AfterimageThirdShotTime - AfterimageSecondShotTime);
-        if (waitToThird > 0f)
+        float elapsed = 0f;
+        for (int i = 0; i < schedule.Count; i++)
         {
-            yield return new WaitForSeconds(waitToThird);
+            ScheduledSpawn spawn = schedule[i];
+            float wait = Mathf.Max(0f, spawn.TimeSeconds - elapsed);
+            if (wait > 0f)
+            {
+                yield return new WaitForSeconds(wait);
+                elapsed = spawn.TimeSeconds;
+            }
+
+            context.SpawnProjectilePattern(
+                spawn.PatternType,
+                spawn.Phase,
+                spawn.PhaseIndex,
+                spawn.OnProjectileSpawn);
         }
 
-        context.SpawnProjectilePattern(
-            ProjectilePatternType.AfterimageBomb,
-            ResolveMaterialPhase(context.Phase1, context.Phase2, 1),
-            1,
-            registerProjectile);
-
-        float waitToExplosion = Mathf.Max(0f, AfterimageExplosionDelaySeconds - AfterimageThirdShotTime);
-        if (waitToExplosion > 0f)
+        if (trackedAfterimageProjectiles.Count > 0)
         {
-            yield return new WaitForSeconds(waitToExplosion);
-        }
+            float waitToExplosion = Mathf.Max(0f, AfterimageExplosionDelaySeconds - elapsed);
+            if (waitToExplosion > 0f)
+            {
+                yield return new WaitForSeconds(waitToExplosion);
+            }
 
-        BombAfterimageExplosionHelper.ExplodeRemaining(
-            trackedProjectiles,
-            context.BombInstanceId,
-            context.BuildFallbackPhase);
+            BombAfterimageExplosionHelper.ExplodeRemaining(
+                trackedAfterimageProjectiles,
+                context.BombInstanceId,
+                context.BuildFallbackPhase);
+        }
     }
 
-    private static PotionPhaseSpec ResolveMaterialPhase(PotionPhaseSpec phase1, PotionPhaseSpec phase2, int materialIndex)
+    private static List<ScheduledSpawn> BuildSchedule(
+        BombPatternExecutionContext context,
+        Action<PotionProjectileController> registerAfterimageProjectile)
     {
-        if (materialIndex == 2)
+        List<ScheduledSpawn> schedule = new();
+        AddPhaseSchedule(schedule, context.Phase1, 1, registerAfterimageProjectile);
+        AddPhaseSchedule(schedule, context.Phase2, 2, registerAfterimageProjectile);
+        return schedule;
+    }
+
+    private static void AddPhaseSchedule(
+        List<ScheduledSpawn> schedule,
+        PotionPhaseSpec phase,
+        int phaseIndex,
+        Action<PotionProjectileController> registerAfterimageProjectile)
+    {
+        if (schedule == null || phase == null)
         {
-            return phase2 ?? phase1;
+            return;
         }
 
-        return phase1 ?? phase2;
+        Action<PotionProjectileController> onProjectileSpawn =
+            phase.patternType == ProjectilePatternType.AfterimageBomb ? registerAfterimageProjectile : null;
+
+        switch (phase.patternType)
+        {
+            case ProjectilePatternType.Fireworks:
+                schedule.Add(new ScheduledSpawn(
+                    phaseIndex == 1 ? FireworksPhase1FirstShotTime : FireworksPhase2FirstShotTime,
+                    phase.patternType,
+                    phase,
+                    phaseIndex,
+                    onProjectileSpawn));
+                schedule.Add(new ScheduledSpawn(
+                    phaseIndex == 1 ? FireworksPhase1SecondShotTime : FireworksPhase2SecondShotTime,
+                    phase.patternType,
+                    phase,
+                    phaseIndex,
+                    onProjectileSpawn));
+                return;
+
+            case ProjectilePatternType.AfterimageBomb:
+                schedule.Add(new ScheduledSpawn(
+                    phaseIndex == 1 ? AfterimagePhase1FirstShotTime : AfterimagePhase2FirstShotTime,
+                    phase.patternType,
+                    phase,
+                    phaseIndex,
+                    onProjectileSpawn));
+                if (phaseIndex == 1)
+                {
+                    schedule.Add(new ScheduledSpawn(
+                        AfterimagePhase1SecondShotTime,
+                        phase.patternType,
+                        phase,
+                        phaseIndex,
+                        onProjectileSpawn));
+                }
+                return;
+
+            default:
+                schedule.Add(new ScheduledSpawn(
+                    phaseIndex == 1 ? DefaultPhase1ShotTime : DefaultPhase2ShotTime,
+                    phase.patternType,
+                    phase,
+                    phaseIndex,
+                    onProjectileSpawn));
+                return;
+        }
     }
 }
 
@@ -142,7 +195,8 @@ internal static class BombAfterimageExplosionHelper
 {
     private const float PixelsPerUnit = 32f;
     private const float AfterimageExplosionSizePx = 64f;
-    private const float AfterimageExplosionLifetimeSeconds = 0.08f;
+    private const float AfterimageFieldDamageIntervalSeconds = 0.5f;
+    private const int AfterimageFieldDamagePerTick = 50;
 
     public static void ExplodeRemaining(
         IReadOnlyList<PotionProjectileController> trackedProjectiles,
@@ -154,18 +208,12 @@ internal static class BombAfterimageExplosionHelper
             return;
         }
 
-        Camera cam = Camera.main;
         float explosionSizeUnits = AfterimageExplosionSizePx / Mathf.Max(1f, PixelsPerUnit);
 
         for (int i = 0; i < trackedProjectiles.Count; i++)
         {
             PotionProjectileController projectile = trackedProjectiles[i];
             if (projectile == null)
-            {
-                continue;
-            }
-
-            if (cam != null && !IsOnScreen(cam, projectile.transform.position))
             {
                 continue;
             }
@@ -179,14 +227,6 @@ internal static class BombAfterimageExplosionHelper
 
             UnityEngine.Object.Destroy(projectile.gameObject);
         }
-    }
-
-    private static bool IsOnScreen(Camera cam, Vector3 position)
-    {
-        Vector3 viewport = cam.WorldToViewportPoint(position);
-        return viewport.z > 0f
-               && viewport.x >= 0f && viewport.x <= 1f
-               && viewport.y >= 0f && viewport.y <= 1f;
     }
 
     private static void SpawnExplosion(
@@ -203,7 +243,8 @@ internal static class BombAfterimageExplosionHelper
         hazard.Init(
             sourcePhase,
             new Vector2(explosionSizeUnits, explosionSizeUnits),
-            AfterimageExplosionLifetimeSeconds,
+            Mathf.Max(0.5f, sourcePhase != null ? sourcePhase.duration : 0f),
+            AfterimageFieldDamageIntervalSeconds,
             bombInstanceId,
             phaseIndex);
     }
@@ -220,7 +261,7 @@ internal static class BombAfterimageExplosionHelper
             fireInterval = source.fireInterval,
             projectileSpeed = source.projectileSpeed,
             rotationSpeedDegPerSec = source.rotationSpeedDegPerSec,
-            baseDamage = source.baseDamage,
+            baseDamage = AfterimageFieldDamagePerTick,
             primaryElement = source.primaryElement,
             subElement = source.subElement,
             damageTarget = DamageTargetType.Both,

@@ -15,6 +15,13 @@ public class PotionProjectileController : MonoBehaviour
     private float lived;
     private float rotationSpeedDegPerSec;
     private bool moveInLocalSpace;
+    private bool useTornadoOrbit;
+    private float tornadoLinearDuration;
+    private float tornadoOrbitAngularSpeedDegPerSec;
+    private Transform tornadoOrbitCenter;
+    private Vector3 tornadoOrbitOffset;
+    private float tornadoOrbitAngleDeg;
+    private bool tornadoOrbitStarted;
 
     private Transform owner;
     private PotionPhaseSpec phaseSpec;
@@ -59,6 +66,13 @@ public class PotionProjectileController : MonoBehaviour
         phaseIndex = sourcePhaseIndex;
         patternType = sourcePatternType;
         lineAngleDeg = sourceLineAngleDeg;
+        useTornadoOrbit = false;
+        tornadoLinearDuration = 0f;
+        tornadoOrbitAngularSpeedDegPerSec = 0f;
+        tornadoOrbitCenter = null;
+        tornadoOrbitOffset = Vector3.zero;
+        tornadoOrbitAngleDeg = 0f;
+        tornadoOrbitStarted = false;
 
         CircleCollider2D col = GetComponent<CircleCollider2D>();
         col.isTrigger = true;
@@ -104,6 +118,21 @@ public class PotionProjectileController : MonoBehaviour
         lived = 0f;
     }
 
+    public void ConfigureTornadoOrbit(Transform orbitCenter, float orbitStartDelaySeconds, float orbitAngularSpeedDegPerSecond)
+    {
+        if (orbitCenter == null)
+        {
+            useTornadoOrbit = false;
+            return;
+        }
+
+        useTornadoOrbit = true;
+        tornadoOrbitCenter = orbitCenter;
+        tornadoLinearDuration = Mathf.Max(0f, orbitStartDelaySeconds);
+        tornadoOrbitAngularSpeedDegPerSec = orbitAngularSpeedDegPerSecond;
+        tornadoOrbitStarted = false;
+    }
+
     private void Update()
     {
         if (!initialized)
@@ -126,6 +155,20 @@ public class PotionProjectileController : MonoBehaviour
             moveDirection.Normalize();
         }
 
+        if (useTornadoOrbit)
+        {
+            if (!tornadoOrbitStarted && lived >= tornadoLinearDuration)
+            {
+                BeginTornadoOrbit();
+            }
+
+            if (tornadoOrbitStarted)
+            {
+                UpdateTornadoOrbit(dt);
+                return;
+            }
+        }
+
         if (moveInLocalSpace && transform.parent != null)
         {
             transform.localPosition += (Vector3)(moveDirection * moveSpeed * dt);
@@ -134,6 +177,41 @@ public class PotionProjectileController : MonoBehaviour
         {
             transform.position += (Vector3)(moveDirection * moveSpeed * dt);
         }
+    }
+
+    private void BeginTornadoOrbit()
+    {
+        if (tornadoOrbitCenter == null)
+        {
+            useTornadoOrbit = false;
+            return;
+        }
+
+        tornadoOrbitStarted = true;
+        tornadoOrbitOffset = transform.position - tornadoOrbitCenter.position;
+        if (tornadoOrbitOffset.sqrMagnitude <= 0.0001f)
+        {
+            tornadoOrbitOffset = Vector3.up * 0.01f;
+        }
+
+        tornadoOrbitAngleDeg = Mathf.Atan2(tornadoOrbitOffset.y, tornadoOrbitOffset.x) * Mathf.Rad2Deg;
+    }
+
+    private void UpdateTornadoOrbit(float dt)
+    {
+        if (tornadoOrbitCenter == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        float radius = tornadoOrbitOffset.magnitude;
+        tornadoOrbitAngleDeg -= tornadoOrbitAngularSpeedDegPerSec * dt;
+        float radians = tornadoOrbitAngleDeg * Mathf.Deg2Rad;
+        Vector3 center = tornadoOrbitCenter.position;
+        Vector3 nextOffset = new Vector3(Mathf.Cos(radians), Mathf.Sin(radians), 0f) * radius;
+        transform.position = center + nextOffset;
+        tornadoOrbitOffset = nextOffset;
     }
 
     private void OnTriggerEnter2D(Collider2D other)

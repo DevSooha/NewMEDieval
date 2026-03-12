@@ -9,7 +9,9 @@ public class Bomb : MonoBehaviour
     private const float DesignFramesPerSecond = 60f;
     private const float FireworksSpeedPxPerFrame = 120f;
     private const float AfterimageSpeedPxPerFrame = 64f;
+    private const float TornadoSpeedPxPerFrame = 96f;
     private const float AfterimageExplosionDelaySeconds = 8f;
+    private const float TornadoTotalLifetimeSeconds = 8f;
 
     [Header("Bomb Settings")]
     public ElementType bombElement = ElementType.Water;
@@ -162,6 +164,10 @@ public class Bomb : MonoBehaviour
                 resolvedSpeed = ConvertPixelsPerFrameToUnitsPerSecond(AfterimageSpeedPxPerFrame);
                 break;
 
+            case ProjectilePatternType.Tornado:
+                resolvedSpeed = ConvertPixelsPerFrameToUnitsPerSecond(TornadoSpeedPxPerFrame);
+                break;
+
             default:
                 resolvedSpeed = phase != null && phase.projectileSpeed > 0f ? phase.projectileSpeed : 6f;
                 break;
@@ -188,6 +194,10 @@ public class Bomb : MonoBehaviour
         if (patternType == ProjectilePatternType.AfterimageBomb)
         {
             lifetime = Mathf.Max(lifetime, AfterimageExplosionDelaySeconds + 0.05f);
+        }
+        else if (patternType == ProjectilePatternType.Tornado)
+        {
+            lifetime = Mathf.Max(lifetime, TornadoTotalLifetimeSeconds);
         }
 
         return lifetime;
