@@ -6,6 +6,7 @@ public class HandOfTime : MonoBehaviour
 {
     [Header("Refs")]
     [SerializeField] private Tilemap groundTilemap;
+    [SerializeField] private FateSeverSpearEmitterController emitterCtrl;
 
     [Header("Projectile Prefabs")]
     [SerializeField] private HandOfTimeProjectile prefab1x3;
@@ -17,12 +18,6 @@ public class HandOfTime : MonoBehaviour
     [Header("Speed")]
     [SerializeField] private float speedWorldPerSec = 5f;
 
-    // Tilemap bounds
-    private const int MIN_X = -14;
-    private const int MAX_X = 13;
-    private const int MIN_Y = -8;
-    private const int MAX_Y = 8;
-
     private void Awake()
     {
         if (groundTilemap == null)
@@ -31,95 +26,63 @@ public class HandOfTime : MonoBehaviour
             if (groundObj != null)
                 groundTilemap = groundObj.GetComponentInChildren<Tilemap>();
         }
+
+        if (emitterCtrl == null)
+        {
+            emitterCtrl = FindObjectOfType<FateSeverSpearEmitterController>();
+        }
     }
 
     public IEnumerator PlayOnce(Transform playerTF)
     {
-        Debug.Log("HandOfTime PlayOnce START");
-
         if (playerTF == null || groundTilemap == null)
-        {
-            Debug.LogError("HandOfTime: playerTF or groundTilemap NULL");
             yield break;
-        }
 
+        // 시전 모션
         yield return new WaitForSeconds(castTime);
 
-        // =========================
-        // 플레이어 타일 좌표
-        // =========================
-
+        // 플레이어 셀 좌표
         Vector3Int playerCell = groundTilemap.WorldToCell(playerTF.position);
 
-        int px = Mathf.Clamp(playerCell.x, MIN_X, MAX_X);
-        int py = Mathf.Clamp(playerCell.y, MIN_Y, MAX_Y);
-
         // =========================
-        // 2x2 탄 (위에서 내려오기)
+        // 2x2 위에서 내려오는 탄
         // =========================
 
-        int laneLeftX = Mathf.FloorToInt(px / 2f) * 2;
+        int idxY = emitterCtrl.GetFixedYIndexFromPlayerCellX(playerCell.x);
 
-        int topY = MAX_Y;
-        int bottomY = MAX_Y - 1;
+        Transform emitterY = emitterCtrl.GetFixedYEmitter(idxY);
 
-        // 2x2 중심 계산
-        Vector3 center2x2 =
-        (
-            groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX, topY, 0)) +
-            groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX + 1, bottomY, 0))
-        ) * 0.5f;
-
-        // spawn 위치 (맵 바로 위)
-        float spawnY =
-            groundTilemap.GetCellCenterWorld(new Vector3Int(0, MAX_Y + 1, 0)).y;
-
-        Vector3 spawn2x2 = new Vector3(center2x2.x, spawnY, 0f);
+        Vector3 spawn2x2 = emitterY.position;
 
         // =========================
-        // 1x3 탄 (오른쪽에서 들어오기)
+        // 1x3 오른쪽에서 들어오는 탄
         // =========================
 
-        Vector3 center1x3 =
-            groundTilemap.GetCellCenterWorld(new Vector3Int(px, py, 0));
+        int idxX = emitterCtrl.GetFixedXIndexFromPlayerCellY(playerCell.y);
 
-        float spawnX =
-            groundTilemap.GetCellCenterWorld(new Vector3Int(MAX_X + 1, 0, 0)).x;
+        Transform emitterX = emitterCtrl.GetFixedXEmitter(idxX);
 
-        Vector3 spawn1x3 = new Vector3(spawnX, center1x3.y, 0f);
+        Vector3 spawn1x3 = emitterX.position;
 
-        // =========================
-        // Debug
-        // =========================
+        Debug.Log($"[HandOfTime] spawn2x2 = {spawn2x2}");
+        Debug.Log($"[HandOfTime] spawn1x3 = {spawn1x3}");
 
-        Debug.Log("spawn2x2 = " + spawn2x2);
-        Debug.Log("spawn1x3 = " + spawn1x3);
-
-        Debug.DrawLine(spawn2x2, spawn2x2 + Vector3.down * 5f, Color.red, 2f);
-        Debug.DrawLine(spawn1x3, spawn1x3 + Vector3.left * 5f, Color.green, 2f);
-
-        // =========================
         // 생성
-        // =========================
-
-        HandOfTimeProjectile p2x2 =
+        HandOfTimeProjectile p2 =
             Instantiate(prefab2x2, spawn2x2, Quaternion.identity);
 
-        HandOfTimeProjectile p1x3 =
+        HandOfTimeProjectile p1 =
             Instantiate(prefab1x3, spawn1x3, Quaternion.identity);
 
-        // =========================
         // 발사
-        // =========================
-
-        p2x2.BeginFire(
-            p2x2.transform.position + Vector3.down,
+        p2.BeginFire(
+            p2.transform.position + Vector3.down,
             speedWorldPerSec,
             HandOfTimeProjectile.Axis.Vertical
         );
 
-        p1x3.BeginFire(
-            p1x3.transform.position + Vector3.left,
+        p1.BeginFire(
+            p1.transform.position + Vector3.left,
             speedWorldPerSec,
             HandOfTimeProjectile.Axis.Horizontal
         );

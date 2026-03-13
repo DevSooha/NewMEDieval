@@ -6,6 +6,7 @@ public class QueenCombat : BossCombatBase
 {
     [Header("References")]
     [SerializeField] private PearlBeamController pearlBeam;
+    [SerializeField] private HandOfTime handOfTime;
 
     [Header("Ground Tilemap (optional)")]
     [SerializeField] private Tilemap groundTilemap;
@@ -53,12 +54,20 @@ public class QueenCombat : BossCombatBase
                 groundTilemap = groundObj.GetComponentInChildren<Tilemap>();
         }
 
+        // 🔹 패턴 자동 탐색 (Inspector 안 넣어도 됨)
+        if (pearlBeam == null)
+            pearlBeam = FindAnyObjectByType<PearlBeamController>();
+
+        if (handOfTime == null)
+            handOfTime = FindAnyObjectByType<HandOfTime>();
+
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
     }
 
     private void OnDestroy()
     {
-        if (kbProxy != null) Destroy(kbProxy.gameObject);
+        if (kbProxy != null)
+            Destroy(kbProxy.gameObject);
     }
 
     private void OnValidate()
@@ -68,17 +77,16 @@ public class QueenCombat : BossCombatBase
 
     public override void StartBattle()
     {
-        if (battleRoutine != null) return;
+        if (battleRoutine != null)
+            return;
 
         if (playerTF == null)
         {
             var playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj == null) return;
+
             playerTF = playerObj.transform;
         }
-
-        if (pearlBeam == null)
-            pearlBeam = FindAnyObjectByType<PearlBeamController>();
 
         battleRoutine = StartCoroutine(BattleLoop());
     }
@@ -87,13 +95,22 @@ public class QueenCombat : BossCombatBase
     {
         while (true)
         {
-            while (pearlBeam == null)
+            // 🔹 PearlBeam 패턴
+            if (pearlBeam != null)
             {
-                pearlBeam = FindAnyObjectByType<PearlBeamController>();
-                yield return null;
+                Debug.Log("[QueenCombat] PearlBeam START");
+                yield return pearlBeam.PlayOnce(playerTF);
             }
 
-            yield return pearlBeam.PlayOnce(playerTF);
+            yield return repeatWait;
+
+            // 🔹 HandOfTime 패턴
+            if (handOfTime != null)
+            {
+                Debug.Log("[QueenCombat] HandOfTime START");
+                yield return handOfTime.PlayOnce(playerTF);
+            }
+
             yield return repeatWait;
         }
     }
@@ -123,7 +140,6 @@ public class QueenCombat : BossCombatBase
 
         if (isInvincible) return;
 
-        // ✅ 넉백 방향: 보스 표면의 가장 가까운 점 -> 플레이어
         Vector2 bossPoint = bossCol != null
             ? bossCol.ClosestPoint(player.transform.position)
             : (Vector2)transform.position;
@@ -135,20 +151,16 @@ public class QueenCombat : BossCombatBase
 
         knockDir = knockDir.normalized;
 
-        // ✅ 프록시는 "sender"로만 쓰는 용도
-        // player.KnockBack(sender, ...)가 sender->player 방향을 쓴다고 가정하고
-        // sender를 플레이어 기준 보스쪽에 위치시킴
         float offset = Mathf.Max(1.5f, kbProxyOffset);
         kbProxy.position = (Vector2)player.transform.position - knockDir * offset;
 
-        Debug.Log($"[QueenCombat] Contact -> Knockback. inv={isInvincible}");
+        Debug.Log("[QueenCombat] Contact -> Knockback");
 
-        // ✅ BossCombatBase의 Knockback() 사용
-        // (플레이어 스크립트 안 건드릴 때 가장 안전)
         Knockback(player, kbProxy, knockbackForce, knockbackStunTime);
 
-        // ✅ 보스 무적/깜빡
-        if (invRoutine != null) StopCoroutine(invRoutine);
+        if (invRoutine != null)
+            StopCoroutine(invRoutine);
+
         invRoutine = StartCoroutine(InvincibleFlickerRoutine(invincibleTime));
     }
 
@@ -178,9 +190,9 @@ public class QueenCombat : BossCombatBase
         if (spriteRenderers == null) return;
 
         float a = visible ? 1f : 0f;
-        for (int i = 0; i < spriteRenderers.Length; i++)
+
+        foreach (var sr in spriteRenderers)
         {
-            var sr = spriteRenderers[i];
             if (sr == null) continue;
 
             var c = sr.color;
@@ -189,11 +201,9 @@ public class QueenCombat : BossCombatBase
         }
     }
 
-    private void RestoreBossVisible() => SetBossVisible(true);
-
-    public void OnBeamHit(Player player, Transform beamOrigin)
+    private void RestoreBossVisible()
     {
-        // 빔 데미지 로직만(원하면 추가)
+        SetBossVisible(true);
     }
 
     private void OnDisable()

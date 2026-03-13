@@ -85,18 +85,7 @@ public class PearlBeamController : MonoBehaviour
             Destroy(knockbackSenderDummy.gameObject);
     }
 
-    public IEnumerator PlayOnce(Transform player)
-    {
-        playerTF = player;
-        if (groundTilemap == null || playerTF == null) yield break;
-
-        yield return new WaitForSeconds(0.5f);
-
-        lockedPlayerCell = groundTilemap.WorldToCell(playerTF.position);
-        yield return new WaitForSeconds(0.8f);
-
-        yield return StartCoroutine(secondStage());
-    }
+    
 
     private IEnumerator secondStage()
     {
@@ -113,7 +102,7 @@ public class PearlBeamController : MonoBehaviour
 
         yield return StartCoroutine(FireRoutine(chosenEmitter, laneIndex, lockedLaneLeftX));
     }
-
+    
     private IEnumerator FireRoutine(Transform emitter, int laneIndex, int laneLeftX)
     {
         Vector3 a = groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX, magicCircleY, 0));
@@ -187,7 +176,22 @@ public class PearlBeamController : MonoBehaviour
 
         return fullHeight;
     }
+    public IEnumerator PlayOnce(Transform player)
+    {
+        playerTF = player;
 
+        if (groundTilemap == null || playerTF == null)
+            yield break;
+
+        // 시전 시간
+        yield return new WaitForSeconds(0.5f);
+
+        // 플레이어 위치 고정
+        lockedPlayerCell = groundTilemap.WorldToCell(playerTF.position);
+
+        // 빔 실행
+        yield return StartCoroutine(secondStage());
+    }
     private void TryHit(Collider2D other)
     {
         if (col == null || !col.enabled) return;
