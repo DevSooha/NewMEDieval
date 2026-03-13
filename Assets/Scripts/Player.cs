@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Tilemaps;
 
 public class Player : MonoBehaviour
 {
@@ -46,6 +47,7 @@ public class Player : MonoBehaviour
     private InventoryUI inventoryUI;
     private PlayerStatusController statusController;
     private PlayerAttackSystem attackSystem;
+    private Collider2D bodyCollider;
     private bool isKnockedBack = false;
     private RigidbodyType2D defaultBodyType;
     private Coroutine knockbackRoutine;
@@ -68,6 +70,7 @@ public class Player : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        bodyCollider = GetComponent<Collider2D>();
 
         if (rb == null)
         {
@@ -86,13 +89,20 @@ public class Player : MonoBehaviour
         moveSpeed = baseSpeed;
 
         int obstacleMask = LayerMask.GetMask("Obstacle");
+        int wallMask = LayerMask.GetMask("Wall");
         if (knockbackObstacleLayers.value == 0)
         {
-            knockbackObstacleLayers = obstacleMask;
+            knockbackObstacleLayers = obstacleMask | wallMask;
         }
-        else if (obstacleMask != 0 && (knockbackObstacleLayers.value & obstacleMask) == 0)
+
+        if (obstacleMask != 0 && (knockbackObstacleLayers.value & obstacleMask) == 0)
         {
             knockbackObstacleLayers |= obstacleMask;
+        }
+
+        if (wallMask != 0 && (knockbackObstacleLayers.value & wallMask) == 0)
+        {
+            knockbackObstacleLayers |= wallMask;
         }
     }
 
@@ -516,6 +526,7 @@ public class Player : MonoBehaviour
 
             float moveDistance = step;
             bool blocked = false;
+            Vector2 currentPosition = rb != null ? rb.position : (Vector2)transform.position;
 
             if (rb != null && knockbackObstacleLayers.value != 0)
             {
@@ -544,13 +555,23 @@ public class Player : MonoBehaviour
                 }
             }
 
+            Vector3 desiredPosition = currentPosition + dir * moveDistance;
+            Vector3 constrainedPosition = ConstrainToWalkablePosition(desiredPosition);
+            float constrainedDistance = Vector2.Distance(currentPosition, constrainedPosition);
+
+            if (constrainedDistance + 0.0001f < moveDistance)
+            {
+                moveDistance = constrainedDistance;
+                blocked = true;
+            }
+
             if (rb != null)
             {
-                rb.MovePosition(rb.position + dir * moveDistance);
+                rb.MovePosition(currentPosition + dir * moveDistance);
             }
             else
             {
-                transform.position += (Vector3)(dir * moveDistance);
+                transform.position = currentPosition + dir * moveDistance;
             }
 
             remaining -= moveDistance;
@@ -572,6 +593,246 @@ public class Player : MonoBehaviour
         SetCanMove(true);
 
         knockbackRoutine = null;
+    }
+
+    public Vector3 ConstrainToWalkablePosition(Vector3 desiredPosition)
+    {
+        Tilemap groundTilemap = ResolveGroundTilemap(desiredPosition);
+        if (groundTilemap == null)
+        {
+            return desiredPosition;
+        }
+
+        if (IsWalkablePosition(groundTilemap, desiredPosition))
+        {
+            return desiredPosition;
+        }
+
+        Vector3Int originCell = groundTilemap.WorldToCell(desiredPosition);
+
+        for (int radius = 0; radius <= 8; radius++)
+        {
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    if (radius > 0 && Mathf.Abs(x) != radius && Mathf.Abs(y) != radius)
+                    {
+                        continue;
+                    }
+
+                    Vector3Int cell = originCell + new Vector3Int(x, y, 0);
+                    if (!groundTilemap.HasTile(cell))
+                    {
+                        continue;
+                    }
+
+                    Vector3 candidate = ClampIntoCell(groundTilemap, cell, desiredPosition);
+                    if (IsWalkablePosition(groundTilemap, candidate))
+                    {
+                        return candidate;
+                    }
+
+                    Vector3 center = groundTilemap.GetCellCenterWorld(cell);
+                    if (IsWalkablePosition(groundTilemap, center))
+                    {
+                        return center;
+                    }
+                }
+            }
+        }
+
+        return transform.position;
+    }
+
+    public void SnapToWalkablePosition()
+    {
+        Vector3 constrainedPosition = ConstrainToWalkablePosition(transform.position);
+        transform.position = constrainedPosition;
+
+        if (rb != null)
+        {
+            rb.position = constrainedPosition;
+            rb.linearVelocity = Vector2.zero;
+        }
+    }
+
+    private Tilemap ResolveGroundTilemap(Vector3 worldPosition)
+    {
+        Tilemap[] tilemaps = FindObjectsByType<Tilemap>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        Tilemap fallback = null;
+
+        for (int i = 0; i < tilemaps.Length; i++)
+        {
+            Tilemap tilemap = tilemaps[i];
+            if (!IsGroundTilemap(tilemap))
+            {
+                continue;
+            }
+
+            Vector3Int cell = tilemap.WorldToCell(worldPosition);
+            if (tilemap.HasTile(cell))
+            {
+                return tilemap;
+            }
+
+            if (fallback == null)
+            {
+                fallback = tilemap;
+            }
+        }
+
+        return fallback;
+    }
+
+    private static bool IsGroundTilemap(Tilemap tilemap)
+    {
+        if (tilemap == null)
+        {
+            return false;
+        }
+
+        GameObject owner = tilemap.gameObject;
+        if (owner == null)
+        {
+            return false;
+        }
+
+        int obstacleLayer = LayerMask.NameToLayer("Obstacle");
+        int wallLayer = LayerMask.NameToLayer("Wall");
+        int ownerLayer = owner.layer;
+        if ((obstacleLayer >= 0 && ownerLayer == obstacleLayer)
+            || (wallLayer >= 0 && ownerLayer == wallLayer))
+        {
+            return false;
+        }
+
+        if (owner.CompareTag("Ground"))
+        {
+            return true;
+        }
+
+        return HasIdentityInHierarchy(tilemap.transform, "Ground", "ground")
+            || HasIdentityInHierarchy(tilemap.transform, "Floor", "floor");
+    }
+
+    private bool IsWalkablePosition(Tilemap groundTilemap, Vector3 worldPosition)
+    {
+        if (groundTilemap == null)
+        {
+            return true;
+        }
+
+        Vector3Int cell = groundTilemap.WorldToCell(worldPosition);
+        if (!groundTilemap.HasTile(cell))
+        {
+            return false;
+        }
+
+        return !OverlapsBlockingCollider(worldPosition);
+    }
+
+    private bool OverlapsBlockingCollider(Vector3 worldPosition)
+    {
+        if (knockbackObstacleLayers.value == 0)
+        {
+            return false;
+        }
+
+        if (bodyCollider == null)
+        {
+            bodyCollider = GetComponent<Collider2D>();
+        }
+
+        Vector2 point = worldPosition;
+        Vector2 size = Vector2.one * 0.2f;
+        float angle = 0f;
+
+        if (bodyCollider is BoxCollider2D box)
+        {
+            size = Vector2.Scale(box.size, transform.lossyScale) * 0.9f;
+            point += Vector2.Scale(box.offset, transform.lossyScale);
+            angle = transform.eulerAngles.z;
+            return HasBlockingHit(Physics2D.OverlapBoxAll(point, size, angle, knockbackObstacleLayers));
+        }
+
+        if (bodyCollider is CapsuleCollider2D capsule)
+        {
+            size = Vector2.Scale(capsule.size, transform.lossyScale) * 0.9f;
+            point += Vector2.Scale(capsule.offset, transform.lossyScale);
+            return HasBlockingHit(Physics2D.OverlapCapsuleAll(point, size, capsule.direction, angle, knockbackObstacleLayers));
+        }
+
+        if (bodyCollider is CircleCollider2D circle)
+        {
+            float radius = circle.radius * Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.y)) * 0.9f;
+            point += Vector2.Scale(circle.offset, transform.lossyScale);
+            return HasBlockingHit(Physics2D.OverlapCircleAll(point, radius, knockbackObstacleLayers));
+        }
+
+        Bounds bounds = bodyCollider != null ? bodyCollider.bounds : new Bounds(transform.position, Vector3.one * 0.2f);
+        size = new Vector2(bounds.size.x, bounds.size.y) * 0.9f;
+        return HasBlockingHit(Physics2D.OverlapBoxAll(point, size, angle, knockbackObstacleLayers));
+    }
+
+    private bool HasBlockingHit(Collider2D[] hits)
+    {
+        if (hits == null || hits.Length == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider2D hit = hits[i];
+            if (hit == null || hit == bodyCollider || hit.transform == transform || hit.transform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            if (hit.isTrigger)
+            {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static Vector3 ClampIntoCell(Tilemap tilemap, Vector3Int cell, Vector3 desiredPosition)
+    {
+        Vector3 cellOrigin = tilemap.CellToWorld(cell);
+        Vector3 cellSize = tilemap.cellSize;
+        const float padding = 0.05f;
+
+        float minX = cellOrigin.x + padding;
+        float maxX = cellOrigin.x + cellSize.x - padding;
+        float minY = cellOrigin.y + padding;
+        float maxY = cellOrigin.y + cellSize.y - padding;
+
+        return new Vector3(
+            Mathf.Clamp(desiredPosition.x, minX, maxX),
+            Mathf.Clamp(desiredPosition.y, minY, maxY),
+            desiredPosition.z);
+    }
+
+    private static bool HasIdentityInHierarchy(Transform start, string exactName, string containsName)
+    {
+        Transform current = start;
+        while (current != null)
+        {
+            if (current.name == exactName
+                || current.name.IndexOf(containsName, System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            current = current.parent;
+        }
+
+        return false;
     }
     public void StartBlink(float duration, float interval)
     {
