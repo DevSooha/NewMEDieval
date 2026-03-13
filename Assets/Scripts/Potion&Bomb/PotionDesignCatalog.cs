@@ -176,7 +176,7 @@ public static class PotionDesignCatalog
             low: Temp(50,
                 player: new[] { Fx(StatusEffectType.StealthInvulnerable, 7f, 0.3f) }),
             mid: Temp(0,
-                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 1f) },
+                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 3f) },
                 enemy: new[] { Fx(StatusEffectType.HealEnemyCurrentHpPercent, 0f, 0.8f) }),
             high: Temp(100)
         ));
@@ -204,7 +204,7 @@ public static class PotionDesignCatalog
             low: Temp(100,
                 player: new[] { Fx(StatusEffectType.PlayerMoveSpeedMultiplier, 16f, 2f) }),
             mid: Temp(0,
-                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 1f) },
+                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 3f) },
                 enemy: new[] { Fx(StatusEffectType.HealEnemyCurrentHpPercent, 0f, 0.8f) }),
             high: Temp(100,
                 player: new[] { Fx(StatusEffectType.StealthOnly, 15f, 0.3f) })
@@ -213,7 +213,7 @@ public static class PotionDesignCatalog
         Add(map, NewIngredient(
             "Edenicash", "에데닉", "애쉬", ElementType.Fire, IngredientShapeType.AfterimageBomb,
             low: Temp(250,
-                player: new[] { Fx(StatusEffectType.BlindBlack, 0.5f, 1f) }),
+                player: new[] { Fx(StatusEffectType.BlindBlack, 0.5f, 2f) }),
             mid: Temp(120),
             high: Temp(200,
                 player: new[]
@@ -233,8 +233,8 @@ public static class PotionDesignCatalog
 
         Add(map, NewIngredient(
             "HALLOWBLAZE", "할로우", "블레이즈", ElementType.Fire, IngredientShapeType.Tornado,
-            low: Temp(140, sub: ElementType.Light, rotationSpeed: 15f),
-            mid: Temp(140, sub: ElementType.Light, rotationSpeed: 60f),
+            low: Temp(140, sub: ElementType.Light, projectileSpeed: 4f),
+            mid: Temp(140, sub: ElementType.Light, projectileSpeed: 12f),
             high: Temp(300, sub: ElementType.Light,
                 player: new[] { Fx(StatusEffectType.BlindWhite, 0.5f, 1f) })
         ));

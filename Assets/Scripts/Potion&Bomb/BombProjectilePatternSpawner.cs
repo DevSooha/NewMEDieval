@@ -15,10 +15,10 @@ public static class BombProjectilePatternSpawner
     private const int AfterimageBulletCountPerDirection = 3;
     private const float PixelsPerUnit = 32f;
 
-    private static readonly float[] TornadoMaterial1AnglesDeg = { 60f, 180f, -120f };
-    private static readonly float[] TornadoMaterial2AnglesDeg = { 0f, 120f, -60f };
-    private static readonly float[] AfterimageMaterial1AnglesDeg = { 60f, 180f, -120f };
-    private static readonly float[] AfterimageMaterial2AnglesDeg = { 0f, 120f, -60f };
+    private static readonly float[] TornadoMaterial1AnglesDeg = { 0f, 120f, 240f };
+    private static readonly float[] TornadoMaterial2AnglesDeg = { 60f, 180f, 300f };
+    private static readonly float[] AfterimageMaterial1AnglesDeg = { 0f, 120f, 240f };
+    private static readonly float[] AfterimageMaterial2AnglesDeg = { 60f, 180f, 300f };
 
     public static void Spawn(
         ProjectilePatternType patternType,
@@ -153,15 +153,17 @@ public static class BombProjectilePatternSpawner
     {
         float[] angleOffsets = phaseIndex == 2 ? AfterimageMaterial2AnglesDeg : AfterimageMaterial1AnglesDeg;
         float spacingUnits = AfterimageSpacingPx / Mathf.Max(1f, PixelsPerUnit);
+        float movementDelayStep = spacingUnits / Mathf.Max(0.01f, projectileSpeed);
 
         for (int d = 0; d < angleOffsets.Length; d++)
         {
             float radians = angleOffsets[d] * Mathf.Deg2Rad;
-            Vector2 direction = new Vector2(Mathf.Sin(radians), Mathf.Cos(radians)).normalized;
+            Vector2 direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
 
             for (int i = 0; i < AfterimageBulletCountPerDirection; i++)
             {
-                Vector3 spawnPos = explosionCenter - (Vector3)(direction * spacingUnits * i);
+                Vector3 spawnPos = explosionCenter;
+                float movementDelay = movementDelayStep * i;
                 SpawnProjectile(
                     ProjectilePatternType.AfterimageBomb,
                     phase,
@@ -173,7 +175,11 @@ public static class BombProjectilePatternSpawner
                     phaseIndex,
                     projectileSpeed,
                     projectileLifetime,
-                    onProjectileSpawn);
+                    controller =>
+                    {
+                        controller?.SetMovementStartDelay(movementDelay);
+                        onProjectileSpawn?.Invoke(controller);
+                    });
             }
         }
     }
@@ -239,16 +245,18 @@ public static class BombProjectilePatternSpawner
     {
         float[] angleSet = phaseIndex == 2 ? TornadoMaterial2AnglesDeg : TornadoMaterial1AnglesDeg;
         float spacingUnits = TornadoSpacingPx / Mathf.Max(1f, PixelsPerUnit);
+        float movementDelayStep = spacingUnits / Mathf.Max(0.01f, projectileSpeed);
         float resolvedLifetime = Mathf.Max(projectileLifetime, TornadoLinearDurationSeconds + TornadoOrbitDurationSeconds);
 
         for (int d = 0; d < angleSet.Length; d++)
         {
             float radians = angleSet[d] * Mathf.Deg2Rad;
-            Vector2 direction = new Vector2(Mathf.Sin(radians), Mathf.Cos(radians)).normalized;
+            Vector2 direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
 
             for (int i = 0; i < TornadoBulletCountPerDirection; i++)
             {
-                Vector3 spawnPos = explosionCenter - (Vector3)(direction * spacingUnits * i);
+                Vector3 spawnPos = explosionCenter;
+                float movementDelay = movementDelayStep * i;
                 SpawnProjectile(
                     ProjectilePatternType.Tornado,
                     phase,
@@ -262,10 +270,11 @@ public static class BombProjectilePatternSpawner
                     resolvedLifetime,
                     controller =>
                     {
-                        float orbitStartDelay = phaseIndex == 2 ? 0f : TornadoLinearDurationSeconds;
+                        controller?.SetMovementStartDelay(movementDelay);
+                        float orbitStartDelay = TornadoLinearDurationSeconds;
                         controller?.ConfigureTornadoOrbit(
                             hitOwner,
-                            orbitStartDelay,
+                            orbitStartDelay + movementDelay,
                             TornadoOrbitAngularSpeedDegPerSec);
                         onProjectileSpawn?.Invoke(controller);
                     });

@@ -195,6 +195,7 @@ internal static class BombAfterimageExplosionHelper
 {
     private const float PixelsPerUnit = 32f;
     private const float AfterimageExplosionSizePx = 64f;
+    private const float AfterimageFieldDurationSeconds = 2f;
     private const float AfterimageFieldDamageIntervalSeconds = 0.5f;
     private const int AfterimageFieldDamagePerTick = 50;
 
@@ -243,7 +244,7 @@ internal static class BombAfterimageExplosionHelper
         hazard.Init(
             sourcePhase,
             new Vector2(explosionSizeUnits, explosionSizeUnits),
-            Mathf.Max(0.5f, sourcePhase != null ? sourcePhase.duration : 0f),
+            AfterimageFieldDurationSeconds,
             AfterimageFieldDamageIntervalSeconds,
             bombInstanceId,
             phaseIndex);
@@ -252,7 +253,7 @@ internal static class BombAfterimageExplosionHelper
     private static PotionPhaseSpec BuildExplosionSpec(PotionPhaseSpec sourcePhase, Func<PotionPhaseSpec> buildFallbackPhase)
     {
         PotionPhaseSpec source = sourcePhase ?? buildFallbackPhase();
-        PotionPhaseSpec explosion = new PotionPhaseSpec
+        return new PotionPhaseSpec
         {
             ingredientId = source.ingredientId,
             patternType = ProjectilePatternType.AfterimageBomb,
@@ -262,40 +263,11 @@ internal static class BombAfterimageExplosionHelper
             projectileSpeed = source.projectileSpeed,
             rotationSpeedDegPerSec = source.rotationSpeedDegPerSec,
             baseDamage = AfterimageFieldDamagePerTick,
-            primaryElement = source.primaryElement,
-            subElement = source.subElement,
+            primaryElement = ElementType.None,
+            subElement = ElementType.None,
             damageTarget = DamageTargetType.Both,
-            healsPlayerOnSelfHit = source.healsPlayerOnSelfHit,
-            ignoreSelfHitPenalty = source.ignoreSelfHitPenalty
+            healsPlayerOnSelfHit = false,
+            ignoreSelfHitPenalty = false
         };
-
-        CopyEffects(source.onPlayerHitEffects, explosion.onPlayerHitEffects);
-        CopyEffects(source.onEnemyHitEffects, explosion.onEnemyHitEffects);
-        return explosion;
-    }
-
-    private static void CopyEffects(List<StatusEffectSpec> source, List<StatusEffectSpec> destination)
-    {
-        if (source == null || destination == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < source.Count; i++)
-        {
-            StatusEffectSpec effect = source[i];
-            if (effect == null)
-            {
-                continue;
-            }
-
-            destination.Add(new StatusEffectSpec
-            {
-                effectType = effect.effectType,
-                duration = effect.duration,
-                magnitude = effect.magnitude,
-                interval = effect.interval
-            });
-        }
     }
 }

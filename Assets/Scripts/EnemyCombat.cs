@@ -41,6 +41,11 @@ public class EnemyCombat : MonoBehaviour
 
     private Vector2 attackDirection = Vector2.left;
 
+    private void Awake()
+    {
+        CombatTargetHitbox.EnsureForEnemy(this);
+    }
+
     void Start()
     {
         playerLayer = LayerMask.GetMask("Player");
@@ -129,17 +134,29 @@ public class EnemyCombat : MonoBehaviour
 
         foreach (Collider2D hit in hits)
         {
-            if (hit.isTrigger) continue;
-
-            Player playerScript = hit.GetComponent<Player>();
-
-            if (playerScript != null && hit.gameObject.activeInHierarchy)
+            if (!CombatTargetHitbox.TryGetPlayerHealth(hit, out PlayerHealth playerHealth))
             {
-                hit.GetComponent<PlayerHealth>()?.TakeDamage(damageAmount);
+                continue;
+            }
+
+            Player playerScript = playerHealth.GetComponent<Player>();
+
+            if (playerScript != null && playerHealth.gameObject.activeInHierarchy)
+            {
+                bool didDamage = playerHealth.TryTakeDamage(
+                    damageAmount,
+                    playerHealth.NormalMonsterHitInvulnerableDuration
+                );
+
+                if (!didDamage)
+                {
+                    return;
+                }
+
                 PlayerStatusController status = playerScript.GetComponent<PlayerStatusController>();
                 if (status == null || !status.IsKnockbackImmune)
                 {
-                    playerScript.KnockBackByDistance(((Vector2)(hit.transform.position - transform.position)).normalized, knockbackTileSize * knockbackTiles, knockbackDuration);
+                    playerScript.KnockBackByDistance(((Vector2)(playerHealth.transform.position - transform.position)).normalized, knockbackTileSize * knockbackTiles, knockbackDuration);
                 }
                 return;
             }

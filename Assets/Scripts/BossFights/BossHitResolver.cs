@@ -53,10 +53,10 @@ public static class BossHitResolver
             return false;
         }
 
-        int previousHp = health.CurrentHP;
-        health.TakeDamage(damage);
-
-        bool didDamage = health.CurrentHP < previousHp;
+        bool didDamage = health.TryTakeDamage(
+            damage,
+            health.BossHitInvulnerableDuration
+        );
         if (!didDamage)
         {
             return false;

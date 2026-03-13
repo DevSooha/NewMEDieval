@@ -43,8 +43,6 @@ public partial class PlayerAttackSystem : MonoBehaviour
     private int currentStack = 0;
     private Coroutine chargeRoutine;
     private readonly List<GameObject> activeMarkers = new();
-    private readonly List<Tilemap> cachedGroundTilemaps = new();
-    private bool groundTilemapsCached;
 
     void Start()
     {
@@ -68,7 +66,6 @@ public partial class PlayerAttackSystem : MonoBehaviour
             bombBlockLayer = LayerMask.GetMask("Obstacle");
         }
 
-        CacheGroundTilemaps();
         EnsureCoreSlots();
         ValidateAttackVisualSetup();
 

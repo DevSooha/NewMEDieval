@@ -10,6 +10,7 @@ public class Bomb : MonoBehaviour
     private const float FireworksSpeedPxPerFrame = 120f;
     private const float AfterimageSpeedPxPerFrame = 64f;
     private const float TornadoSpeedPxPerFrame = 96f;
+    private const float FireworksMinimumLifetimeSeconds = 4f;
     private const float AfterimageExplosionDelaySeconds = 8f;
     private const float TornadoTotalLifetimeSeconds = 8f;
 
@@ -66,6 +67,7 @@ public class Bomb : MonoBehaviour
         }
 
         ApplyPotionVisual();
+        LogConfiguredBombInfo();
     }
 
     private void Start()
@@ -191,7 +193,11 @@ public class Bomb : MonoBehaviour
             lifetime = Mathf.Max(minProjectileLifetime, Mathf.Max(0.1f, baseLife));
         }
 
-        if (patternType == ProjectilePatternType.AfterimageBomb)
+        if (patternType == ProjectilePatternType.Fireworks)
+        {
+            lifetime = Mathf.Max(lifetime, FireworksMinimumLifetimeSeconds);
+        }
+        else if (patternType == ProjectilePatternType.AfterimageBomb)
         {
             lifetime = Mathf.Max(lifetime, AfterimageExplosionDelaySeconds + 0.05f);
         }
@@ -257,6 +263,118 @@ public class Bomb : MonoBehaviour
             primaryElement = NormalizeElement(bombElement),
             subElement = ElementType.None,
             damageTarget = DamageTargetType.Both
+        };
+    }
+
+    private void LogConfiguredBombInfo()
+    {
+        if (sourcePotionData == null)
+        {
+            Debug.Log($"[Bomb] Placed bomb | object={name} | potionData=null");
+            return;
+        }
+
+        PotionPhaseSpec phase1 = sourcePotionData.GetPhase(0);
+        PotionPhaseSpec phase2 = sourcePotionData.GetPhase(1);
+        string displayName = sourcePotionData.GetDisplayName();
+
+        Debug.Log(
+            $"[Bomb]\n" +
+            $"Name: {displayName}\n" +
+            $"Temp: {sourcePotionData.temperature}\n" +
+            $"Ingredient1: {GetIngredientLabel(phase1)}\n" +
+            $"Ingredient2: {GetIngredientLabel(phase2)}\n" +
+            $"Phase1: {DescribePhaseForPlacementLog(phase1, 1)}\n" +
+            $"Phase2: {DescribePhaseForPlacementLog(phase2, 2)}",
+            this);
+    }
+
+    private static string GetIngredientLabel(PotionPhaseSpec phase)
+    {
+        return phase == null || string.IsNullOrWhiteSpace(phase.ingredientId) ? "none" : phase.ingredientId;
+    }
+
+    private static string DescribePhaseForPlacementLog(PotionPhaseSpec phase, int phaseIndex)
+    {
+        if (phase == null)
+        {
+            return $"#{phaseIndex}:none";
+        }
+
+        string effectsSummary = DescribeEffectsForPlacementLog(phase);
+        return
+            $"#{phaseIndex} {phase.patternType} | Elem={phase.primaryElement}/{phase.subElement} | " +
+            $"Target={phase.damageTarget} | Effects={effectsSummary}";
+    }
+
+    private static string DescribeEffectsForPlacementLog(PotionPhaseSpec phase)
+    {
+        if (phase == null)
+        {
+            return "none";
+        }
+
+        System.Collections.Generic.List<string> parts = new();
+
+        if (phase.healsPlayerOnSelfHit)
+        {
+            parts.Add("self-hit heals player");
+        }
+
+        if (phase.ignoreSelfHitPenalty)
+        {
+            parts.Add("self-hit penalty ignored");
+        }
+
+        AppendEffectDescriptions(parts, phase.onPlayerHitEffects, "player");
+        AppendEffectDescriptions(parts, phase.onEnemyHitEffects, "enemy");
+
+        return parts.Count == 0 ? "no extra status effect" : string.Join("; ", parts);
+    }
+
+    private static void AppendEffectDescriptions(
+        System.Collections.Generic.List<string> parts,
+        System.Collections.Generic.List<StatusEffectSpec> effects,
+        string targetLabel)
+    {
+        if (parts == null || effects == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < effects.Count; i++)
+        {
+            StatusEffectSpec effect = effects[i];
+            if (effect == null || effect.effectType == StatusEffectType.None)
+            {
+                continue;
+            }
+
+            parts.Add($"{targetLabel} {DescribeStatusEffect(effect)}");
+        }
+    }
+
+    private static string DescribeStatusEffect(StatusEffectSpec effect)
+    {
+        return effect.effectType switch
+        {
+            StatusEffectType.HealPlayerFlat => $"heals immediately (amount {effect.magnitude:0.##})",
+            StatusEffectType.HealEnemyCurrentHpPercent => $"heals current HP ratio immediately ({effect.magnitude:0.##})",
+            StatusEffectType.StealthOnly => $"gets stealth for {effect.duration:0.##}s",
+            StatusEffectType.StealthInvulnerable => $"gets stealth+invulnerability for {effect.duration:0.##}s",
+            StatusEffectType.PlayerMoveSpeedMultiplier => $"move speed multiplier {effect.magnitude:0.##} for {effect.duration:0.##}s",
+            StatusEffectType.PlayerStun => $"is stunned for {effect.duration:0.##}s",
+            StatusEffectType.EnemyMoveSpeedMultiplier => $"move speed multiplier {effect.magnitude:0.##} for {effect.duration:0.##}s",
+            StatusEffectType.EnemyStun => $"is stunned for {effect.duration:0.##}s",
+            StatusEffectType.PlayerInputReverse => $"input is reversed for {effect.duration:0.##}s",
+            StatusEffectType.PlayerInputDelay => $"input is delayed for {effect.duration:0.##}s",
+            StatusEffectType.BlindBlack => $"gets black blind effect for {effect.duration:0.##}s",
+            StatusEffectType.BlindWhite => $"gets white blind effect for {effect.duration:0.##}s",
+            StatusEffectType.EnemyKnockback => $"is knocked back by {effect.magnitude:0.##}",
+            StatusEffectType.PoisonDot => $"takes {effect.magnitude:0.##} damage every {effect.interval:0.##}s for {effect.duration:0.##}s",
+            StatusEffectType.PlayerRedStateContactBurn => $"gets contact burn for {effect.duration:0.##}s, {effect.magnitude:0.##} damage every {effect.interval:0.##}s",
+            StatusEffectType.PlayerKnockbackImmune => $"gets knockback immunity for {effect.duration:0.##}s",
+            _ => effect.effectType.ToString()
         };
     }
 

@@ -25,6 +25,7 @@ public class PlayerStatusController : MonoBehaviour
     [Header("Blind Overlay")]
     [SerializeField, Range(0f, 1f)] private float blindBlackOverlayAlpha = 0.65f;
     [SerializeField, Range(0f, 1f)] private float blindWhiteOverlayAlpha = 0.55f;
+    [SerializeField, Min(0.05f)] private float blindTransitionDuration = 0.5f;
     private bool blindOverlayCaptured;
     private Color blindOriginalFadeColor = new Color(0f, 0f, 0f, 0f);
 
@@ -181,7 +182,6 @@ public class PlayerStatusController : MonoBehaviour
     {
         StopEffect(StatusEffectType.BlindBlack);
         StopEffect(StatusEffectType.BlindWhite);
-        RestoreBlindOverlay();
         running[type] = StartCoroutine(BlindRoutine(duration, color, type, overlayAlpha));
     }
 
@@ -272,24 +272,50 @@ public class PlayerStatusController : MonoBehaviour
 
     private IEnumerator BlindRoutine(float duration, Color color, StatusEffectType effectType, float overlayAlpha)
     {
-        float safe = Mathf.Max(0.05f, duration);
+        float holdDuration = Mathf.Max(0.05f, duration);
 
         if (UIManager.Instance == null || UIManager.Instance.fadeImage == null)
         {
-            yield return new WaitForSeconds(safe);
+            yield return new WaitForSeconds(holdDuration);
             running.Remove(effectType);
             yield break;
         }
 
         CaptureBlindOverlay();
+        Color start = blindOriginalFadeColor;
+        if (blindOverlayCaptured)
+        {
+            start = UIManager.Instance.fadeImage.color;
+        }
+
         Color target = color;
         target.a = Mathf.Clamp01(overlayAlpha);
 
-        UIManager.Instance.fadeImage.color = target;
+        float transition = Mathf.Max(0.05f, blindTransitionDuration);
         UIManager.Instance.fadeImage.gameObject.SetActive(true);
         UIManager.Instance.fadeImage.transform.SetAsLastSibling();
 
-        yield return new WaitForSeconds(safe);
+        float elapsed = 0f;
+        while (elapsed < transition)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / transition);
+            UIManager.Instance.fadeImage.color = Color.Lerp(start, target, t);
+            yield return null;
+        }
+
+        UIManager.Instance.fadeImage.color = target;
+
+        yield return new WaitForSeconds(holdDuration);
+
+        elapsed = 0f;
+        while (elapsed < transition)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / transition);
+            UIManager.Instance.fadeImage.color = Color.Lerp(target, start, t);
+            yield return null;
+        }
 
         RestoreBlindOverlay();
         running.Remove(effectType);
@@ -353,9 +379,7 @@ public class PlayerStatusController : MonoBehaviour
             Collider2D hit = hits[i];
             if (hit == null) continue;
 
-            EnemyCombat enemy = hit.GetComponent<EnemyCombat>();
-            if (enemy == null) enemy = hit.GetComponentInParent<EnemyCombat>();
-            if (enemy != null)
+            if (CombatTargetHitbox.TryGetEnemyCombat(hit, out EnemyCombat enemy))
             {
                 enemy.EnemyTakeDamage(damage);
                 continue;

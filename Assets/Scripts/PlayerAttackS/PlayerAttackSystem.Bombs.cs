@@ -268,19 +268,25 @@ public partial class PlayerAttackSystem
 
     private bool TryGetPlacementPositionAtDistance(int distance, out Vector2 placementPos)
     {
-        Vector2 rawPos = (Vector2)transform.position + (distance * tileSize * GetAimDirection());
-        return TryResolvePlacementPosition(rawPos, out placementPos);
-    }
+        placementPos = transform.position;
 
-    private bool TryResolvePlacementPosition(Vector2 rawPos, out Vector2 resolvedPos)
-    {
-        resolvedPos = rawPos;
-        if (!TryFindGroundTileCenter(rawPos, out Vector2 tileCenter))
+        if (distance <= 0)
         {
             return false;
         }
 
-        resolvedPos = tileCenter;
+        Vector2 direction = GetAimDirection();
+        if (direction.sqrMagnitude <= 0.0001f && playerMovement != null)
+        {
+            direction = playerMovement.LastMoveDirection;
+        }
+
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            direction = Vector2.down;
+        }
+
+        placementPos = (Vector2)transform.position + (direction.normalized * tileSize * distance);
         return true;
     }
 
@@ -306,88 +312,6 @@ public partial class PlayerAttackSystem
         }
 
         return false;
-    }
-
-    private bool TryFindGroundTileCenter(Vector2 worldPos, out Vector2 tileCenter)
-    {
-        if (!groundTilemapsCached || cachedGroundTilemaps.Count == 0)
-        {
-            CacheGroundTilemaps();
-        }
-
-        if (TryFindGroundTileCenterInCachedTilemaps(worldPos, out tileCenter))
-        {
-            return true;
-        }
-
-        CacheGroundTilemaps();
-        return TryFindGroundTileCenterInCachedTilemaps(worldPos, out tileCenter);
-    }
-
-    private bool TryFindGroundTileCenterInCachedTilemaps(Vector2 worldPos, out Vector2 tileCenter)
-    {
-        tileCenter = worldPos;
-        bool found = false;
-        float minSqrDistance = float.PositiveInfinity;
-
-        for (int i = 0; i < cachedGroundTilemaps.Count; i++)
-        {
-            Tilemap tilemap = cachedGroundTilemaps[i];
-            if (tilemap == null)
-            {
-                continue;
-            }
-
-            if (!tilemap.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            Vector3Int cellPos = tilemap.WorldToCell(worldPos);
-            if (!tilemap.HasTile(cellPos))
-            {
-                continue;
-            }
-
-            Vector3 center = tilemap.GetCellCenterWorld(cellPos);
-            float sqrDistance = ((Vector2)center - worldPos).sqrMagnitude;
-            if (!found || sqrDistance < minSqrDistance)
-            {
-                found = true;
-                minSqrDistance = sqrDistance;
-                tileCenter = center;
-            }
-        }
-
-        return found;
-    }
-
-    private void CacheGroundTilemaps()
-    {
-        groundTilemapsCached = true;
-        cachedGroundTilemaps.Clear();
-
-        if (floorTilemap != null
-            && floorTilemap.gameObject.activeInHierarchy
-            && IsGroundTilemap(floorTilemap))
-        {
-            cachedGroundTilemaps.Add(floorTilemap);
-        }
-
-        Tilemap[] tilemaps = FindObjectsByType<Tilemap>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-        for (int i = 0; i < tilemaps.Length; i++)
-        {
-            Tilemap tilemap = tilemaps[i];
-            if (tilemap == null || !IsGroundTilemap(tilemap))
-            {
-                continue;
-            }
-
-            if (!cachedGroundTilemaps.Contains(tilemap))
-            {
-                cachedGroundTilemaps.Add(tilemap);
-            }
-        }
     }
 
     private static bool IsGroundTilemap(Tilemap tilemap)

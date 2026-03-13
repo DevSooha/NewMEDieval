@@ -5,6 +5,8 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider2D))]
 public class PotionAreaHazard : MonoBehaviour
 {
+    [SerializeField] private float offscreenMargin = 0.2f;
+    [SerializeField] private bool drawHazardGizmo = true;
     private BoxCollider2D triggerCollider;
     private Rigidbody2D body;
     private PotionPhaseSpec phaseSpec;
@@ -15,6 +17,7 @@ public class PotionAreaHazard : MonoBehaviour
     private int phaseIndex;
     private bool usesPeriodicTicks;
     private float tickIntervalSeconds;
+    private Camera cachedCamera;
 
     public int SourceBombId => sourceBombId;
     public int PhaseIndex => phaseIndex;
@@ -34,6 +37,7 @@ public class PotionAreaHazard : MonoBehaviour
         body.bodyType = RigidbodyType2D.Kinematic;
         body.gravityScale = 0f;
         body.simulated = true;
+        cachedCamera = Camera.main;
     }
 
     public void Init(PotionPhaseSpec spec, Vector2 sizeUnits, float durationSeconds)
@@ -79,6 +83,22 @@ public class PotionAreaHazard : MonoBehaviour
         Destroy(gameObject);
     }
 
+    private void Update()
+    {
+        if (!initialized)
+        {
+            return;
+        }
+
+        if (!IsOffscreen())
+        {
+            return;
+        }
+
+        triggerCollider.enabled = false;
+        Destroy(gameObject);
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (!initialized || phaseSpec == null || other == null)
@@ -100,7 +120,7 @@ public class PotionAreaHazard : MonoBehaviour
             return;
         }
 
-        PotionHitResolver.TryResolveAreaHit(phaseSpec, other, gameObject.GetInstanceID());
+        PotionHitResolver.TryResolveAreaHit(phaseSpec, other, gameObject.GetInstanceID(), transform.position);
     }
 
     private void OnTriggerStay2D(Collider2D other)
@@ -125,7 +145,7 @@ public class PotionAreaHazard : MonoBehaviour
             return;
         }
 
-        if (PotionHitResolver.TryResolveAreaHit(phaseSpec, other, gameObject.GetInstanceID()))
+        if (PotionHitResolver.TryResolveAreaHit(phaseSpec, other, gameObject.GetInstanceID(), transform.position))
         {
             nextTickTimeByTarget[colliderId] = Time.time + tickIntervalSeconds;
         }
@@ -143,5 +163,61 @@ public class PotionAreaHazard : MonoBehaviour
             : other.gameObject.GetInstanceID();
 
         nextTickTimeByTarget.Remove(colliderId);
+    }
+
+    private bool IsOffscreen()
+    {
+        if (cachedCamera == null)
+        {
+            cachedCamera = Camera.main;
+        }
+
+        if (cachedCamera == null)
+        {
+            return false;
+        }
+
+        Vector3 viewport = cachedCamera.WorldToViewportPoint(transform.position);
+        if (viewport.z < 0f)
+        {
+            return true;
+        }
+
+        return viewport.x < -offscreenMargin
+            || viewport.x > 1f + offscreenMargin
+            || viewport.y < -offscreenMargin
+            || viewport.y > 1f + offscreenMargin;
+    }
+
+    private void OnDrawGizmos()
+    {
+        DrawHazardGizmo();
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        DrawHazardGizmo();
+    }
+
+    private void DrawHazardGizmo()
+    {
+        if (!drawHazardGizmo)
+        {
+            return;
+        }
+
+        BoxCollider2D box = triggerCollider != null ? triggerCollider : GetComponent<BoxCollider2D>();
+        if (box == null)
+        {
+            return;
+        }
+
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Gizmos.matrix = transform.localToWorldMatrix;
+        Gizmos.color = box.enabled && gameObject.activeInHierarchy
+            ? new Color(1f, 0.45f, 0.1f, 0.85f)
+            : new Color(1f, 0.8f, 0.2f, 0.6f);
+        Gizmos.DrawWireCube(box.offset, box.size);
+        Gizmos.matrix = previousMatrix;
     }
 }

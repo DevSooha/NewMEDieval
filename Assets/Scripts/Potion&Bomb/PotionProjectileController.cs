@@ -4,6 +4,7 @@
 public class PotionProjectileController : MonoBehaviour
 {
     [SerializeField] private float lifetime = 3f;
+    [SerializeField] private float offscreenMargin = 0.2f;
     [Header("Rendering")]
     [SerializeField] private string sortingLayerName = "EnemyBullet";
     [SerializeField] private int sortingOrder = 50;
@@ -16,6 +17,7 @@ public class PotionProjectileController : MonoBehaviour
     private float rotationSpeedDegPerSec;
     private bool moveInLocalSpace;
     private bool useTornadoOrbit;
+    private float movementStartDelay;
     private float tornadoLinearDuration;
     private float tornadoOrbitAngularSpeedDegPerSec;
     private Transform tornadoOrbitCenter;
@@ -26,6 +28,10 @@ public class PotionProjectileController : MonoBehaviour
     private Transform owner;
     private PotionPhaseSpec phaseSpec;
     private bool initialized;
+    private CircleCollider2D hitCollider;
+    private bool contactDamageEnabled;
+    private Camera cachedCamera;
+    private bool offscreenDamageDisabled;
 
     private int sourceBombId;
     private int phaseIndex;
@@ -67,16 +73,20 @@ public class PotionProjectileController : MonoBehaviour
         patternType = sourcePatternType;
         lineAngleDeg = sourceLineAngleDeg;
         useTornadoOrbit = false;
+        movementStartDelay = 0f;
         tornadoLinearDuration = 0f;
         tornadoOrbitAngularSpeedDegPerSec = 0f;
         tornadoOrbitCenter = null;
         tornadoOrbitOffset = Vector3.zero;
         tornadoOrbitAngleDeg = 0f;
         tornadoOrbitStarted = false;
+        offscreenDamageDisabled = false;
 
-        CircleCollider2D col = GetComponent<CircleCollider2D>();
-        col.isTrigger = true;
-        col.radius = 0.12f;
+        hitCollider = GetComponent<CircleCollider2D>();
+        hitCollider.isTrigger = true;
+        hitCollider.radius = 0.12f;
+        contactDamageEnabled = true;
+        cachedCamera = Camera.main;
 
         Rigidbody2D body = GetComponent<Rigidbody2D>();
         if (body == null)
@@ -133,6 +143,12 @@ public class PotionProjectileController : MonoBehaviour
         tornadoOrbitStarted = false;
     }
 
+    public void SetMovementStartDelay(float delaySeconds)
+    {
+        movementStartDelay = Mathf.Max(0f, delaySeconds);
+        contactDamageEnabled = movementStartDelay <= 0f;
+    }
+
     private void Update()
     {
         if (!initialized)
@@ -147,6 +163,27 @@ public class PotionProjectileController : MonoBehaviour
         {
             Destroy(gameObject);
             return;
+        }
+
+        if (IsOffscreen())
+        {
+            contactDamageEnabled = false;
+            offscreenDamageDisabled = true;
+            if (patternType != ProjectilePatternType.AfterimageBomb)
+            {
+                Destroy(gameObject);
+            }
+            return;
+        }
+
+        if (lived < movementStartDelay)
+        {
+            return;
+        }
+
+        if (!contactDamageEnabled && !offscreenDamageDisabled)
+        {
+            contactDamageEnabled = true;
         }
 
         if (Mathf.Abs(rotationSpeedDegPerSec) > 0.01f)
@@ -216,7 +253,17 @@ public class PotionProjectileController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!initialized || other == null) return;
+        TryHandleTrigger(other);
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        TryHandleTrigger(other);
+    }
+
+    private void TryHandleTrigger(Collider2D other)
+    {
+        if (!initialized || other == null || !contactDamageEnabled) return;
 
         bool consumedByCombat = PotionHitResolver.TryResolveHit(this, other);
         bool consumedByEnvironment = !consumedByCombat && PotionHitResolver.TryResolveEnvironmentHit(this, other);
@@ -227,6 +274,30 @@ public class PotionProjectileController : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private bool IsOffscreen()
+    {
+        if (cachedCamera == null)
+        {
+            cachedCamera = Camera.main;
+        }
+
+        if (cachedCamera == null)
+        {
+            return false;
+        }
+
+        Vector3 viewport = cachedCamera.WorldToViewportPoint(transform.position);
+        if (viewport.z < 0f)
+        {
+            return true;
+        }
+
+        return viewport.x < -offscreenMargin
+            || viewport.x > 1f + offscreenMargin
+            || viewport.y < -offscreenMargin
+            || viewport.y > 1f + offscreenMargin;
     }
 
     private static Sprite GetFallbackSprite()
