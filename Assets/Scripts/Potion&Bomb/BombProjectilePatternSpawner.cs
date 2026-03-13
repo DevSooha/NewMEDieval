@@ -6,17 +6,19 @@ public static class BombProjectilePatternSpawner
     private const int FireworksPatternIndex = 1;
     private const int FireworksBulletCountPerDirection = 3;
     private const float FireworksSpacingPx = 32f;
+    private const int TornadoDirectionCount = 6;
     private const int TornadoBulletCountPerDirection = 4;
     private const float TornadoSpacingPx = 64f;
     private const float TornadoLinearDurationSeconds = 2f;
     private const float TornadoOrbitDurationSeconds = 6f;
+    private const float TornadoFadeOutDurationSeconds = 0.5f;
     private const float TornadoOrbitAngularSpeedDegPerSec = 30f;
     private const float AfterimageSpacingPx = 64f;
     private const int AfterimageBulletCountPerDirection = 3;
     private const float PixelsPerUnit = 32f;
 
-    private static readonly float[] TornadoMaterial1AnglesDeg = { 0f, 120f, 240f };
-    private static readonly float[] TornadoMaterial2AnglesDeg = { 60f, 180f, 300f };
+    private static readonly float[] TornadoMaterial1AnglesDeg = BuildEvenAngleSet(0f);
+    private static readonly float[] TornadoMaterial2AnglesDeg = BuildEvenAngleSet(30f);
     private static readonly float[] AfterimageMaterial1AnglesDeg = { 0f, 120f, 240f };
     private static readonly float[] AfterimageMaterial2AnglesDeg = { 60f, 180f, 300f };
 
@@ -246,7 +248,10 @@ public static class BombProjectilePatternSpawner
         float[] angleSet = phaseIndex == 2 ? TornadoMaterial2AnglesDeg : TornadoMaterial1AnglesDeg;
         float spacingUnits = TornadoSpacingPx / Mathf.Max(1f, PixelsPerUnit);
         float movementDelayStep = spacingUnits / Mathf.Max(0.01f, projectileSpeed);
-        float resolvedLifetime = Mathf.Max(projectileLifetime, TornadoLinearDurationSeconds + TornadoOrbitDurationSeconds);
+        float resolvedLifetime = Mathf.Max(
+            projectileLifetime,
+            TornadoLinearDurationSeconds + TornadoOrbitDurationSeconds + TornadoFadeOutDurationSeconds);
+        Transform orbitAnchor = CreateTornadoOrbitAnchor(hitOwner, explosionCenter, sourceBombId, phaseIndex, resolvedLifetime);
 
         for (int d = 0; d < angleSet.Length; d++)
         {
@@ -271,10 +276,11 @@ public static class BombProjectilePatternSpawner
                     controller =>
                     {
                         controller?.SetMovementStartDelay(movementDelay);
-                        float orbitStartDelay = TornadoLinearDurationSeconds;
                         controller?.ConfigureTornadoOrbit(
-                            hitOwner,
-                            orbitStartDelay + movementDelay,
+                            orbitAnchor,
+                            TornadoLinearDurationSeconds,
+                            TornadoLinearDurationSeconds + TornadoOrbitDurationSeconds,
+                            TornadoFadeOutDurationSeconds,
                             phase != null ? phase.orbitAngularSpeedDegPerSec : TornadoOrbitAngularSpeedDegPerSec);
                         onProjectileSpawn?.Invoke(controller);
                     });
@@ -350,5 +356,30 @@ public static class BombProjectilePatternSpawner
             new Vector2(-1f, 1f).normalized,
             new Vector2(1f, -1f).normalized
         };
+    }
+
+    private static float[] BuildEvenAngleSet(float startAngleDeg)
+    {
+        float[] angles = new float[TornadoDirectionCount];
+        float step = 360f / TornadoDirectionCount;
+        for (int i = 0; i < angles.Length; i++)
+        {
+            angles[i] = startAngleDeg + (step * i);
+        }
+
+        return angles;
+    }
+
+    private static Transform CreateTornadoOrbitAnchor(
+        Transform hitOwner,
+        Vector3 explosionCenter,
+        int sourceBombId,
+        int phaseIndex,
+        float lifetimeSeconds)
+    {
+        GameObject anchor = new GameObject($"TornadoOrbitAnchor_{sourceBombId}_{phaseIndex}");
+        anchor.transform.position = hitOwner != null ? hitOwner.position : explosionCenter;
+        UnityEngine.Object.Destroy(anchor, Mathf.Max(0.1f, lifetimeSeconds + 0.1f));
+        return anchor.transform;
     }
 }

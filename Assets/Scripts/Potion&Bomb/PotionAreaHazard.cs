@@ -6,6 +6,7 @@ using UnityEngine;
 public class PotionAreaHazard : MonoBehaviour
 {
     private static readonly Dictionary<int, float> SharedNextTickTimeByTarget = new Dictionary<int, float>();
+    private static readonly Collider2D[] OverlapResults = new Collider2D[16];
 
     [SerializeField] private float offscreenMargin = 0.2f;
     [SerializeField] private bool drawHazardGizmo = true;
@@ -74,6 +75,8 @@ public class PotionAreaHazard : MonoBehaviour
             Mathf.Max(0.05f, sizeUnits.y));
         triggerCollider.enabled = true;
 
+        ApplyImmediateTicksForCurrentOverlaps();
+
         StopAllCoroutines();
         StartCoroutine(LifetimeRoutine(Mathf.Max(0.05f, durationSeconds)));
     }
@@ -113,7 +116,7 @@ public class PotionAreaHazard : MonoBehaviour
             : other.gameObject.GetInstanceID();
         if (usesPeriodicTicks)
         {
-            nextTickTimeByTarget[colliderId] = Time.time + tickIntervalSeconds;
+            ApplyImmediateTick(other, colliderId);
             return;
         }
 
@@ -171,6 +174,51 @@ public class PotionAreaHazard : MonoBehaviour
             : other.gameObject.GetInstanceID();
 
         nextTickTimeByTarget.Remove(colliderId);
+    }
+
+    private void ApplyImmediateTicksForCurrentOverlaps()
+    {
+        if (!initialized || phaseSpec == null || !usesPeriodicTicks || triggerCollider == null)
+        {
+            return;
+        }
+
+        ContactFilter2D filter = ContactFilter2D.noFilter;
+        filter.useTriggers = true;
+
+        int overlapCount = triggerCollider.Overlap(filter, OverlapResults);
+        for (int i = 0; i < overlapCount; i++)
+        {
+            Collider2D other = OverlapResults[i];
+            if (other == null)
+            {
+                continue;
+            }
+
+            int colliderId = other.attachedRigidbody != null
+                ? other.attachedRigidbody.gameObject.GetInstanceID()
+                : other.gameObject.GetInstanceID();
+            ApplyImmediateTick(other, colliderId);
+        }
+    }
+
+    private void ApplyImmediateTick(Collider2D other, int colliderId)
+    {
+        if (other == null)
+        {
+            return;
+        }
+
+        if (CanApplySharedTick(colliderId)
+            && PotionHitResolver.TryResolveAreaHit(phaseSpec, other, gameObject.GetInstanceID(), transform.position))
+        {
+            float nextTickTime = Time.time + tickIntervalSeconds;
+            nextTickTimeByTarget[colliderId] = nextTickTime;
+            SharedNextTickTimeByTarget[colliderId] = nextTickTime;
+            return;
+        }
+
+        nextTickTimeByTarget[colliderId] = Time.time + tickIntervalSeconds;
     }
 
     private bool IsOffscreen()

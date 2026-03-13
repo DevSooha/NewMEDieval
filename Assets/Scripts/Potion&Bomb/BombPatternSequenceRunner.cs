@@ -35,9 +35,11 @@ internal static class BombPatternSequenceRunner
     private const float AfterimagePhase1FirstShotTime = 0f;
     private const float AfterimagePhase2FirstShotTime = 3f;
     private const float AfterimagePhase1SecondShotTime = 6f;
+    private const float AfterimagePhase2SecondShotTime = 9f;
+    private const float TornadoSimultaneousShotTime = 0f;
     private const float DefaultPhase1ShotTime = 0f;
     private const float DefaultPhase2ShotTime = 2f;
-    private const float AfterimageExplosionDelaySeconds = 8f;
+    private const float AfterimageExplosionDelaySeconds = 10f;
 
     private readonly struct ScheduledSpawn
     {
@@ -177,6 +179,24 @@ internal static class BombPatternSequenceRunner
                         phaseIndex,
                         onProjectileSpawn));
                 }
+                else
+                {
+                    schedule.Add(new ScheduledSpawn(
+                        AfterimagePhase2SecondShotTime,
+                        phase.patternType,
+                        phase,
+                        phaseIndex,
+                        onProjectileSpawn));
+                }
+                return;
+
+            case ProjectilePatternType.Tornado:
+                schedule.Add(new ScheduledSpawn(
+                    TornadoSimultaneousShotTime,
+                    phase.patternType,
+                    phase,
+                    phaseIndex,
+                    onProjectileSpawn));
                 return;
 
             default:
@@ -197,7 +217,7 @@ internal static class BombAfterimageExplosionHelper
     private const float AfterimageExplosionSizePx = 64f;
     private const float AfterimageFieldDurationSeconds = 2f;
     private const float AfterimageFieldDamageIntervalSeconds = 0.5f;
-    private const int AfterimageFieldDamagePerTick = 50;
+    private const int AfterimageFieldDamagePerTick = 1;
 
     public static void ExplodeRemaining(
         IReadOnlyList<PotionProjectileController> trackedProjectiles,
@@ -222,6 +242,7 @@ internal static class BombAfterimageExplosionHelper
             SpawnExplosion(
                 projectile.transform.position,
                 BuildExplosionSpec(projectile.PhaseSpec, buildFallbackPhase),
+                projectile.PhaseSpec,
                 projectile.PhaseIndex,
                 explosionSizeUnits,
                 bombInstanceId);
@@ -233,6 +254,7 @@ internal static class BombAfterimageExplosionHelper
     private static void SpawnExplosion(
         Vector3 worldPosition,
         PotionPhaseSpec sourcePhase,
+        PotionPhaseSpec durationSourcePhase,
         int phaseIndex,
         float explosionSizeUnits,
         int bombInstanceId)
@@ -244,7 +266,7 @@ internal static class BombAfterimageExplosionHelper
         hazard.Init(
             sourcePhase,
             new Vector2(explosionSizeUnits, explosionSizeUnits),
-            AfterimageFieldDurationSeconds,
+            Mathf.Max(0.05f, durationSourcePhase != null ? durationSourcePhase.duration : AfterimageFieldDurationSeconds),
             AfterimageFieldDamageIntervalSeconds,
             bombInstanceId,
             phaseIndex);
@@ -266,9 +288,9 @@ internal static class BombAfterimageExplosionHelper
             rotationSpeedDegPerSec = source.rotationSpeedDegPerSec,
             orbitAngularSpeedDegPerSec = source.orbitAngularSpeedDegPerSec,
             baseDamage = AfterimageFieldDamagePerTick,
-            primaryElement = ElementType.None,
-            subElement = ElementType.None,
-            damageTarget = DamageTargetType.Both,
+            primaryElement = source.primaryElement,
+            subElement = source.subElement,
+            damageTarget = source.damageTarget,
             healsPlayerOnSelfHit = false,
             ignoreSelfHitPenalty = false
         };

@@ -124,7 +124,11 @@ public static class PotionDesignCatalog
                 _ => ProjectilePatternType.Fireworks
             },
             useCardinalDirections = isFirstPhase,
-            duration = 8f,
+            duration = design.shape switch
+            {
+                IngredientShapeType.AfterimageBomb => 2f,
+                _ => 8f
+            },
             temperature = temperature,
             initialSpawnDelay = tempDesign.initialSpawnDelay,
             fireInterval = tempDesign.fireInterval,

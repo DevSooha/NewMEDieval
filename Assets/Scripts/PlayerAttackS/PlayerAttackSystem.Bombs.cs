@@ -291,8 +291,15 @@ public partial class PlayerAttackSystem
             return false;
         }
 
-        Vector2 rawTargetPosition = (Vector2)transform.position + (direction.normalized * tileSize * distance);
-        Vector3Int targetCell = floorTilemap.WorldToCell(rawTargetPosition);
+        Vector3Int originCell = floorTilemap.WorldToCell(transform.position);
+        Vector3Int stepCell = GetPlacementStepCell(direction);
+        if (stepCell == Vector3Int.zero)
+        {
+            return false;
+        }
+
+        // Step in tile-cell space so diagonal stacks always change both x and y together.
+        Vector3Int targetCell = originCell + (stepCell * distance);
         if (!floorTilemap.HasTile(targetCell))
         {
             return false;
@@ -300,6 +307,15 @@ public partial class PlayerAttackSystem
 
         placementPos = floorTilemap.GetCellCenterWorld(targetCell);
         return true;
+    }
+
+    private static Vector3Int GetPlacementStepCell(Vector2 direction)
+    {
+        const float axisDeadZone = 0.25f;
+
+        int stepX = Mathf.Abs(direction.x) >= axisDeadZone ? (int)Mathf.Sign(direction.x) : 0;
+        int stepY = Mathf.Abs(direction.y) >= axisDeadZone ? (int)Mathf.Sign(direction.y) : 0;
+        return new Vector3Int(stepX, stepY, 0);
     }
 
     bool IsBombPlacementBlocked(Vector2 pos)

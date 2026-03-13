@@ -11,8 +11,8 @@ public class Bomb : MonoBehaviour
     private const float AfterimageSpeedPxPerFrame = 64f;
     private const float TornadoSpeedPxPerFrame = 96f;
     private const float FireworksMinimumLifetimeSeconds = 4f;
-    private const float AfterimageExplosionDelaySeconds = 8f;
-    private const float TornadoTotalLifetimeSeconds = 8f;
+    private const float AfterimageExplosionDelaySeconds = 10f;
+    private const float TornadoTotalLifetimeSeconds = 8.5f;
 
     [Header("Bomb Settings")]
     public ElementType bombElement = ElementType.Water;
