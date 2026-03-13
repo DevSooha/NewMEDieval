@@ -32,6 +32,7 @@ public partial class PlayerAttackSystem : MonoBehaviour
     public List<WeaponSlot> slots = new();
 
     private Player playerMovement;
+    private PlayerStatusController statusController;
     private PlayerInteraction interactionSensor;
     private InventoryUI inventoryUI;
 
@@ -47,6 +48,7 @@ public partial class PlayerAttackSystem : MonoBehaviour
     void Start()
     {
         playerMovement = GetComponent<Player>();
+        statusController = GetComponent<PlayerStatusController>();
         interactionSensor = GetComponentInChildren<PlayerInteraction>();
         inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
 
@@ -87,7 +89,11 @@ public partial class PlayerAttackSystem : MonoBehaviour
         RecoverFromStaleBombChargeState(currentSlotIsPotionBomb);
         bool attackPressedThisFrame = IsAttackPressed();
 
-        if (!isAttack && !isCharging && Input.GetKeyDown(KeyCode.C))
+        bool rotatePressed = statusController != null
+            ? statusController.ProcessActionButtonDown("rotate_slot", Input.GetKeyDown(KeyCode.C))
+            : Input.GetKeyDown(KeyCode.C);
+
+        if (!isAttack && !isCharging && rotatePressed)
         {
             RotateWeaponSlots();
         }
@@ -138,12 +144,12 @@ public partial class PlayerAttackSystem : MonoBehaviour
 
     bool IsAttackPressed()
     {
-        return CombatInputHelper.IsAttackPressed();
+        return CombatInputHelper.IsAttackPressed(statusController);
     }
 
     bool IsAttackReleased()
     {
-        return CombatInputHelper.IsAttackReleased();
+        return CombatInputHelper.IsAttackReleased(statusController);
     }
 
     private void RecoverFromStaleBombChargeState(bool currentSlotIsPotionBomb)

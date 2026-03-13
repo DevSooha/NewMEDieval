@@ -77,14 +77,17 @@ public class PotionPhaseSpec
 {
     [Header("Identity")]
     public string ingredientId;
+    public PotionTemperature temperature = PotionTemperature.Mid;
 
     [Header("Pattern")]
     public ProjectilePatternType patternType = ProjectilePatternType.Fireworks;
     public bool useCardinalDirections = true;
     public float duration = 8f;
+    public float initialSpawnDelay = 0f;
     public float fireInterval = 0.25f;
     public float projectileSpeed = 8f;
     public float rotationSpeedDegPerSec = 30f;
+    public float orbitAngularSpeedDegPerSec = 30f;
 
     [Header("Damage/Element")]
     public int baseDamage = 100;

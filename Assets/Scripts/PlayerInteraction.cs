@@ -24,6 +24,7 @@ public class PlayerInteraction : MonoBehaviour
     private const float CraftingOpenTransitionSeconds = 0.5f;
     private const int ControlRecoveryFrames = 3;
     private PlayerAttackSystem playerAttackSystem;
+    private PlayerStatusController playerStatusController;
 
     public bool IsInteractable => canInteract;
     public bool HasImmediateInteractionTarget => currentItem != null || currentNPC != null || isCampfire;
@@ -42,6 +43,7 @@ public class PlayerInteraction : MonoBehaviour
         interactionCollider.radius = interactionRadius;
         interactionCollider.isTrigger = true;
         playerAttackSystem = GetComponentInParent<PlayerAttackSystem>();
+        playerStatusController = GetComponentInParent<PlayerStatusController>();
 
         EnsureUiReferences();
 
@@ -71,7 +73,11 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
-        if (IsCraftingUiVisible() && Input.GetKeyDown(KeyCode.X))
+        bool closePressed = playerStatusController != null
+            ? playerStatusController.ProcessActionButtonDown("close_ui", Input.GetKeyDown(KeyCode.X))
+            : Input.GetKeyDown(KeyCode.X);
+
+        if (IsCraftingUiVisible() && closePressed)
         {
             if (craftUI != null)
             {
@@ -83,7 +89,7 @@ public class PlayerInteraction : MonoBehaviour
             }
         }
 
-        if (UIManager.Instance != null && UIManager.Instance.IsSelectPanelActive() && Input.GetKeyDown(KeyCode.X))
+        if (UIManager.Instance != null && UIManager.Instance.IsSelectPanelActive() && closePressed)
         {
             UIManager.Instance.HideSelectPanel();
         }

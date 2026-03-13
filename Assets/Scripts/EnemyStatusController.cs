@@ -6,12 +6,19 @@ public class EnemyStatusController : MonoBehaviour
 {
     private EnemyCombat enemyCombat;
     private EnemyMovement enemyMovement;
+    private BossHealth bossHealth;
+    private BossCombatBase bossCombat;
     private Rigidbody2D rb;
+    private Animator[] animators = System.Array.Empty<Animator>();
 
     private readonly Dictionary<StatusEffectType, Coroutine> running = new();
+    private readonly Dictionary<StatusEffectType, float> effectEndTimes = new();
+    private readonly Dictionary<StatusEffectType, float> effectMagnitudes = new();
+    private readonly Dictionary<StatusEffectType, float> effectIntervals = new();
 
     private bool stunned;
     private float speedMultiplier = 1f;
+    private bool bossCombatWasEnabledBeforeStun;
 
     public bool IsStunned => stunned;
     public float SpeedMultiplier => speedMultiplier;
@@ -24,8 +31,16 @@ public class EnemyStatusController : MonoBehaviour
         enemyMovement = GetComponent<EnemyMovement>();
         if (enemyMovement == null) enemyMovement = GetComponentInParent<EnemyMovement>();
 
+        bossHealth = GetComponent<BossHealth>();
+        if (bossHealth == null) bossHealth = GetComponentInParent<BossHealth>();
+
+        bossCombat = GetComponent<BossCombatBase>();
+        if (bossCombat == null) bossCombat = GetComponentInParent<BossCombatBase>();
+
         rb = GetComponent<Rigidbody2D>();
         if (rb == null) rb = GetComponentInParent<Rigidbody2D>();
+
+        animators = GetComponentsInChildren<Animator>(true);
     }
 
     private void OnDisable()
@@ -39,8 +54,13 @@ public class EnemyStatusController : MonoBehaviour
         }
 
         running.Clear();
+        effectEndTimes.Clear();
+        effectMagnitudes.Clear();
+        effectIntervals.Clear();
         stunned = false;
         speedMultiplier = 1f;
+        RestoreBossCombatState();
+        SetAnimatorSpeed(1f);
     }
 
     public void ApplyEffect(StatusEffectSpec effect)
@@ -50,33 +70,81 @@ public class EnemyStatusController : MonoBehaviour
         switch (effect.effectType)
         {
             case StatusEffectType.EnemyStun:
-                StartOrRefresh(effect.effectType, StunRoutine(effect.duration));
+                RefreshEffect(effect.effectType, effect.duration);
+                StartIfNeeded(effect.effectType, StunRoutine());
                 break;
             case StatusEffectType.EnemyMoveSpeedMultiplier:
-                StartOrRefresh(effect.effectType, SpeedRoutine(effect.duration, effect.magnitude <= 0f ? 1f : effect.magnitude));
+                RefreshEffect(effect.effectType, effect.duration, effect.magnitude <= 0f ? 1f : effect.magnitude);
+                StartIfNeeded(effect.effectType, SpeedRoutine());
                 break;
             case StatusEffectType.EnemyKnockback:
                 ApplyKnockback(effect.magnitude);
                 break;
             case StatusEffectType.PoisonDot:
-                StartOrRefresh(effect.effectType, PoisonRoutine(effect.duration, effect.magnitude, effect.interval));
+                RefreshEffect(effect.effectType, effect.duration, effect.magnitude, effect.interval);
+                StartIfNeeded(effect.effectType, PoisonRoutine());
                 break;
         }
     }
 
-    private void StartOrRefresh(StatusEffectType type, IEnumerator routine)
+    public void ApplyHitKnockback(Vector2 sourcePosition, float distanceUnits, float durationSeconds)
+    {
+        if (distanceUnits <= 0f)
+        {
+            return;
+        }
+
+        Vector2 direction = ((Vector2)transform.position - sourcePosition);
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            direction = Vector2.right;
+        }
+
+        ApplyKnockback(distanceUnits * 64f, direction.normalized);
+    }
+
+    private void RefreshEffect(StatusEffectType type, float duration, float magnitude = 0f, float interval = 0f)
+    {
+        effectEndTimes[type] = Time.time + Mathf.Max(0.05f, duration);
+        effectMagnitudes[type] = magnitude;
+        effectIntervals[type] = interval;
+    }
+
+    private void StartIfNeeded(StatusEffectType type, IEnumerator routine)
     {
         if (running.TryGetValue(type, out Coroutine existing) && existing != null)
         {
-            StopCoroutine(existing);
+            return;
         }
 
         running[type] = StartCoroutine(routine);
     }
 
-    private IEnumerator StunRoutine(float duration)
+    private bool IsEffectActive(StatusEffectType type)
     {
-        float safe = Mathf.Max(0.05f, duration);
+        return effectEndTimes.TryGetValue(type, out float endTime) && Time.time < endTime;
+    }
+
+    private float GetEffectMagnitude(StatusEffectType type, float fallback = 0f)
+    {
+        return effectMagnitudes.TryGetValue(type, out float magnitude) ? magnitude : fallback;
+    }
+
+    private float GetEffectInterval(StatusEffectType type, float fallback = 0f)
+    {
+        return effectIntervals.TryGetValue(type, out float interval) ? interval : fallback;
+    }
+
+    private void ClearEffect(StatusEffectType type)
+    {
+        running.Remove(type);
+        effectEndTimes.Remove(type);
+        effectMagnitudes.Remove(type);
+        effectIntervals.Remove(type);
+    }
+
+    private IEnumerator StunRoutine()
+    {
         stunned = true;
 
         if (rb != null)
@@ -84,59 +152,125 @@ public class EnemyStatusController : MonoBehaviour
             rb.linearVelocity = Vector2.zero;
         }
 
-        yield return new WaitForSeconds(safe);
-        stunned = false;
-        running.Remove(StatusEffectType.EnemyStun);
-    }
-
-    private IEnumerator SpeedRoutine(float duration, float multiplier)
-    {
-        float safe = Mathf.Max(0.05f, duration);
-        speedMultiplier = Mathf.Max(0.1f, multiplier);
-
-        yield return new WaitForSeconds(safe);
-        speedMultiplier = 1f;
-        running.Remove(StatusEffectType.EnemyMoveSpeedMultiplier);
-    }
-
-    private IEnumerator PoisonRoutine(float duration, float percentPerTick, float interval)
-    {
-        if (enemyCombat == null)
+        if (bossCombat != null)
         {
-            running.Remove(StatusEffectType.PoisonDot);
-            yield break;
+            bossCombatWasEnabledBeforeStun = bossCombat.enabled;
+            bossCombat.enabled = false;
         }
 
-        float remaining = Mathf.Max(0.05f, duration);
-        float tick = Mathf.Max(0.1f, interval <= 0f ? 2f : interval);
-        float percent = Mathf.Max(0f, percentPerTick);
-
-        while (remaining > 0f && !enemyCombat.IsDead)
+        while (IsEffectActive(StatusEffectType.EnemyStun))
         {
-            int damage = Mathf.RoundToInt(enemyCombat.CurrentHealth * (percent / 100f));
-            if (damage > 0)
+            if (rb != null)
             {
-                enemyCombat.EnemyTakeDamage(damage);
+                rb.linearVelocity = Vector2.zero;
+            }
+            yield return null;
+        }
+
+        stunned = false;
+        RestoreBossCombatState();
+        ClearEffect(StatusEffectType.EnemyStun);
+    }
+
+    private IEnumerator SpeedRoutine()
+    {
+        while (IsEffectActive(StatusEffectType.EnemyMoveSpeedMultiplier))
+        {
+            speedMultiplier = Mathf.Max(0.1f, GetEffectMagnitude(StatusEffectType.EnemyMoveSpeedMultiplier, 1f));
+            SetAnimatorSpeed(speedMultiplier);
+            yield return null;
+        }
+
+        speedMultiplier = 1f;
+        SetAnimatorSpeed(1f);
+        ClearEffect(StatusEffectType.EnemyMoveSpeedMultiplier);
+    }
+
+    private IEnumerator PoisonRoutine()
+    {
+        while (IsEffectActive(StatusEffectType.PoisonDot))
+        {
+            float tick = Mathf.Max(0.1f, GetEffectInterval(StatusEffectType.PoisonDot, 2f));
+            float percent = Mathf.Max(0f, GetEffectMagnitude(StatusEffectType.PoisonDot));
+
+            if (enemyCombat != null && !enemyCombat.IsDead)
+            {
+                int damage = Mathf.RoundToInt(enemyCombat.CurrentHealth * (percent / 100f));
+                if (damage > 0)
+                {
+                    enemyCombat.EnemyTakeDamage(damage);
+                }
+            }
+            else if (bossHealth != null && bossHealth.CurrentHP > 0)
+            {
+                int damage = Mathf.RoundToInt(bossHealth.CurrentHP * (percent / 100f));
+                if (damage > 0)
+                {
+                    bossHealth.TakeDamage(damage, ElementType.Poison);
+                }
+            }
+            else
+            {
+                break;
             }
 
             yield return new WaitForSeconds(tick);
-            remaining -= tick;
         }
 
-        running.Remove(StatusEffectType.PoisonDot);
+        ClearEffect(StatusEffectType.PoisonDot);
     }
 
-    private void ApplyKnockback(float distance)
+    private void ApplyKnockback(float distancePixels, Vector2? overrideDirection = null)
     {
-        if (rb == null || distance <= 0f) return;
+        float distanceUnits = distancePixels / 64f;
+        if (distanceUnits <= 0f)
+        {
+            return;
+        }
 
-        Vector2 dir = Vector2.right;
-        if (Player.Instance != null)
+        Vector2 dir = overrideDirection ?? Vector2.right;
+        if (!overrideDirection.HasValue && Player.Instance != null)
         {
             dir = ((Vector2)transform.position - (Vector2)Player.Instance.transform.position).normalized;
             if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
         }
 
-        rb.MovePosition(rb.position + dir * (distance / 64f));
+        Vector3 delta = (Vector3)(dir.normalized * distanceUnits);
+        if (rb != null)
+        {
+            rb.MovePosition(rb.position + (Vector2)delta);
+            return;
+        }
+
+        transform.position += delta;
+    }
+
+    private void SetAnimatorSpeed(float multiplier)
+    {
+        if (animators == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < animators.Length; i++)
+        {
+            Animator animator = animators[i];
+            if (animator == null)
+            {
+                continue;
+            }
+
+            animator.speed = multiplier;
+        }
+    }
+
+    private void RestoreBossCombatState()
+    {
+        if (bossCombat != null && bossCombatWasEnabledBeforeStun)
+        {
+            bossCombat.enabled = true;
+        }
+
+        bossCombatWasEnabledBeforeStun = false;
     }
 }

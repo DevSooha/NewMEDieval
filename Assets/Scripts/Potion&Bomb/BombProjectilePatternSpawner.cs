@@ -275,7 +275,7 @@ public static class BombProjectilePatternSpawner
                         controller?.ConfigureTornadoOrbit(
                             hitOwner,
                             orbitStartDelay + movementDelay,
-                            TornadoOrbitAngularSpeedDegPerSec);
+                            phase != null ? phase.orbitAngularSpeedDegPerSec : TornadoOrbitAngularSpeedDegPerSec);
                         onProjectileSpawn?.Invoke(controller);
                     });
             }

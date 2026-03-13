@@ -8,10 +8,13 @@ public static class PotionDesignCatalog
     {
         public int damage;
         public ElementType subElement = ElementType.None;
+        public DamageTargetType damageTarget = DamageTargetType.Both;
         public bool ignoreSelfHitPenalty;
+        public float initialSpawnDelay;
         public float projectileSpeed = 8f;
         public float fireInterval = 0.25f;
         public float rotationSpeedDegPerSec = 30f;
+        public float orbitAngularSpeedDegPerSec = 30f;
         public readonly List<StatusEffectSpec> playerEffects = new();
         public readonly List<StatusEffectSpec> enemyEffects = new();
     }
@@ -122,13 +125,16 @@ public static class PotionDesignCatalog
             },
             useCardinalDirections = isFirstPhase,
             duration = 8f,
+            temperature = temperature,
+            initialSpawnDelay = tempDesign.initialSpawnDelay,
             fireInterval = tempDesign.fireInterval,
             projectileSpeed = tempDesign.projectileSpeed,
             rotationSpeedDegPerSec = tempDesign.rotationSpeedDegPerSec,
+            orbitAngularSpeedDegPerSec = tempDesign.orbitAngularSpeedDegPerSec,
             baseDamage = tempDesign.damage,
             primaryElement = design.primary,
             subElement = tempDesign.subElement,
-            damageTarget = DamageTargetType.Both,
+            damageTarget = tempDesign.damageTarget,
             ignoreSelfHitPenalty = tempDesign.ignoreSelfHitPenalty,
             healsPlayerOnSelfHit = ContainsEffect(tempDesign.playerEffects, StatusEffectType.HealPlayerFlat)
         };
@@ -176,7 +182,7 @@ public static class PotionDesignCatalog
             low: Temp(50,
                 player: new[] { Fx(StatusEffectType.StealthInvulnerable, 7f, 0.3f) }),
             mid: Temp(0,
-                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 3f) },
+                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 1f) },
                 enemy: new[] { Fx(StatusEffectType.HealEnemyCurrentHpPercent, 0f, 0.8f) }),
             high: Temp(100)
         ));
@@ -192,7 +198,7 @@ public static class PotionDesignCatalog
 
         Add(map, NewIngredient(
             "MORBIDMIRE", "몰비드", "마이어", ElementType.Water, IngredientShapeType.AfterimageBomb,
-            low: Temp(0,
+            low: Temp(0, ignoreSelfPenalty: true,
                 enemy: new[] { Fx(StatusEffectType.EnemyStun, 8f, 1f) }),
             mid: Temp(120, sub: ElementType.Dark),
             high: Temp(0, sub: ElementType.Poison,
@@ -204,10 +210,10 @@ public static class PotionDesignCatalog
             low: Temp(100,
                 player: new[] { Fx(StatusEffectType.PlayerMoveSpeedMultiplier, 16f, 2f) }),
             mid: Temp(0,
-                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 3f) },
+                player: new[] { Fx(StatusEffectType.HealPlayerFlat, 0f, 1f) },
                 enemy: new[] { Fx(StatusEffectType.HealEnemyCurrentHpPercent, 0f, 0.8f) }),
             high: Temp(100,
-                player: new[] { Fx(StatusEffectType.StealthOnly, 15f, 0.3f) })
+                player: new[] { Fx(StatusEffectType.StealthInvulnerable, 15f, 0.3f) })
         ));
 
         Add(map, NewIngredient(
@@ -225,7 +231,7 @@ public static class PotionDesignCatalog
 
         Add(map, NewIngredient(
             "Dustflare", "더스트", "플레어", ElementType.Fire, IngredientShapeType.Fireworks,
-            low: Temp(50, projectileSpeed: 4f),
+            low: Temp(50, initialSpawnDelay: 0.25f, projectileSpeed: 4f),
             mid: Temp(100),
             high: Temp(200,
                 enemy: new[] { Fx(StatusEffectType.EnemyMoveSpeedMultiplier, 10f, 2f) })
@@ -233,15 +239,15 @@ public static class PotionDesignCatalog
 
         Add(map, NewIngredient(
             "HALLOWBLAZE", "할로우", "블레이즈", ElementType.Fire, IngredientShapeType.Tornado,
-            low: Temp(140, sub: ElementType.Light, projectileSpeed: 4f),
-            mid: Temp(140, sub: ElementType.Light, projectileSpeed: 12f),
+            low: Temp(140, sub: ElementType.Light, orbitAngularSpeed: 15f),
+            mid: Temp(140, sub: ElementType.Light, orbitAngularSpeed: 60f),
             high: Temp(300, sub: ElementType.Light,
-                player: new[] { Fx(StatusEffectType.BlindWhite, 0.5f, 1f) })
+                enemy: new[] { Fx(StatusEffectType.BlindWhite, 0.5f, 1f) })
         ));
 
         Add(map, NewIngredient(
             "HelioSpark", "헬리오", "스파크", ElementType.Electric, IngredientShapeType.Fireworks,
-            low: Temp(30, ignoreSelfPenalty: true),
+            low: Temp(3, damageTarget: DamageTargetType.EnemyOnly, ignoreSelfPenalty: true),
             mid: Temp(100,
                 player: new[] { Fx(StatusEffectType.PlayerMoveSpeedMultiplier, 15f, 2f) }),
             high: Temp(50,
@@ -259,8 +265,7 @@ public static class PotionDesignCatalog
         Add(map, NewIngredient(
             "FALLWING", "폴", "윙", ElementType.Electric, IngredientShapeType.Tornado,
             low: Temp(100),
-            mid: Temp(60,
-                enemy: new[] { Fx(StatusEffectType.EnemyKnockback, 0f, 64f) }),
+            mid: Temp(60),
             high: Temp(100,
                 player: new[] { Fx(StatusEffectType.PlayerStun, 3f, 1f) },
                 enemy: new[] { Fx(StatusEffectType.EnemyStun, 3f, 1f) })
@@ -297,10 +302,13 @@ public static class PotionDesignCatalog
     private static IngredientTempDesign Temp(
         int damage,
         ElementType sub = ElementType.None,
+        DamageTargetType damageTarget = DamageTargetType.Both,
         bool ignoreSelfPenalty = false,
+        float initialSpawnDelay = 0f,
         float projectileSpeed = 8f,
         float fireInterval = 0.25f,
         float rotationSpeed = 30f,
+        float orbitAngularSpeed = 30f,
         StatusEffectSpec[] player = null,
         StatusEffectSpec[] enemy = null)
     {
@@ -308,10 +316,13 @@ public static class PotionDesignCatalog
         {
             damage = damage,
             subElement = sub,
+            damageTarget = damageTarget,
             ignoreSelfHitPenalty = ignoreSelfPenalty,
+            initialSpawnDelay = initialSpawnDelay,
             projectileSpeed = projectileSpeed,
             fireInterval = fireInterval,
-            rotationSpeedDegPerSec = rotationSpeed
+            rotationSpeedDegPerSec = rotationSpeed,
+            orbitAngularSpeedDegPerSec = orbitAngularSpeed
         };
 
         if (player != null)

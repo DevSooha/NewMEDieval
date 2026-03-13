@@ -286,7 +286,19 @@ public partial class PlayerAttackSystem
             direction = Vector2.down;
         }
 
-        placementPos = (Vector2)transform.position + (direction.normalized * tileSize * distance);
+        if (floorTilemap == null)
+        {
+            return false;
+        }
+
+        Vector2 rawTargetPosition = (Vector2)transform.position + (direction.normalized * tileSize * distance);
+        Vector3Int targetCell = floorTilemap.WorldToCell(rawTargetPosition);
+        if (!floorTilemap.HasTile(targetCell))
+        {
+            return false;
+        }
+
+        placementPos = floorTilemap.GetCellCenterWorld(targetCell);
         return true;
     }
 

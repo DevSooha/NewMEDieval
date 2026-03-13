@@ -350,7 +350,7 @@ public class Player : MonoBehaviour
     }
     bool IsInteractOrAttackPressed()
     {
-        return CombatInputHelper.IsAttackPressed();
+        return CombatInputHelper.IsAttackPressed(statusController);
     }
 
 
@@ -567,11 +567,11 @@ public class Player : MonoBehaviour
 
             if (rb != null)
             {
-                rb.MovePosition(currentPosition + dir * moveDistance);
+                rb.MovePosition(constrainedPosition);
             }
             else
             {
-                transform.position = currentPosition + dir * moveDistance;
+                transform.position = constrainedPosition;
             }
 
             remaining -= moveDistance;

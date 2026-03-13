@@ -5,6 +5,8 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider2D))]
 public class PotionAreaHazard : MonoBehaviour
 {
+    private static readonly Dictionary<int, float> SharedNextTickTimeByTarget = new Dictionary<int, float>();
+
     [SerializeField] private float offscreenMargin = 0.2f;
     [SerializeField] private bool drawHazardGizmo = true;
     private BoxCollider2D triggerCollider;
@@ -145,9 +147,15 @@ public class PotionAreaHazard : MonoBehaviour
             return;
         }
 
+        if (!CanApplySharedTick(colliderId))
+        {
+            return;
+        }
+
         if (PotionHitResolver.TryResolveAreaHit(phaseSpec, other, gameObject.GetInstanceID(), transform.position))
         {
             nextTickTimeByTarget[colliderId] = Time.time + tickIntervalSeconds;
+            SharedNextTickTimeByTarget[colliderId] = Time.time + tickIntervalSeconds;
         }
     }
 
@@ -187,6 +195,16 @@ public class PotionAreaHazard : MonoBehaviour
             || viewport.x > 1f + offscreenMargin
             || viewport.y < -offscreenMargin
             || viewport.y > 1f + offscreenMargin;
+    }
+
+    private bool CanApplySharedTick(int colliderId)
+    {
+        if (!SharedNextTickTimeByTarget.TryGetValue(colliderId, out float sharedNextTickTime))
+        {
+            return true;
+        }
+
+        return Time.time >= sharedNextTickTime;
     }
 
     private void OnDrawGizmos()

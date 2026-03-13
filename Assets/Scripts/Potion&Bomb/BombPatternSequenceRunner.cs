@@ -148,13 +148,13 @@ internal static class BombPatternSequenceRunner
         {
             case ProjectilePatternType.Fireworks:
                 schedule.Add(new ScheduledSpawn(
-                    phaseIndex == 1 ? FireworksPhase1FirstShotTime : FireworksPhase2FirstShotTime,
+                    (phaseIndex == 1 ? FireworksPhase1FirstShotTime : FireworksPhase2FirstShotTime) + Mathf.Max(0f, phase.initialSpawnDelay),
                     phase.patternType,
                     phase,
                     phaseIndex,
                     onProjectileSpawn));
                 schedule.Add(new ScheduledSpawn(
-                    phaseIndex == 1 ? FireworksPhase1SecondShotTime : FireworksPhase2SecondShotTime,
+                    (phaseIndex == 1 ? FireworksPhase1SecondShotTime : FireworksPhase2SecondShotTime) + Mathf.Max(0f, phase.initialSpawnDelay),
                     phase.patternType,
                     phase,
                     phaseIndex,
@@ -256,12 +256,15 @@ internal static class BombAfterimageExplosionHelper
         return new PotionPhaseSpec
         {
             ingredientId = source.ingredientId,
+            temperature = source.temperature,
             patternType = ProjectilePatternType.AfterimageBomb,
             useCardinalDirections = source.useCardinalDirections,
             duration = source.duration,
+            initialSpawnDelay = source.initialSpawnDelay,
             fireInterval = source.fireInterval,
             projectileSpeed = source.projectileSpeed,
             rotationSpeedDegPerSec = source.rotationSpeedDegPerSec,
+            orbitAngularSpeedDegPerSec = source.orbitAngularSpeedDegPerSec,
             baseDamage = AfterimageFieldDamagePerTick,
             primaryElement = ElementType.None,
             subElement = ElementType.None,
