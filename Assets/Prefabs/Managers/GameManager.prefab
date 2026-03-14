@@ -57,7 +57,7 @@ MonoBehaviour:
   playableHeight: 18
   mainCamera: {fileID: 0}
   player: {fileID: 0}
-  startRoomData: {fileID: 11400000, guid: 281cb2b1b56741b4aae9d14976f38bb2, type: 2}
+  startRoomData: {fileID: 11400000, guid: 860e1fed1cf0e2d49b72be1781f1d9b6, type: 2}
   allMapRooms:
   - {fileID: 11400000, guid: 281cb2b1b56741b4aae9d14976f38bb2, type: 2}
   - {fileID: 11400000, guid: 0648fc3e6498e5c4abec5001fa0aad69, type: 2}
@@ -66,12 +66,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1c75e8bcab7ce5c4cbeac0955cf34f62, type: 2}
   - {fileID: 11400000, guid: 97adaad70f7af8e49b66ed4b806c33a5, type: 2}
   - {fileID: 11400000, guid: 21a547241fef03d49a55ec8d4c20f949, type: 2}
-  - {fileID: 11400000, guid: e93d6f4be3c3ddc449bea795351fa6b4, type: 2}
   - {fileID: 11400000, guid: 1465ed0872820f54f998940c6bbe967a, type: 2}
   - {fileID: 11400000, guid: c7f36f3ced0638c43bda10e785f9c36f, type: 2}
-  - {fileID: 11400000, guid: df844122793586b4fac58eb0067ea489, type: 2}
+  - {fileID: 11400000, guid: e93d6f4be3c3ddc449bea795351fa6b4, type: 2}
   - {fileID: 11400000, guid: 860e1fed1cf0e2d49b72be1781f1d9b6, type: 2}
   - {fileID: 11400000, guid: 7bc810811c44c82468d3800bc527bea7, type: 2}
+  - {fileID: 11400000, guid: df844122793586b4fac58eb0067ea489, type: 2}
   debugLogs: 1
   deactivateFarRoomsInsteadOfDestroy: 1
   currentRoomData: {fileID: 0}
@@ -99,7 +99,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38ed88fe3777f444f945919f0313a802, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TestGameStarter
-  startingRoom: {fileID: 11400000, guid: 281cb2b1b56741b4aae9d14976f38bb2, type: 2}
+  startingRoom: {fileID: 11400000, guid: 860e1fed1cf0e2d49b72be1781f1d9b6, type: 2}
   player: {fileID: 0}
   playerSpawnPointOverride: {fileID: 0}
   playerSpawnPointName: PlayerSpawnPoint
@@ -151,6 +151,7 @@ MonoBehaviour:
     rightFrameSprite: {fileID: 0}
     backgroundColor: {r: 1, g: 1, b: 1, a: 1}
     frameColor: {r: 1, g: 1, b: 1, a: 1}
+  targetFrameTileHeight: 192
 --- !u!1 &7191000000000000101
 GameObject:
   m_ObjectHideFlags: 0
