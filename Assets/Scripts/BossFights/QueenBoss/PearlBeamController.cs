@@ -49,14 +49,13 @@ public class PearlBeamController : MonoBehaviour
     private float nextHitTime = 0f;
 
     [Header("Damage Blocker (Flower)")]
-    [SerializeField] private LayerMask flowerMask;   // Flower 타일맵/콜라이더 레이어
+    [SerializeField] private LayerMask flowerMask;
     [SerializeField] private float blockerSkin = 0.02f;
 
-    // ✅ Player 스크립트 수정 없이 넉백 유도용(가짜 sender)
-    [Header("Knockback (No Player Script Change)")]
+    [Header("Knockback")]
     [SerializeField] private float knockbackForce = 8f;
     [SerializeField] private float knockbackStunTime = 0.15f;
-    [SerializeField] private float knockbackSenderOffsetX = 1.0f; // 더미 sender를 플레이어 옆에 둘 거리(월드)
+    [SerializeField] private float knockbackSenderOffsetX = 1.0f;
 
     private Transform knockbackSenderDummy;
 
@@ -73,7 +72,6 @@ public class PearlBeamController : MonoBehaviour
                 groundTilemap = groundObj.GetComponentInChildren<Tilemap>();
         }
 
-        // ✅ 더미 sender 생성
         var go = new GameObject("[PearlBeam]KnockbackSenderDummy");
         go.hideFlags = HideFlags.HideInHierarchy;
         knockbackSenderDummy = go.transform;
@@ -85,24 +83,42 @@ public class PearlBeamController : MonoBehaviour
             Destroy(knockbackSenderDummy.gameObject);
     }
 
-    
-
     private IEnumerator secondStage()
     {
-        int px = lockedPlayerCell.x;
+        int px = lockedPlayerCell.x; 
+        // 이전 Playonce()에 lockedPlayerCell의 x좌표를 받는다. 
 
         int laneIndex = Mathf.FloorToInt((px - laneStartLeftX) / (float)laneStep);
+        //플레이어가 어느 lane에 있는지 계산하는 코드이다. 
         laneIndex = Mathf.Clamp(laneIndex, 0, laneCount - 1);
-
+        //Clamp는 값을 범위 안에 제한합니다. laneCount로 배열 범위 초과 방지를 한다. 
+        
+        
         lockedLaneIndex = laneIndex;
+        //선택된 lane을 저장한다. 현재 선택된 lane 번호를 저장한다.
         lockedLaneLeftX = laneStartLeftX + laneIndex * laneStep;
-
+        //lane의 시작 X 계산,
+        
         Transform chosenEmitter = emitters[laneIndex];
-        if (chosenEmitter == null) yield break;
 
         yield return StartCoroutine(FireRoutine(chosenEmitter, laneIndex, lockedLaneLeftX));
     }
-    
+
+    public IEnumerator PlayOnce(Transform player)
+    {
+        playerTF = player; 
+        //플레이어의 위치를 받는데 사용한다. 
+
+        yield return new WaitForSeconds(0.5f); 
+        //0.5초 동안 기다리는거
+
+        lockedPlayerCell = groundTilemap.WorldToCell(playerTF.position); 
+        //플레이어의 위치를 타일 좌표로 변환한다. 
+
+        yield return StartCoroutine(secondStage()); 
+        //기다리거나 그런게 아니라 동시에 실행됨. secondStage()와 같이 실행되고, 그리고 나서 끝나면 Playonce 다시 진행하는 것이다. 
+    }
+
     private IEnumerator FireRoutine(Transform emitter, int laneIndex, int laneLeftX)
     {
         Vector3 a = groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX, magicCircleY, 0));
@@ -176,22 +192,7 @@ public class PearlBeamController : MonoBehaviour
 
         return fullHeight;
     }
-    public IEnumerator PlayOnce(Transform player)
-    {
-        playerTF = player;
 
-        if (groundTilemap == null || playerTF == null)
-            yield break;
-
-        // 시전 시간
-        yield return new WaitForSeconds(0.5f);
-
-        // 플레이어 위치 고정
-        lockedPlayerCell = groundTilemap.WorldToCell(playerTF.position);
-
-        // 빔 실행
-        yield return StartCoroutine(secondStage());
-    }
     private void TryHit(Collider2D other)
     {
         if (col == null || !col.enabled) return;
@@ -204,7 +205,6 @@ public class PearlBeamController : MonoBehaviour
 
         nextHitTime = Time.time + hitInterval;
 
-        // ✅ 셀 Y로 방향 결정
         int hitCellY = groundTilemap != null
             ? groundTilemap.WorldToCell(other.transform.position).y
             : Mathf.RoundToInt(other.transform.position.y);
@@ -212,19 +212,16 @@ public class PearlBeamController : MonoBehaviour
         bool knockRight = (hitCellY >= -9 && hitCellY <= 0);
         bool knockLeft = (hitCellY > 0);
 
-        // ✅ 데미지/피격은 기존 2파라미터만 호출 (3파라미터/ApplyKnockback 사용 안함)
         BossHitResolver.TryApplyBossHit(other, damagePerHit, transform.position);
 
-        // ✅ 넉백(플레이어 스크립트 수정 없이) : 더미 sender 위치로 방향 유도
         if (knockbackSenderDummy != null && (knockRight || knockLeft))
         {
             Vector3 p = player.transform.position;
 
-            // 오른쪽 넉백 = sender를 플레이어 왼쪽에 둔다
-            // 왼쪽  넉백 = sender를 플레이어 오른쪽에 둔다
             float senderX = p.x + (knockLeft ? +knockbackSenderOffsetX : -knockbackSenderOffsetX);
 
             knockbackSenderDummy.position = new Vector3(senderX, p.y, p.z);
+
             PlayerStatusController status = player.GetComponent<PlayerStatusController>();
             if (status == null || !status.IsKnockbackImmune)
             {
@@ -271,23 +268,13 @@ public class PearlBeamController : MonoBehaviour
         vfxLoop.SetActive(false);
     }
 
-    private Vector3 GetLaneAnchorWorld(int laneLeftX)
-    {
-        Vector3 a = groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX, magicCircleY, 0));
-        Vector3 b = groundTilemap.GetCellCenterWorld(new Vector3Int(laneLeftX + 1, magicCircleY, 0));
-        return (a + b) * 0.5f;
-    }
-
     private float ComputeDamageHeightUntilFlower(Vector3 origin, float fullHeight)
     {
         RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.up, fullHeight, flowerMask);
-        if (hit.collider == null)
-        {
-            Debug.Log("[PearlBeam] No flower hit by raycast");
-            return fullHeight;
-        }
 
-        Debug.Log($"[PearlBeam] Flower blocks at distance={hit.distance:F2} hit={hit.collider.name}");
+        if (hit.collider == null)
+            return fullHeight;
+
         return Mathf.Max(0f, hit.distance - blockerSkin);
     }
 }

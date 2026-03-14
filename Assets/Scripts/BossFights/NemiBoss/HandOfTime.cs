@@ -35,46 +35,26 @@ public class HandOfTime : MonoBehaviour
 
     public IEnumerator PlayOnce(Transform playerTF)
     {
-        if (playerTF == null || groundTilemap == null)
-            yield break;
+        yield return new WaitForSeconds(castTime); //이거 기다리는 거
 
-        // 시전 모션
-        yield return new WaitForSeconds(castTime);
+        Debug.Log($"Player world: {playerTF.position}"); //플레이어의 위치를 받아.
 
-        // 플레이어 셀 좌표
-        Vector3Int playerCell = groundTilemap.WorldToCell(playerTF.position);
+        // 플레이어 world 위치 기준 emitter 찾기
+        Transform emitterY = emitterCtrl.GetClosestYEmitter(playerTF.position.x); //
+        Transform emitterX = emitterCtrl.GetClosestXEmitter(playerTF.position.y); //
 
-        // =========================
-        // 2x2 위에서 내려오는 탄
-        // =========================
+        Vector3 spawn2x2 = emitterY.position;//
+        Vector3 spawn1x3 = emitterX.position;//
 
-        int idxY = emitterCtrl.GetFixedYIndexFromPlayerCellX(playerCell.x);
+        Debug.Log($"Spawn Y: {spawn2x2}");
+        Debug.Log($"Spawn X: {spawn1x3}");
 
-        Transform emitterY = emitterCtrl.GetFixedYEmitter(idxY);
-
-        Vector3 spawn2x2 = emitterY.position;
-
-        // =========================
-        // 1x3 오른쪽에서 들어오는 탄
-        // =========================
-
-        int idxX = emitterCtrl.GetFixedXIndexFromPlayerCellY(playerCell.y);
-
-        Transform emitterX = emitterCtrl.GetFixedXEmitter(idxX);
-
-        Vector3 spawn1x3 = emitterX.position;
-
-        Debug.Log($"[HandOfTime] spawn2x2 = {spawn2x2}");
-        Debug.Log($"[HandOfTime] spawn1x3 = {spawn1x3}");
-
-        // 생성
         HandOfTimeProjectile p2 =
-            Instantiate(prefab2x2, spawn2x2, Quaternion.identity);
+            Instantiate(prefab2x2, spawn2x2, prefab2x2.transform.rotation);
 
         HandOfTimeProjectile p1 =
-            Instantiate(prefab1x3, spawn1x3, Quaternion.identity);
+            Instantiate(prefab1x3, spawn1x3, prefab1x3.transform.rotation);
 
-        // 발사
         p2.BeginFire(
             p2.transform.position + Vector3.down,
             speedWorldPerSec,
