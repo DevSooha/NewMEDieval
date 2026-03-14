@@ -197,6 +197,7 @@ public class RoomManager : MonoBehaviour
         if (matchData != null)
         {
             currentRoomData = matchData;
+            ApplySeasonVisuals(matchData, true);
 
             Vector3 intendedPos = GetIntendedRoomPosition(matchData, null, Vector2.zero, 0f);
 
@@ -235,6 +236,7 @@ public class RoomManager : MonoBehaviour
         if (currentRoomData != null) return; // ??€? ?¥ë‡ë¦?ë¶¾ë§–
 
         currentRoomData = startRoom;
+        ApplySeasonVisuals(startRoom, true);
 
         // ????–ì˜‰ è«??ê¾©íŠ‚???ê³???æ¹²ê³—???°ì¤ˆ ?ëº¤ì ™ (roomCoordåª›Â€ ??¼ë‹”??ë£???–ì˜‰?? ??‰ì ™)
         runtimeRoomPositions[startRoom.roomID] = position;
@@ -423,6 +425,7 @@ public class RoomManager : MonoBehaviour
         ZeroPlayerVelocity();
 
         currentRoomData = nextRoom;
+        ApplySeasonVisuals(nextRoom, false);
 
         // ????€ë£??ê¾¨ì¦º ???ê³????ê¾©íŠ‚?? ??½ë»¾ ï§ã…¼ë¬???ï§?è«???»íˆ•??ºë“ƒ ?ê¾©íŠ‚????‰ê½‘??•ì¤ˆ ????        // (åª›Â€???? ??»â…¨ ??‰ì ™ ????ˆë’— å¯ƒìŒ?? è«???»íˆ•??ºë“ƒ??ç§»ë?ì°??°ì¤ˆ ?ëº¤ì ¹??ãˆƒ ?ëªƒë±¶ ?„ì’•???€?‘åª›? ??€??
         Vector3 settledRoomPos = new Vector3(targetCameraPos.x, targetCameraPos.y, 0f);
@@ -697,6 +700,17 @@ public class RoomManager : MonoBehaviour
         Vector3 fallback = CalculateRoomPosition(currentRoomData);
         runtimeRoomPositions[currentRoomData.roomID] = fallback;
         DWarn($"EnsureRuntimePosition: cached current [{currentRoomData.roomID}] from roomCoord fallback pos={fallback}");
+    }
+
+    private void ApplySeasonVisuals(RoomData roomData, bool immediate)
+    {
+        if (SeasonVisualController.Instance == null || roomData == null)
+        {
+            return;
+        }
+
+        float duration = immediate ? 0f : transitionTime;
+        SeasonVisualController.Instance.ApplySeason(roomData, immediate, duration);
     }
 
     private void SetPlayerInput(bool active)
