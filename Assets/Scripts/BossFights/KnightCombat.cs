@@ -95,18 +95,20 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private void OnEnable()
     {
-        PlayerHealth.OnPlayerDeath += HandlePlayerDeath;
+        ResumeBossPresentation();
+        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
         ResolvePlayerTransform();
     }
 
     private void OnDisable()
     {
-        PlayerHealth.OnPlayerDeath -= HandlePlayerDeath;
+        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
         CleanupOffensivesOnDisable();
     }
 
     public override void StartBattle()
     {
+        ResumeBossPresentation();
         if (isBattleRunning) return;
         if (!ResolvePlayerTransform()) return;
 
@@ -339,6 +341,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private void HandlePlayerDeath()
     {
+        CleanupBossPresentationOnPlayerDeath();
         if (deathRoutine != null) return;
         deathRoutine = StartCoroutine(HandlePlayerDeathRoutine());
     }
@@ -444,6 +447,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private void ResetBattleForRetry()
     {
+        ResumeBossPresentation();
         isBattleRunning = false;
 
         if (battleLoopRoutine != null)

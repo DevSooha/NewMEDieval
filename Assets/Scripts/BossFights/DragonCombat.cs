@@ -86,13 +86,14 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
     private void OnEnable()
     {
         ActiveInstance = this;
+        ResumeBossPresentation();
         ApplyFlyingStandbyPose();
-        PlayerHealth.OnPlayerDeath += HandlePlayerDeath;
+        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
     }
 
     private void OnDisable()
     {
-        PlayerHealth.OnPlayerDeath -= HandlePlayerDeath;
+        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
         SetFlyingRestrictionZoneActive(false);
         CleanupOffensivesOnDisable();
 
@@ -132,6 +133,7 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
 
     public override void StartBattle()
     {
+        ResumeBossPresentation();
         if (IsStealthBattleSkipped)
         {
             Debug.Log("[Dragon] StartBattle ignored because stealth skip is active.");
@@ -406,11 +408,13 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
 
         battleResultHandled = true;
         Debug.Log("[Dragon] Player defeated.");
+        CleanupBossPresentationOnPlayerDeath();
         ResetBattleForRetry();
     }
 
     private void ResetBattleForRetry()
     {
+        ResumeBossPresentation();
         isBattleActive = false;
         battleResultHandled = false;
         CleanupOffensivesOnBattleReset();

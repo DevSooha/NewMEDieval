@@ -149,6 +149,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
+        PlayerDeathCleanup.StopAllActivePlayback();
         OnPlayerDeath?.Invoke();
         gameObject.SetActive(false);
     }

@@ -50,6 +50,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     private FacingDirection currentFacingDirection = FacingDirection.E;
     private bool hasTriggeredFarAttackInCurrentWindow;
     private bool hasPlayedAttackAnimationInCurrentAttack;
+    private bool isBattleStopped;
 
     private void Awake()
     {
@@ -66,11 +67,21 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
     public override void StartBattle()
     {
+        ResumeBossPresentation();
+        ResetBattleFlags();
         StartCoroutine(AppearRoutine());
+    }
+
+    private void OnEnable()
+    {
+        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
+        ResumeBossPresentation();
+        isBattleStopped = false;
     }
 
     private void OnDisable()
     {
+        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
         CleanupOffensivesOnDisable();
     }
 
@@ -107,6 +118,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     {
         while (true)
         {
+            if (isBattleStopped) yield break;
             if (playerTF == null) yield break;
             float currentDistanceUnits = Vector2.Distance(transform.position, playerTF.position);
             float currentDistancePx = currentDistanceUnits * PixelsPerUnit;
@@ -145,6 +157,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
     private IEnumerator AttackRoutine()
     {
+        if (isBattleStopped) yield break;
         Debug.Log("공격!");
         hasPlayedAttackAnimationInCurrentAttack = false;
 
@@ -356,4 +369,27 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         Vector2 resolvedDir = dirToPlayer.sqrMagnitude > 0.0001f ? dirToPlayer : Vector2.right;
         UpdateAnimatorForState(BossState.Attack, resolvedDir);
     }
+
+    private void HandlePlayerDeath()
+    {
+        if (isBattleStopped)
+        {
+            return;
+        }
+
+        isBattleStopped = true;
+        StopAllCoroutines();
+        CleanupBossPresentationOnPlayerDeath();
+        ResetBattleFlags();
+    }
+
+    private void ResetBattleFlags()
+    {
+        currentState = BossState.Move;
+        keepCloseTimer = 0f;
+        hasTriggeredFarAttackInCurrentWindow = false;
+        hasPlayedAttackAnimationInCurrentAttack = false;
+        lastPlayedStateName = null;
+    }
+
 }
