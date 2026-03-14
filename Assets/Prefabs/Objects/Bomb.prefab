@@ -79,7 +79,7 @@ MonoBehaviour:
   topRenderer: {fileID: 0}
   frameRenderer: {fileID: 0}
   forceSorting: 1
-  sortingLayerName: EnemyBullet
+  sortingLayerName: Objects
   sortingOrder: 40
 --- !u!212 &1165381254583271831
 SpriteRenderer:

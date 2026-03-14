@@ -44,6 +44,7 @@ public partial class PlayerAttackSystem : MonoBehaviour
     private int currentStack = 0;
     private Coroutine chargeRoutine;
     private readonly List<GameObject> activeMarkers = new();
+    private readonly List<int> activeMarkerStacks = new();
 
     void Start()
     {

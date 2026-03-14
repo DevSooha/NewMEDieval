@@ -49,7 +49,7 @@ public partial class PlayerAttackSystem
             {
                 Debug.Log($"[AttackSystem] Bomb release | hold={duration:0.00}s | targetStack={maxCount} | ammo={ammoBeforeSpawn}", this);
             }
-            int spawnedCount = SpawnBombsByStack(maxCount);
+            int spawnedCount = SpawnBombAtLastMarker(maxCount);
 
             if (spawnedCount > 0)
             {
@@ -159,6 +159,7 @@ public partial class PlayerAttackSystem
         GameObject marker = Instantiate(stackMarkerPrefab, spawnPos, Quaternion.identity);
         ConfigureStackMarker(marker, stackIndex);
         activeMarkers.Add(marker);
+        activeMarkerStacks.Add(stackIndex);
     }
 
     void HideLastStackMarker()
@@ -176,6 +177,7 @@ public partial class PlayerAttackSystem
         }
 
         activeMarkers.RemoveAt(lastIndex);
+        activeMarkerStacks.RemoveAt(lastIndex);
     }
 
     void ClearMarkers()
@@ -185,6 +187,7 @@ public partial class PlayerAttackSystem
             if (marker != null) Destroy(marker);
         }
         activeMarkers.Clear();
+        activeMarkerStacks.Clear();
     }
 
     bool SpawnBombAt(int distance)
@@ -234,26 +237,20 @@ public partial class PlayerAttackSystem
         return true;
     }
 
-    int SpawnBombsByStack(int maxCount)
+    int SpawnBombAtLastMarker(int maxCount)
     {
         if (maxCount <= 0)
         {
             return 0;
         }
 
-        int clampedMaxCount = Mathf.Clamp(maxCount, 0, MaxBombStacks);
-        int spawnedCount = 0;
-        for (int i = 1; i <= clampedMaxCount; i++)
+        int targetStack = Mathf.Clamp(maxCount, 1, MaxBombStacks);
+        if (activeMarkerStacks.Count > 0)
         {
-            if (!SpawnBombAt(i))
-            {
-                break;
-            }
-
-            spawnedCount++;
+            targetStack = activeMarkerStacks[activeMarkerStacks.Count - 1];
         }
 
-        return spawnedCount;
+        return SpawnBombAt(targetStack) ? 1 : 0;
     }
 
     bool CanPlaceBombAtDistance(int distance)

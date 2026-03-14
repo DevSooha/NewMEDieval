@@ -45,12 +45,23 @@ public class PotionAreaHazard : MonoBehaviour
 
     public void Init(PotionPhaseSpec spec, Vector2 sizeUnits, float durationSeconds)
     {
-        Init(spec, sizeUnits, durationSeconds, 0, 0);
+        Init(spec, sizeUnits, durationSeconds, 0f, 0, 0, 0f);
     }
 
     public void Init(PotionPhaseSpec spec, Vector2 sizeUnits, float durationSeconds, int sourceBombInstanceId, int sourcePhaseIndex)
     {
-        Init(spec, sizeUnits, durationSeconds, 0f, sourceBombInstanceId, sourcePhaseIndex);
+        Init(spec, sizeUnits, durationSeconds, 0f, sourceBombInstanceId, sourcePhaseIndex, 0f);
+    }
+
+    public void Init(
+        PotionPhaseSpec spec,
+        Vector2 sizeUnits,
+        float durationSeconds,
+        int sourceBombInstanceId,
+        int sourcePhaseIndex,
+        float rotationDegrees)
+    {
+        Init(spec, sizeUnits, durationSeconds, 0f, sourceBombInstanceId, sourcePhaseIndex, rotationDegrees);
     }
 
     public void Init(
@@ -60,6 +71,18 @@ public class PotionAreaHazard : MonoBehaviour
         float tickInterval,
         int sourceBombInstanceId,
         int sourcePhaseIndex)
+    {
+        Init(spec, sizeUnits, durationSeconds, tickInterval, sourceBombInstanceId, sourcePhaseIndex, 0f);
+    }
+
+    public void Init(
+        PotionPhaseSpec spec,
+        Vector2 sizeUnits,
+        float durationSeconds,
+        float tickInterval,
+        int sourceBombInstanceId,
+        int sourcePhaseIndex,
+        float rotationDegrees)
     {
         phaseSpec = spec;
         enteredTargets.Clear();
@@ -73,6 +96,7 @@ public class PotionAreaHazard : MonoBehaviour
         triggerCollider.size = new Vector2(
             Mathf.Max(0.05f, sizeUnits.x),
             Mathf.Max(0.05f, sizeUnits.y));
+        transform.rotation = Quaternion.Euler(0f, 0f, rotationDegrees);
         triggerCollider.enabled = true;
 
         ApplyImmediateTicksForCurrentOverlaps();

@@ -245,7 +245,8 @@ internal static class BombAfterimageExplosionHelper
                 projectile.PhaseSpec,
                 projectile.PhaseIndex,
                 explosionSizeUnits,
-                bombInstanceId);
+                bombInstanceId,
+                projectile.LineAngleDeg);
 
             UnityEngine.Object.Destroy(projectile.gameObject);
         }
@@ -257,7 +258,8 @@ internal static class BombAfterimageExplosionHelper
         PotionPhaseSpec durationSourcePhase,
         int phaseIndex,
         float explosionSizeUnits,
-        int bombInstanceId)
+        int bombInstanceId,
+        float rotationDegrees)
     {
         GameObject hazardObject = new GameObject("AfterimageExplosionHazard");
         hazardObject.transform.position = worldPosition;
@@ -269,7 +271,8 @@ internal static class BombAfterimageExplosionHelper
             Mathf.Max(0.05f, durationSourcePhase != null ? durationSourcePhase.duration : AfterimageFieldDurationSeconds),
             AfterimageFieldDamageIntervalSeconds,
             bombInstanceId,
-            phaseIndex);
+            phaseIndex,
+            rotationDegrees);
     }
 
     private static PotionPhaseSpec BuildExplosionSpec(PotionPhaseSpec sourcePhase, Func<PotionPhaseSpec> buildFallbackPhase)
