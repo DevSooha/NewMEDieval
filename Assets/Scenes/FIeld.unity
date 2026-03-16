@@ -1274,6 +1274,10 @@ PrefabInstance:
       propertyPath: springBGM
       value: 
       objectReference: {fileID: 8300000, guid: b8ee94e28b59aa14ea75f3120192a85b, type: 3}
+    - target: {fileID: 5094380547055318228, guid: a3e17ff276f41d94eba697f7018ccb14, type: 3}
+      propertyPath: summerBGM
+      value: 
+      objectReference: {fileID: 8300000, guid: 6191ac22b140fdc498956e0be0d94a48, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

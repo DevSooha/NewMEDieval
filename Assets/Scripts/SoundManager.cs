@@ -5,8 +5,8 @@ public class SoundManager : MonoBehaviour
 {
     [Header("BGM's")]
     public AudioClip springBGM;
+    public AudioClip summerBGM;
     public AudioClip fallBGM;
-    
 
     AudioSource audioSource;
     public static SoundManager instance;
@@ -37,11 +37,14 @@ public class SoundManager : MonoBehaviour
 
         switch (roomID)
         {
-            case "aut_1" or "aut_2" or "aut_3": // 실제 씬 이름
-                clip = fallBGM;
-                break;
             case "spr_1" or "spr_2" or "spr_3" or "spr_4" or "spr_5" or "spr_6" or "spr_7":
                 clip = springBGM;
+                break;
+            case "sum_1" or "sum_2" or "sum_3":
+                clip = summerBGM;
+                break;                
+            case "aut_1" or "aut_2" or "aut_3": 
+                clip = fallBGM;
                 break;
         }
         if (clip == null) return;
