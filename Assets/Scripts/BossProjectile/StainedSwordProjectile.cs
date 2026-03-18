@@ -18,6 +18,7 @@ public class StainedSwordProjectile : MonoBehaviour
     private bool isDestroyed;
     private Collider2D projectileCollider;
     private SpriteRenderer[] spriteRenderers;
+    private ParticleSystem[] particleSystems;
 
     private void Awake()
     {
@@ -25,6 +26,7 @@ public class StainedSwordProjectile : MonoBehaviour
         projectileCollider.isTrigger = true;
         projectileCollider.enabled = false;
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        particleSystems = GetComponentsInChildren<ParticleSystem>(true);
     }
 
     public void Initialize(Transform followTarget, Action<StainedSwordProjectile> onDestroyedCallback)
@@ -35,6 +37,23 @@ public class StainedSwordProjectile : MonoBehaviour
         isFading = false;
         canCollide = false;
         isDestroyed = false;
+        gameObject.SetActive(true);
+
+        foreach (SpriteRenderer spriteRenderer in spriteRenderers)
+        {
+            if (spriteRenderer == null) continue;
+
+            Color color = spriteRenderer.color;
+            color.a = 1f;
+            spriteRenderer.color = color;
+        }
+
+        foreach (ParticleSystem particleSystem in particleSystems)
+        {
+            if (particleSystem == null) continue;
+            particleSystem.Clear(true);
+            particleSystem.Play(true);
+        }
 
         StopAllCoroutines();
         StartCoroutine(HomingRoutine());
@@ -75,6 +94,12 @@ public class StainedSwordProjectile : MonoBehaviour
 
         projectileCollider.enabled = false;
         canCollide = false;
+
+        foreach (ParticleSystem particleSystem in particleSystems)
+        {
+            if (particleSystem == null) continue;
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
 
         float elapsed = 0f;
         while (elapsed < fadeOutDuration)
@@ -147,6 +172,12 @@ public class StainedSwordProjectile : MonoBehaviour
         if (projectileCollider != null)
         {
             projectileCollider.enabled = false;
+        }
+
+        foreach (ParticleSystem particleSystem in particleSystems)
+        {
+            if (particleSystem == null) continue;
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
         DestroyProjectile();

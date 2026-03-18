@@ -6,7 +6,9 @@ public class PlayerHealth : MonoBehaviour
 {
     [Header("Health Settings")]
     [SerializeField] private int maxHP = 6;
-    [SerializeField] private float hitInvulnerableDuration = 0.8f;
+    [SerializeField] private float defaultHitInvulnerableDuration = 0.8f;
+    [SerializeField] private float normalMonsterHitInvulnerableDuration = 0.4f;
+    [SerializeField] private float bossHitInvulnerableDuration = 0.8f;
     [SerializeField] private float hitBlinkInterval = 0.16f;
 
     private int currentHP;
@@ -21,10 +23,13 @@ public class PlayerHealth : MonoBehaviour
     public int CurrentHP => currentHP;
     public int EffectiveMaxHp => maxHP + temporaryMaxHpBonus;
     public bool IsInvulnerable => isInvulnerable;
+    public float NormalMonsterHitInvulnerableDuration => normalMonsterHitInvulnerableDuration;
+    public float BossHitInvulnerableDuration => bossHitInvulnerableDuration;
 
     private void Awake()
     {
         currentHP = maxHP;
+        CombatTargetHitbox.EnsureForPlayer(this);
     }
 
     private void Start()
@@ -34,8 +39,13 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
-        if (amount <= 0) return;
-        if (isInvulnerable) return;
+        TryTakeDamage(amount, defaultHitInvulnerableDuration);
+    }
+
+    public bool TryTakeDamage(int amount, float invulnerableDuration)
+    {
+        if (amount <= 0) return false;
+        if (isInvulnerable) return false;
 
         currentHP -= amount;
         currentHP = Mathf.Clamp(currentHP, 0, EffectiveMaxHp);
@@ -45,16 +55,22 @@ public class PlayerHealth : MonoBehaviour
         if (currentHP <= 0)
         {
             Die();
-            return;
+            return true;
         }
 
-        TriggerHitInvulnerability();
+        TriggerHitInvulnerability(invulnerableDuration);
+        return true;
     }
 
     public void TriggerHitInvulnerability()
     {
-        if (hitInvulnerableDuration <= 0f) return;
-        SetInvulnerableForSeconds(hitInvulnerableDuration);
+        TriggerHitInvulnerability(defaultHitInvulnerableDuration);
+    }
+
+    public void TriggerHitInvulnerability(float duration)
+    {
+        if (duration <= 0f) return;
+        SetInvulnerableForSeconds(duration);
     }
 
     public void SetInvulnerableForSeconds(float duration)
@@ -133,6 +149,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
+        PlayerDeathCleanup.StopAllActivePlayback();
         OnPlayerDeath?.Invoke();
         gameObject.SetActive(false);
     }

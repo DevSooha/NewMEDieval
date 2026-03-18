@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
 public partial class PlayerAttackSystem
@@ -50,7 +49,7 @@ public partial class PlayerAttackSystem
             {
                 Debug.Log($"[AttackSystem] Bomb release | hold={duration:0.00}s | targetStack={maxCount} | ammo={ammoBeforeSpawn}", this);
             }
-            int spawnedCount = SpawnBombsByStack(maxCount);
+            int spawnedCount = SpawnBombAtLastMarker(maxCount);
 
             if (spawnedCount > 0)
             {
@@ -160,6 +159,7 @@ public partial class PlayerAttackSystem
         GameObject marker = Instantiate(stackMarkerPrefab, spawnPos, Quaternion.identity);
         ConfigureStackMarker(marker, stackIndex);
         activeMarkers.Add(marker);
+        activeMarkerStacks.Add(stackIndex);
     }
 
     void HideLastStackMarker()
@@ -177,6 +177,7 @@ public partial class PlayerAttackSystem
         }
 
         activeMarkers.RemoveAt(lastIndex);
+        activeMarkerStacks.RemoveAt(lastIndex);
     }
 
     void ClearMarkers()
@@ -186,6 +187,7 @@ public partial class PlayerAttackSystem
             if (marker != null) Destroy(marker);
         }
         activeMarkers.Clear();
+        activeMarkerStacks.Clear();
     }
 
     bool SpawnBombAt(int distance)
@@ -220,7 +222,7 @@ public partial class PlayerAttackSystem
             return false;
         }
 
-        ApplyFieldVisualScaleIfNeeded(bombObj);
+        FieldSceneScaleUtility.ApplyIfNeeded(bombObj);
 
         Bomb bomb = bombObj.GetComponent<Bomb>();
         if (bomb != null && slot.equippedPotion != null && slot.equippedPotion.data != null)
@@ -235,26 +237,20 @@ public partial class PlayerAttackSystem
         return true;
     }
 
-    int SpawnBombsByStack(int maxCount)
+    int SpawnBombAtLastMarker(int maxCount)
     {
         if (maxCount <= 0)
         {
             return 0;
         }
 
-        int clampedMaxCount = Mathf.Clamp(maxCount, 0, MaxBombStacks);
-        int spawnedCount = 0;
-        for (int i = 1; i <= clampedMaxCount; i++)
+        int targetStack = Mathf.Clamp(maxCount, 1, MaxBombStacks);
+        if (activeMarkerStacks.Count > 0)
         {
-            if (!SpawnBombAt(i))
-            {
-                break;
-            }
-
-            spawnedCount++;
+            targetStack = activeMarkerStacks[activeMarkerStacks.Count - 1];
         }
 
-        return spawnedCount;
+        return SpawnBombAt(targetStack) ? 1 : 0;
     }
 
     bool CanPlaceBombAtDistance(int distance)
@@ -269,20 +265,54 @@ public partial class PlayerAttackSystem
 
     private bool TryGetPlacementPositionAtDistance(int distance, out Vector2 placementPos)
     {
-        Vector2 rawPos = (Vector2)transform.position + (distance * tileSize * GetAimDirection());
-        return TryResolvePlacementPosition(rawPos, out placementPos);
-    }
+        placementPos = transform.position;
 
-    private bool TryResolvePlacementPosition(Vector2 rawPos, out Vector2 resolvedPos)
-    {
-        resolvedPos = rawPos;
-        if (!TryFindGroundTileCenter(rawPos, out Vector2 tileCenter))
+        if (distance <= 0)
         {
             return false;
         }
 
-        resolvedPos = tileCenter;
+        Vector2 direction = GetAimDirection();
+        if (direction.sqrMagnitude <= 0.0001f && playerMovement != null)
+        {
+            direction = playerMovement.LastMoveDirection;
+        }
+
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            direction = Vector2.down;
+        }
+
+        if (floorTilemap == null)
+        {
+            return false;
+        }
+
+        Vector3Int originCell = floorTilemap.WorldToCell(transform.position);
+        Vector3Int stepCell = GetPlacementStepCell(direction);
+        if (stepCell == Vector3Int.zero)
+        {
+            return false;
+        }
+
+        // Step in tile-cell space so diagonal stacks always change both x and y together.
+        Vector3Int targetCell = originCell + (stepCell * distance);
+        if (!floorTilemap.HasTile(targetCell))
+        {
+            return false;
+        }
+
+        placementPos = floorTilemap.GetCellCenterWorld(targetCell);
         return true;
+    }
+
+    private static Vector3Int GetPlacementStepCell(Vector2 direction)
+    {
+        const float axisDeadZone = 0.25f;
+
+        int stepX = Mathf.Abs(direction.x) >= axisDeadZone ? (int)Mathf.Sign(direction.x) : 0;
+        int stepY = Mathf.Abs(direction.y) >= axisDeadZone ? (int)Mathf.Sign(direction.y) : 0;
+        return new Vector3Int(stepX, stepY, 0);
     }
 
     bool IsBombPlacementBlocked(Vector2 pos)
@@ -307,88 +337,6 @@ public partial class PlayerAttackSystem
         }
 
         return false;
-    }
-
-    private bool TryFindGroundTileCenter(Vector2 worldPos, out Vector2 tileCenter)
-    {
-        if (!groundTilemapsCached || cachedGroundTilemaps.Count == 0)
-        {
-            CacheGroundTilemaps();
-        }
-
-        if (TryFindGroundTileCenterInCachedTilemaps(worldPos, out tileCenter))
-        {
-            return true;
-        }
-
-        CacheGroundTilemaps();
-        return TryFindGroundTileCenterInCachedTilemaps(worldPos, out tileCenter);
-    }
-
-    private bool TryFindGroundTileCenterInCachedTilemaps(Vector2 worldPos, out Vector2 tileCenter)
-    {
-        tileCenter = worldPos;
-        bool found = false;
-        float minSqrDistance = float.PositiveInfinity;
-
-        for (int i = 0; i < cachedGroundTilemaps.Count; i++)
-        {
-            Tilemap tilemap = cachedGroundTilemaps[i];
-            if (tilemap == null)
-            {
-                continue;
-            }
-
-            if (!tilemap.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            Vector3Int cellPos = tilemap.WorldToCell(worldPos);
-            if (!tilemap.HasTile(cellPos))
-            {
-                continue;
-            }
-
-            Vector3 center = tilemap.GetCellCenterWorld(cellPos);
-            float sqrDistance = ((Vector2)center - worldPos).sqrMagnitude;
-            if (!found || sqrDistance < minSqrDistance)
-            {
-                found = true;
-                minSqrDistance = sqrDistance;
-                tileCenter = center;
-            }
-        }
-
-        return found;
-    }
-
-    private void CacheGroundTilemaps()
-    {
-        groundTilemapsCached = true;
-        cachedGroundTilemaps.Clear();
-
-        if (floorTilemap != null
-            && floorTilemap.gameObject.activeInHierarchy
-            && IsGroundTilemap(floorTilemap))
-        {
-            cachedGroundTilemaps.Add(floorTilemap);
-        }
-
-        Tilemap[] tilemaps = FindObjectsByType<Tilemap>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-        for (int i = 0; i < tilemaps.Length; i++)
-        {
-            Tilemap tilemap = tilemaps[i];
-            if (tilemap == null || !IsGroundTilemap(tilemap))
-            {
-                continue;
-            }
-
-            if (!cachedGroundTilemaps.Contains(tilemap))
-            {
-                cachedGroundTilemaps.Add(tilemap);
-            }
-        }
     }
 
     private static bool IsGroundTilemap(Tilemap tilemap)
@@ -576,53 +524,5 @@ public partial class PlayerAttackSystem
         }
 
         Debug.LogWarning($"[AttackSystem] {message}", this);
-    }
-
-    private void ApplyFieldVisualScaleIfNeeded(GameObject obj)
-    {
-        if (obj == null)
-        {
-            return;
-        }
-
-        bool isFieldScene = IsFieldSceneContext(obj);
-        if (!isFieldScene)
-        {
-            return;
-        }
-
-        obj.transform.localScale *= 0.25f;
-    }
-
-    private static bool IsFieldSceneContext(GameObject obj)
-    {
-        if (obj != null && IsFieldSceneName(obj.scene.name))
-        {
-            return true;
-        }
-
-        Scene activeScene = SceneManager.GetActiveScene();
-        if (IsFieldSceneName(activeScene.name))
-        {
-            return true;
-        }
-
-        int loadedSceneCount = SceneManager.sceneCount;
-        for (int i = 0; i < loadedSceneCount; i++)
-        {
-            Scene loadedScene = SceneManager.GetSceneAt(i);
-            if (IsFieldSceneName(loadedScene.name))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsFieldSceneName(string sceneName)
-    {
-        return string.Equals(sceneName, "FIeld", StringComparison.OrdinalIgnoreCase)
-               || string.Equals(sceneName, "Field", StringComparison.OrdinalIgnoreCase);
     }
 }

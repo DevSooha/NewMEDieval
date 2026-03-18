@@ -46,6 +46,7 @@ public class InventoryUI : MonoBehaviour
     private float pendingUnequipExpireTime;
     private const float UnequipConfirmWindowSeconds = 1f;
     private bool slotsInitialized;
+    private Inventory subscribedInventory;
 
     private void Start()
     {
@@ -69,11 +70,13 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
+        SyncInventorySubscription();
         RefreshUI();
     }
 
     private void OnDisable()
     {
+        UnsubscribeFromInventory();
         CancelWeaponSlotSelection();
     }
 
@@ -93,11 +96,6 @@ public class InventoryUI : MonoBehaviour
         {
             CancelWeaponSlotSelection();
         }
-    }
-
-    private void FixedUpdate()
-    {
-        RefreshUI();
     }
 
     private void InitializeMaterialSlots()
@@ -141,6 +139,7 @@ public class InventoryUI : MonoBehaviour
     private void EnsureInitialized()
     {
         EnsureRuntimeReferences();
+        SyncInventorySubscription();
 
         if (!slotsInitialized)
         {
@@ -214,6 +213,38 @@ public class InventoryUI : MonoBehaviour
             WeaponSlotUI ui = FindFirstObjectByType<WeaponSlotUI>(FindObjectsInactive.Include);
             if (ui != null) weaponSlotRoot = ui.transform as RectTransform;
         }
+    }
+
+    private void SyncInventorySubscription()
+    {
+        if (inventory == subscribedInventory)
+        {
+            return;
+        }
+
+        UnsubscribeFromInventory();
+
+        if (inventory != null)
+        {
+            inventory.Changed += HandleInventoryChanged;
+            subscribedInventory = inventory;
+        }
+    }
+
+    private void UnsubscribeFromInventory()
+    {
+        if (subscribedInventory == null)
+        {
+            return;
+        }
+
+        subscribedInventory.Changed -= HandleInventoryChanged;
+        subscribedInventory = null;
+    }
+
+    private void HandleInventoryChanged()
+    {
+        RefreshUI();
     }
 
     private void BindPageButtons()
@@ -353,18 +384,112 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
+        PotionPhaseSpec phase1 = potion.data.GetPhase(0);
+        PotionPhaseSpec phase2 = potion.data.GetPhase(1);
         tooltipText.text = $"{potion.data.potionName}\n" +
                        $"Damage 1: {potion.data.damage1}\n" +
                        $"Damage 2: {potion.data.damage2}\n" +
                        $"Bullet Type 1: {potion.data.bulletType1}\n" +
                        $"Bullet Type 2: {potion.data.bulletType2}\n" +
                        $"Element 1: {potion.data.element1}\n" +
-                       $"Element 2: {potion.data.element2}";
+                       $"Element 2: {potion.data.element2}\n" +
+                       $"{BuildPotionPhaseTooltipLine("재료1", phase1)}\n" +
+                       $"{BuildPotionPhaseTooltipLine("재료2", phase2)}";
 
         tooltipPanel.SetActive(true);
         EnsureTooltipLayout();
         tooltipPanel.transform.SetAsLastSibling();
         PositionTooltipAt(position);
+    }
+
+    private static string BuildPotionPhaseTooltipLine(string label, PotionPhaseSpec phase)
+    {
+        if (phase == null)
+        {
+            return $"{label}: 정보 없음";
+        }
+
+        string ingredientName = string.IsNullOrWhiteSpace(phase.ingredientId) ? "미상" : phase.ingredientId;
+        string effects = BuildPotionEffectSummary(phase);
+        return $"{label}: {ingredientName} / {phase.patternType} / {effects}";
+    }
+
+    private static string BuildPotionEffectSummary(PotionPhaseSpec phase)
+    {
+        List<string> parts = new List<string>();
+
+        if (phase.healsPlayerOnSelfHit)
+        {
+            parts.Add("자힐");
+        }
+
+        if (phase.ignoreSelfHitPenalty)
+        {
+            parts.Add("자해없음");
+        }
+
+        AppendEffectLabels(parts, phase.onPlayerHitEffects, "플레이어");
+        AppendEffectLabels(parts, phase.onEnemyHitEffects, "적");
+
+        if (parts.Count == 0)
+        {
+            parts.Add("효과 없음");
+        }
+
+        return string.Join(", ", parts);
+    }
+
+    private static void AppendEffectLabels(List<string> parts, List<StatusEffectSpec> effects, string prefix)
+    {
+        if (effects == null) return;
+
+        for (int i = 0; i < effects.Count; i++)
+        {
+            StatusEffectSpec effect = effects[i];
+            if (effect == null || effect.effectType == StatusEffectType.None) continue;
+            parts.Add($"{prefix}:{FormatEffectLabel(effect)}");
+        }
+    }
+
+    private static string FormatEffectLabel(StatusEffectSpec effect)
+    {
+        switch (effect.effectType)
+        {
+            case StatusEffectType.HealPlayerFlat:
+                return $"회복 {effect.magnitude:0.##}";
+            case StatusEffectType.HealEnemyCurrentHpPercent:
+                return $"적 회복 {effect.magnitude * 100f:0.##}%";
+            case StatusEffectType.StealthOnly:
+                return $"은신 {effect.duration:0.##}초";
+            case StatusEffectType.StealthInvulnerable:
+                return $"무적 은신 {effect.duration:0.##}초";
+            case StatusEffectType.PlayerMoveSpeedMultiplier:
+                return $"이속 x{effect.magnitude:0.##} {effect.duration:0.##}초";
+            case StatusEffectType.PlayerStun:
+                return $"기절 {effect.duration:0.##}초";
+            case StatusEffectType.EnemyMoveSpeedMultiplier:
+                return $"적 이속 x{effect.magnitude:0.##} {effect.duration:0.##}초";
+            case StatusEffectType.EnemyStun:
+                return $"적 기절 {effect.duration:0.##}초";
+            case StatusEffectType.PlayerInputReverse:
+                return $"조작 반전 {effect.duration:0.##}초";
+            case StatusEffectType.PlayerInputDelay:
+                return $"조작 지연 {effect.duration:0.##}초";
+            case StatusEffectType.BlindBlack:
+                return $"암전 {effect.duration:0.##}초";
+            case StatusEffectType.BlindWhite:
+                return $"백색 실명 {effect.duration:0.##}초";
+            case StatusEffectType.EnemyKnockback:
+                return $"적 넉백 {effect.magnitude:0.##}";
+            case StatusEffectType.PoisonDot:
+                return $"중독 {effect.duration:0.##}초, {effect.interval:0.##}초마다 현재 체력의 {effect.magnitude:0.##}%";
+            case StatusEffectType.PlayerRedStateContactBurn:
+                return $"화상 {effect.duration:0.##}초, {effect.interval:0.##}초마다 {effect.magnitude:0.##}";
+            case StatusEffectType.PlayerKnockbackImmune:
+                return $"넉백 면역 {effect.duration:0.##}초";
+            default:
+                return effect.effectType.ToString();
+        }
     }
 
     public void ShowMaterialTooltip(Item item, Vector3 position)

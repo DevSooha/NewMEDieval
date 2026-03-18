@@ -95,18 +95,20 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private void OnEnable()
     {
-        PlayerHealth.OnPlayerDeath += HandlePlayerDeath;
+        ResumeBossPresentation();
+        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
         ResolvePlayerTransform();
     }
 
     private void OnDisable()
     {
-        PlayerHealth.OnPlayerDeath -= HandlePlayerDeath;
+        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
         CleanupOffensivesOnDisable();
     }
 
     public override void StartBattle()
     {
+        ResumeBossPresentation();
         if (isBattleRunning) return;
         if (!ResolvePlayerTransform()) return;
 
@@ -242,6 +244,8 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private IEnumerator HandleLatentThorn()
     {
+        float timelineDuration = ResolveConfiguredThornTimelineDuration();
+
         if (thornWarningDuration > 0f)
         {
             yield return new WaitForSeconds(thornWarningDuration);
@@ -249,7 +253,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
         EnsureThornSetup();
 
-        float damageDuration = Mathf.Max(0f, thornRiseDuration + thornHoldDuration + thornDespawnDuration);
+        float damageDuration = Mathf.Max(0f, timelineDuration - thornWarningDuration);
         foreach (LatentThornHitbox thorn in thornHitboxes)
         {
             if (thorn != null)
@@ -339,6 +343,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private void HandlePlayerDeath()
     {
+        CleanupBossPresentationOnPlayerDeath();
         if (deathRoutine != null) return;
         deathRoutine = StartCoroutine(HandlePlayerDeathRoutine());
     }
@@ -444,6 +449,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
     private void ResetBattleForRetry()
     {
+        ResumeBossPresentation();
         isBattleRunning = false;
 
         if (battleLoopRoutine != null)
@@ -469,6 +475,8 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
                 thorn.ResetState();
             }
         }
+
+        StopThornTimelines();
 
         if (bossHealth != null)
         {
@@ -543,19 +551,23 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
 
         for (int i = 0; i < thornHitboxes.Count; i++)
         {
-            if (thornHitboxes[i] != null && thornSpawnPoints[i] != null)
+            if (thornHitboxes[i] == null || i >= thornSpawnPoints.Count || thornSpawnPoints[i] == null)
             {
-                thornHitboxes[i].transform.position = thornSpawnPoints[i].position;
-                thornHitboxes[i].gameObject.SetActive(true);
+                continue;
             }
+
+            thornHitboxes[i].transform.position = thornSpawnPoints[i].position;
+            thornHitboxes[i].gameObject.SetActive(true);
         }
 
         for (int i = 0; i < thornTimelines.Count; i++)
         {
-            if (thornTimelines[i] != null && thornSpawnPoints[i] != null)
+            if (thornTimelines[i] == null || i >= thornSpawnPoints.Count || thornSpawnPoints[i] == null)
             {
-                thornTimelines[i].transform.position = thornSpawnPoints[i].position;
+                continue;
             }
+
+            thornTimelines[i].transform.position = thornSpawnPoints[i].position;
         }
     }
 
@@ -579,6 +591,16 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
         if (sourcePrefab == null)
         {
             return;
+        }
+
+        for (int i = thornTimelines.Count - 1; i >= 0; i--)
+        {
+            if (thornTimelines[i] != null)
+            {
+                continue;
+            }
+
+            thornTimelines.RemoveAt(i);
         }
 
         while (thornTimelines.Count > thornSpawnPoints.Count)
@@ -635,6 +657,10 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
         foreach (PlayableDirector director in thornTimelines)
         {
             if (director == null) continue;
+            if (!director.gameObject.activeSelf)
+            {
+                director.gameObject.SetActive(true);
+            }
             director.Stop();
             director.time = 0;
             director.Play();
@@ -648,7 +674,16 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
             if (director == null) continue;
             director.Stop();
             director.time = 0;
+            if (director.gameObject.activeSelf)
+            {
+                director.gameObject.SetActive(false);
+            }
         }
+    }
+
+    private float ResolveConfiguredThornTimelineDuration()
+    {
+        return Mathf.Max(0f, thornWarningDuration + thornRiseDuration + thornHoldDuration + thornDespawnDuration);
     }
 
     private void BindThornTimelineReferences(PlayableDirector director)

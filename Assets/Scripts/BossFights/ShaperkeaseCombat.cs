@@ -26,6 +26,9 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
     private BedimmedWall[] bedimmedWalls;
     private Vector3[] initialWallPositions;
 
+    [Header("Pattern 2: Ray Settings")]
+    [SerializeField] private float raySpawnOffsetFromBoss = 2.5f;
+
     [Header("Pattern 3: Masque Illusion Stats")]
     public float trapSpeed = 4f;
     public float trapDuration = 4f;
@@ -182,7 +185,7 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         for (int i = 0; i < fixedAngles.Length; i++)
         {
             Vector3 fireDir = Quaternion.Euler(0f, 0f, fixedAngles[i]) * Vector3.right;
-            Vector3 spawnPos = transform.position + (fireDir * 2.5f);
+            Vector3 spawnPos = transform.position + (fireDir * raySpawnOffsetFromBoss);
             Quaternion rotation = Quaternion.FromToRotation(Vector3.down, fireDir);
 
             BossProjectile bp = rayPool.Rent();
@@ -231,4 +234,42 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
             Debug.LogError("[Masque Illusion] Missing MasqueIllusionProjectile component.");
         }
     }
-}
+
+#if UNITY_EDITOR
+    private void OnDrawGizmosSelected()
+    {
+        DrawRaySpawnPreview();
+
+        Transform previewTarget = targetTransform != null ? targetTransform : player;
+        if (previewTarget == null)
+        {
+            return;
+        }
+
+        Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.85f);
+        Gizmos.DrawWireSphere(previewTarget.position, trapSpawnDistance);
+
+        Vector3 previewDirection = Vector3.right;
+        Vector3 previewSpawnPosition = previewTarget.position + (previewDirection * trapSpawnDistance);
+
+        Gizmos.color = new Color(0.1f, 1f, 0.5f, 0.9f);
+        Gizmos.DrawLine(previewTarget.position, previewSpawnPosition);
+        Gizmos.DrawWireSphere(previewSpawnPosition, 0.3f);
+    }
+
+    private void DrawRaySpawnPreview()
+    {
+        float[] fixedAngles = { 0f, 60f, 120f, 180f, 240f, 300f };
+
+        Gizmos.color = new Color(1f, 0.5f, 0.1f, 0.9f);
+        for (int i = 0; i < fixedAngles.Length; i++)
+        {
+            Vector3 fireDir = Quaternion.Euler(0f, 0f, fixedAngles[i]) * Vector3.right;
+            Vector3 spawnPos = transform.position + (fireDir * raySpawnOffsetFromBoss);
+
+            Gizmos.DrawLine(transform.position, spawnPos);
+            Gizmos.DrawWireSphere(spawnPos, 0.2f);
+        }
+    }
+#endif
+}

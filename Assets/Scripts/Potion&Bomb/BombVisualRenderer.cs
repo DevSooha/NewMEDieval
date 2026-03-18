@@ -9,7 +9,7 @@ public class BombVisualRenderer : MonoBehaviour
     [SerializeField] private SpriteRenderer frameRenderer;
     [Header("Sorting")]
     [SerializeField] private bool forceSorting = true;
-    [SerializeField] private string sortingLayerName = "EnemyBullet";
+    [SerializeField] private string sortingLayerName = "Objects";
     [SerializeField] private int sortingOrder = 40;
     [Header("Fallback")]
     [SerializeField] private bool useBaseRendererAsFallback = true;

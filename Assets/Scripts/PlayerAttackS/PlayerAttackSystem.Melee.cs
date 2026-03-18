@@ -22,18 +22,19 @@ public partial class PlayerAttackSystem
 
         foreach (Collider2D hit in hits)
         {
-            EnemyCombat enemy = hit.GetComponent<EnemyCombat>();
-            if (enemy != null)
-            {
-                enemy.EnemyTakeDamage(50);
-                continue;
-            }
-
             BossHealth boss = hit.GetComponent<BossHealth>();
             if (boss != null)
             {
                 boss.TakeDamage(50, ElementType.None);
+                continue;
             }
+
+            if (!CombatTargetHitbox.TryGetEnemyCombat(hit, out EnemyCombat enemy))
+            {
+                continue;
+            }
+
+            enemy.EnemyTakeDamage(50);
         }
 
         yield return new WaitForSeconds(0.4f);

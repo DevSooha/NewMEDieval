@@ -4,6 +4,7 @@
 public class PotionProjectileController : MonoBehaviour
 {
     [SerializeField] private float lifetime = 3f;
+    [SerializeField] private float offscreenMargin = 0.2f;
     [Header("Rendering")]
     [SerializeField] private string sortingLayerName = "EnemyBullet";
     [SerializeField] private int sortingOrder = 50;
@@ -15,10 +16,27 @@ public class PotionProjectileController : MonoBehaviour
     private float lived;
     private float rotationSpeedDegPerSec;
     private bool moveInLocalSpace;
+    private bool useTornadoOrbit;
+    private float movementStartDelay;
+    private float tornadoLinearDuration;
+    private float tornadoFadeOutStartTime;
+    private float tornadoFadeOutDuration;
+    private float tornadoOrbitAngularSpeedDegPerSec;
+    private Transform tornadoOrbitCenter;
+    private Vector3 tornadoOrbitOffset;
+    private float tornadoOrbitAngleDeg;
+    private bool tornadoOrbitStarted;
 
     private Transform owner;
     private PotionPhaseSpec phaseSpec;
     private bool initialized;
+    private CircleCollider2D hitCollider;
+    private bool contactDamageEnabled;
+    private Camera cachedCamera;
+    private bool offscreenDamageDisabled;
+    private bool combatDamageDisabled;
+    private SpriteRenderer[] cachedSpriteRenderers;
+    private Color[] cachedSpriteRendererColors;
 
     private int sourceBombId;
     private int phaseIndex;
@@ -59,10 +77,24 @@ public class PotionProjectileController : MonoBehaviour
         phaseIndex = sourcePhaseIndex;
         patternType = sourcePatternType;
         lineAngleDeg = sourceLineAngleDeg;
+        useTornadoOrbit = false;
+        movementStartDelay = 0f;
+        tornadoLinearDuration = 0f;
+        tornadoFadeOutStartTime = float.PositiveInfinity;
+        tornadoFadeOutDuration = 0f;
+        tornadoOrbitAngularSpeedDegPerSec = 0f;
+        tornadoOrbitCenter = null;
+        tornadoOrbitOffset = Vector3.zero;
+        tornadoOrbitAngleDeg = 0f;
+        tornadoOrbitStarted = false;
+        offscreenDamageDisabled = false;
+        combatDamageDisabled = false;
 
-        CircleCollider2D col = GetComponent<CircleCollider2D>();
-        col.isTrigger = true;
-        col.radius = 0.12f;
+        hitCollider = GetComponent<CircleCollider2D>();
+        hitCollider.isTrigger = true;
+        hitCollider.radius = 0.12f;
+        contactDamageEnabled = true;
+        cachedCamera = Camera.main;
 
         Rigidbody2D body = GetComponent<Rigidbody2D>();
         if (body == null)
@@ -98,10 +130,40 @@ public class PotionProjectileController : MonoBehaviour
         }
 
         EnsureVisibleRenderer();
+        CacheRendererState();
         ApplySortingToRenderers();
+        ApplyVisualAlpha(1f);
 
         initialized = true;
         lived = 0f;
+    }
+
+    public void ConfigureTornadoOrbit(
+        Transform orbitCenter,
+        float orbitStartDelaySeconds,
+        float fadeOutStartTimeSeconds,
+        float fadeOutDurationSeconds,
+        float orbitAngularSpeedDegPerSecond)
+    {
+        if (orbitCenter == null)
+        {
+            useTornadoOrbit = false;
+            return;
+        }
+
+        useTornadoOrbit = true;
+        tornadoOrbitCenter = orbitCenter;
+        tornadoLinearDuration = Mathf.Max(0f, orbitStartDelaySeconds);
+        tornadoFadeOutStartTime = Mathf.Max(tornadoLinearDuration, fadeOutStartTimeSeconds);
+        tornadoFadeOutDuration = Mathf.Max(0.01f, fadeOutDurationSeconds);
+        tornadoOrbitAngularSpeedDegPerSec = orbitAngularSpeedDegPerSecond;
+        tornadoOrbitStarted = false;
+    }
+
+    public void SetMovementStartDelay(float delaySeconds)
+    {
+        movementStartDelay = Mathf.Max(0f, delaySeconds);
+        UpdateContactDamageState();
     }
 
     private void Update()
@@ -120,10 +182,57 @@ public class PotionProjectileController : MonoBehaviour
             return;
         }
 
+        bool isOffscreen = IsOffscreen();
+        if (isOffscreen)
+        {
+            offscreenDamageDisabled = true;
+            contactDamageEnabled = false;
+            if (patternType != ProjectilePatternType.AfterimageBomb && patternType != ProjectilePatternType.Tornado)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            if (patternType == ProjectilePatternType.AfterimageBomb)
+            {
+                return;
+            }
+        }
+        else
+        {
+            offscreenDamageDisabled = false;
+        }
+
+        if (patternType == ProjectilePatternType.Tornado)
+        {
+            UpdateTornadoState();
+        }
+
+        if (lived < movementStartDelay)
+        {
+            UpdateContactDamageState();
+            return;
+        }
+
         if (Mathf.Abs(rotationSpeedDegPerSec) > 0.01f)
         {
             moveDirection = Quaternion.Euler(0f, 0f, -rotationSpeedDegPerSec * dt) * moveDirection;
             moveDirection.Normalize();
+        }
+
+        if (useTornadoOrbit)
+        {
+            if (!tornadoOrbitStarted && lived >= tornadoLinearDuration)
+            {
+                BeginTornadoOrbit();
+            }
+
+            if (tornadoOrbitStarted)
+            {
+                UpdateTornadoOrbit(dt);
+                UpdateContactDamageState();
+                return;
+            }
         }
 
         if (moveInLocalSpace && transform.parent != null)
@@ -134,11 +243,138 @@ public class PotionProjectileController : MonoBehaviour
         {
             transform.position += (Vector3)(moveDirection * moveSpeed * dt);
         }
+
+        UpdateContactDamageState();
+    }
+
+    private void BeginTornadoOrbit()
+    {
+        if (tornadoOrbitCenter == null)
+        {
+            useTornadoOrbit = false;
+            return;
+        }
+
+        tornadoOrbitStarted = true;
+        tornadoOrbitOffset = transform.position - tornadoOrbitCenter.position;
+        if (tornadoOrbitOffset.sqrMagnitude <= 0.0001f)
+        {
+            tornadoOrbitOffset = Vector3.up * 0.01f;
+        }
+
+        tornadoOrbitAngleDeg = Mathf.Atan2(tornadoOrbitOffset.y, tornadoOrbitOffset.x) * Mathf.Rad2Deg;
+    }
+
+    private void UpdateTornadoOrbit(float dt)
+    {
+        if (tornadoOrbitCenter == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        float radius = tornadoOrbitOffset.magnitude;
+        tornadoOrbitAngleDeg -= tornadoOrbitAngularSpeedDegPerSec * dt;
+        float radians = tornadoOrbitAngleDeg * Mathf.Deg2Rad;
+        Vector3 center = tornadoOrbitCenter.position;
+        Vector3 nextOffset = new Vector3(Mathf.Cos(radians), Mathf.Sin(radians), 0f) * radius;
+        transform.position = center + nextOffset;
+        tornadoOrbitOffset = nextOffset;
+    }
+
+    private void UpdateTornadoState()
+    {
+        if (!useTornadoOrbit)
+        {
+            combatDamageDisabled = false;
+            ApplyVisualAlpha(1f);
+            return;
+        }
+
+        if (lived >= tornadoFadeOutStartTime)
+        {
+            combatDamageDisabled = true;
+            float fadeElapsed = lived - tornadoFadeOutStartTime;
+            float fadeProgress = tornadoFadeOutDuration <= 0.0001f
+                ? 1f
+                : Mathf.Clamp01(fadeElapsed / tornadoFadeOutDuration);
+            ApplyVisualAlpha(1f - fadeProgress);
+            return;
+        }
+
+        if (lived >= tornadoLinearDuration)
+        {
+            combatDamageDisabled = false;
+            ApplyVisualAlpha(1f);
+            return;
+        }
+
+        combatDamageDisabled = false;
+        ApplyVisualAlpha(1f);
+    }
+
+    private void UpdateContactDamageState()
+    {
+        bool canDealDamage = initialized
+            && lived >= movementStartDelay
+            && !offscreenDamageDisabled
+            && !combatDamageDisabled;
+        contactDamageEnabled = canDealDamage;
+        if (hitCollider != null)
+        {
+            hitCollider.enabled = canDealDamage;
+        }
+    }
+
+    private void CacheRendererState()
+    {
+        cachedSpriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        cachedSpriteRendererColors = new Color[cachedSpriteRenderers.Length];
+        for (int i = 0; i < cachedSpriteRenderers.Length; i++)
+        {
+            cachedSpriteRendererColors[i] = cachedSpriteRenderers[i] != null
+                ? cachedSpriteRenderers[i].color
+                : Color.white;
+        }
+    }
+
+    private void ApplyVisualAlpha(float alphaFactor)
+    {
+        if (cachedSpriteRenderers == null || cachedSpriteRendererColors == null)
+        {
+            return;
+        }
+
+        float clampedAlpha = Mathf.Clamp01(alphaFactor);
+        for (int i = 0; i < cachedSpriteRenderers.Length; i++)
+        {
+            SpriteRenderer spriteRenderer = cachedSpriteRenderers[i];
+            if (spriteRenderer == null)
+            {
+                continue;
+            }
+
+            Color baseColor = i < cachedSpriteRendererColors.Length
+                ? cachedSpriteRendererColors[i]
+                : spriteRenderer.color;
+            baseColor.a *= clampedAlpha;
+            spriteRenderer.color = baseColor;
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!initialized || other == null) return;
+        TryHandleTrigger(other);
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        TryHandleTrigger(other);
+    }
+
+    private void TryHandleTrigger(Collider2D other)
+    {
+        if (!initialized || other == null || !contactDamageEnabled) return;
 
         bool consumedByCombat = PotionHitResolver.TryResolveHit(this, other);
         bool consumedByEnvironment = !consumedByCombat && PotionHitResolver.TryResolveEnvironmentHit(this, other);
@@ -149,6 +385,30 @@ public class PotionProjectileController : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private bool IsOffscreen()
+    {
+        if (cachedCamera == null)
+        {
+            cachedCamera = Camera.main;
+        }
+
+        if (cachedCamera == null)
+        {
+            return false;
+        }
+
+        Vector3 viewport = cachedCamera.WorldToViewportPoint(transform.position);
+        if (viewport.z < 0f)
+        {
+            return true;
+        }
+
+        return viewport.x < -offscreenMargin
+            || viewport.x > 1f + offscreenMargin
+            || viewport.y < -offscreenMargin
+            || viewport.y > 1f + offscreenMargin;
     }
 
     private static Sprite GetFallbackSprite()

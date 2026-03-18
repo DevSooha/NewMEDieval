@@ -24,6 +24,7 @@ public abstract class BossCombatBase : MonoBehaviour
     private const string PlayerTag = "Player";
     private readonly Dictionary<GameObject, TrackedOffensive> trackedOffensives = new();
     private bool isCleaningUpOffensives;
+    private Animator[] cachedBossAnimators;
 
     [Header("Default Knockback Settings")]
     [SerializeField] protected float defaultKnockbackForce = 8f;
@@ -53,6 +54,34 @@ public abstract class BossCombatBase : MonoBehaviour
     protected void CleanupOffensivesOnBattleReset()
     {
         CleanupBossOffensives(BossOffensiveCleanupReason.BattleReset);
+    }
+
+    protected void RegisterPlayerDeathBaseHandler(Action handler)
+    {
+        PlayerHealth.OnPlayerDeath -= handler;
+        PlayerHealth.OnPlayerDeath += handler;
+    }
+
+    protected void UnregisterPlayerDeathBaseHandler(Action handler)
+    {
+        PlayerHealth.OnPlayerDeath -= handler;
+    }
+
+    protected void CleanupBossPresentationOnPlayerDeath()
+    {
+        CleanupOffensivesOnBattleReset();
+        FreezeBossAnimators();
+    }
+
+    protected void ResumeBossPresentation()
+    {
+        Animator[] animators = GetBossAnimators();
+        for (int i = 0; i < animators.Length; i++)
+        {
+            Animator animator = animators[i];
+            if (animator == null) continue;
+            animator.speed = 1f;
+        }
     }
 
     protected void RegisterBossOffensive(GameObject offensive, bool isVisualOnly = false)
@@ -285,7 +314,7 @@ public abstract class BossCombatBase : MonoBehaviour
         return cachedPlayerTransform != null;
     }
 
-    protected bool TryResolvePlayer(ref Player cachedPlayer)
+    protected bool TryResolvePlayer(ref Player cachedPlayer)
     {
         if (cachedPlayer != null)
         {
@@ -304,8 +333,29 @@ public abstract class BossCombatBase : MonoBehaviour
             cachedPlayer = playerObject.GetComponent<Player>();
         }
 
-        return cachedPlayer != null;
-    }
+        return cachedPlayer != null;
+    }
+
+    private void FreezeBossAnimators()
+    {
+        Animator[] animators = GetBossAnimators();
+        for (int i = 0; i < animators.Length; i++)
+        {
+            Animator animator = animators[i];
+            if (animator == null) continue;
+            animator.speed = 0f;
+        }
+    }
+
+    private Animator[] GetBossAnimators()
+    {
+        if (cachedBossAnimators == null || cachedBossAnimators.Length == 0)
+        {
+            cachedBossAnimators = GetComponentsInChildren<Animator>(true);
+        }
+
+        return cachedBossAnimators ?? Array.Empty<Animator>();
+    }
 
     protected IEnumerator FadeSpriteAlpha(SpriteRenderer targetRenderer, float duration, float fromAlpha = 0f, float toAlpha = 1f)
     {

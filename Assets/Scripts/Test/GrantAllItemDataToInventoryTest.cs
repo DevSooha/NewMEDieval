@@ -7,8 +7,10 @@ public class GrantAllItemDataToInventoryTest : MonoBehaviour
     [SerializeField] private Inventory inventory;
 
     [Header("Grant Settings")]
-    [SerializeField] private string resourcesFolder = "ItemData";
+    [SerializeField] private string itemResourcesFolder = "ItemData";
+    [SerializeField] private string potionResourcesFolder = "PotionData";
     [SerializeField] private int amountPerItem = 20;
+    [SerializeField] private int amountPerPotion = 5;
     [SerializeField] private bool includePotionCategory = false;
     [SerializeField] private bool grantOnStart = true;
     [SerializeField] private bool restrictAutoGrantToTestScenes = true;
@@ -60,14 +62,14 @@ public class GrantAllItemDataToInventoryTest : MonoBehaviour
             return;
         }
 
-        ItemData[] allItemData = Resources.LoadAll<ItemData>(resourcesFolder);
+        ItemData[] allItemData = Resources.LoadAll<ItemData>(itemResourcesFolder);
         if (allItemData == null || allItemData.Length == 0)
         {
-            Debug.LogWarning($"[GrantAllItemDataToInventoryTest] No ItemData found in Resources/{resourcesFolder}");
+            Debug.LogWarning($"[GrantAllItemDataToInventoryTest] No ItemData found in Resources/{itemResourcesFolder}");
             return;
         }
 
-        int grantedCount = 0;
+        int grantedMaterialCount = 0;
 
         for (int i = 0; i < allItemData.Length; i++)
         {
@@ -81,10 +83,27 @@ public class GrantAllItemDataToInventoryTest : MonoBehaviour
 
             int amount = Mathf.Max(1, amountPerItem);
             inventory.AddItem(data, amount);
-            grantedCount++;
+            grantedMaterialCount++;
         }
 
-        Debug.Log($"[GrantAllItemDataToInventoryTest] Granted {grantedCount} ItemData entries x{Mathf.Max(1, amountPerItem)}");
+        int grantedPotionCount = 0;
+        if (includePotionCategory)
+        {
+            PotionData[] allPotionData = Resources.LoadAll<PotionData>(potionResourcesFolder);
+            int potionAmount = Mathf.Max(1, amountPerPotion);
+
+            for (int i = 0; i < allPotionData.Length; i++)
+            {
+                PotionData data = allPotionData[i];
+                if (data == null) continue;
+
+                inventory.AddPotion(data, potionAmount);
+                grantedPotionCount++;
+            }
+        }
+
+        Debug.Log(
+            $"[GrantAllItemDataToInventoryTest] Granted materials={grantedMaterialCount} x{Mathf.Max(1, amountPerItem)}, potions={grantedPotionCount} x{Mathf.Max(1, amountPerPotion)}");
     }
 
     private void ResolveInventory()

@@ -44,7 +44,7 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private bool wasDraggingDuringGame = false;
 
     private const float GAUGE_HEIGHT = 224f;
-    private const float NEEDLE_TOP_BLOCK_PIXELS = 1f;
+    private const float NEEDLE_TOP_BLOCK_PIXELS = 8.4f;
     private const float GAUGE_UP_SPEED = 28f;
     private const float GAUGE_DOWN_SPEED = 10f;
     private const float DRAG_THRESHOLD_PIXELS = 2f;

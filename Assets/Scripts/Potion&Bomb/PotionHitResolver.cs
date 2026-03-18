@@ -8,6 +8,11 @@ public static class PotionHitResolver
     private const string WallTag = "Wall";
     private const string NpcTag = "NPC";
     private const string CampfireTag = "Campfire";
+    private const float PlayerHitKnockbackDistance = 0.75f;
+    private const float PlayerHitKnockbackDuration = 0.12f;
+    private const float EnemyHitKnockbackDistance = 1f;
+    private const float BossHitKnockbackDistance = 1f;
+    private const int PotionPlayerDamage = 1;
 
     private static readonly Dictionary<ulong, int> LastHitFrameByPair = new Dictionary<ulong, int>();
 
@@ -23,10 +28,11 @@ public static class PotionHitResolver
             other,
             projectile.Owner,
             projectile.GetInstanceID(),
-            allowSelfHitRules: true);
+            allowSelfHitRules: true,
+            hitOrigin: projectile.transform.position);
     }
 
-    public static bool TryResolveAreaHit(PotionPhaseSpec spec, Collider2D other, int sourceInstanceId = 0)
+    public static bool TryResolveAreaHit(PotionPhaseSpec spec, Collider2D other, int sourceInstanceId = 0, Vector2? hitOrigin = null)
     {
         if (spec == null || other == null) return false;
         return TryResolveHitWithFrameGate(
@@ -34,7 +40,8 @@ public static class PotionHitResolver
             other,
             null,
             sourceInstanceId,
-            allowSelfHitRules: false);
+            allowSelfHitRules: false,
+            hitOrigin: hitOrigin);
     }
 
     public static bool TryResolveEnvironmentHit(PotionProjectileController projectile, Collider2D other)
@@ -85,19 +92,19 @@ public static class PotionHitResolver
     public static void ApplySpecToPlayer(PotionPhaseSpec spec, PlayerHealth health)
     {
         if (spec == null || health == null) return;
-        ApplyPlayerHit(spec, health, isSelfHit: false);
+        ApplyPlayerHit(spec, health, isSelfHit: false, hitOrigin: null);
     }
 
     public static void ApplySpecToEnemy(PotionPhaseSpec spec, EnemyCombat enemy)
     {
         if (spec == null || enemy == null) return;
-        ApplyEnemyHit(spec, enemy);
+        ApplyEnemyHit(spec, enemy, null);
     }
 
     public static void ApplySpecToBoss(PotionPhaseSpec spec, BossHealth boss)
     {
         if (spec == null || boss == null) return;
-        ApplyBossHit(spec, boss);
+        ApplyBossHit(spec, boss, null);
     }
 
     private static bool TryResolveHitWithFrameGate(
@@ -105,12 +112,10 @@ public static class PotionHitResolver
         Collider2D other,
         Transform owner,
         int sourceInstanceId,
-        bool allowSelfHitRules)
+        bool allowSelfHitRules,
+        Vector2? hitOrigin)
     {
-        PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
-        if (playerHealth == null) playerHealth = other.GetComponentInParent<PlayerHealth>();
-
-        if (playerHealth != null)
+        if (CombatTargetHitbox.TryGetPlayerHealth(other, out PlayerHealth playerHealth))
         {
             bool isSelfHit = allowSelfHitRules && IsOwnerTarget(owner, playerHealth.transform);
             if (!isSelfHit && spec.damageTarget == DamageTargetType.EnemyOnly)
@@ -119,16 +124,14 @@ public static class PotionHitResolver
             }
 
             if (!ReserveFrameHit(sourceInstanceId, playerHealth)) return false;
-            ApplyPlayerHit(spec, playerHealth, isSelfHit);
+            ApplyPlayerHit(spec, playerHealth, isSelfHit, hitOrigin);
             return true;
         }
 
-        EnemyCombat enemyCombat = other.GetComponent<EnemyCombat>();
-        if (enemyCombat == null) enemyCombat = other.GetComponentInParent<EnemyCombat>();
-        if (enemyCombat != null)
+        if (CombatTargetHitbox.TryGetEnemyCombat(other, out EnemyCombat enemyCombat))
         {
             if (!ReserveFrameHit(sourceInstanceId, enemyCombat)) return false;
-            ApplyEnemyHit(spec, enemyCombat);
+            ApplyEnemyHit(spec, enemyCombat, hitOrigin);
             return true;
         }
 
@@ -137,14 +140,14 @@ public static class PotionHitResolver
         if (bossHealth != null)
         {
             if (!ReserveFrameHit(sourceInstanceId, bossHealth)) return false;
-            ApplyBossHit(spec, bossHealth);
+            ApplyBossHit(spec, bossHealth, hitOrigin);
             return true;
         }
 
         return false;
     }
 
-    private static void ApplyPlayerHit(PotionPhaseSpec spec, PlayerHealth health, bool isSelfHit)
+    private static void ApplyPlayerHit(PotionPhaseSpec spec, PlayerHealth health, bool isSelfHit, Vector2? hitOrigin)
     {
         if (health == null) return;
 
@@ -154,31 +157,82 @@ public static class PotionHitResolver
         }
         else if (isSelfHit && !spec.ignoreSelfHitPenalty)
         {
-            health.TakeDamage(1);
+            health.TryTakeDamage(1, 0f);
+        }
+        else if (spec.baseDamage > 0 && spec.damageTarget != DamageTargetType.EnemyOnly)
+        {
+            health.TryTakeDamage(PotionPlayerDamage, health.BossHitInvulnerableDuration);
         }
 
         PlayerStatusController status = GetOrAdd<PlayerStatusController>(health.gameObject);
-        ApplyEffectsToPlayer(spec, health, status);
+        bool shouldApplyKnockback = !isSelfHit && spec.damageTarget != DamageTargetType.EnemyOnly;
+        if (shouldApplyKnockback)
+        {
+            ApplyPlayerKnockback(health, status, hitOrigin);
+        }
+        ApplyEffectsToPlayer(spec, health, status, isSelfHit);
     }
 
-    private static void ApplyEnemyHit(PotionPhaseSpec spec, EnemyCombat enemy)
+    private static void ApplyPlayerKnockback(PlayerHealth health, PlayerStatusController status, Vector2? hitOrigin)
+    {
+        if (health == null || health.CurrentHP <= 0)
+        {
+            return;
+        }
+
+        if (status != null && status.IsKnockbackImmune)
+        {
+            return;
+        }
+
+        Player player = health.GetComponent<Player>();
+        if (player == null)
+        {
+            player = health.GetComponentInParent<Player>();
+        }
+
+        if (player == null || !player.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        Vector2 direction = hitOrigin.HasValue
+            ? (Vector2)player.transform.position - hitOrigin.Value
+            : player.LastMoveDirection;
+
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            direction = player.LastMoveDirection.sqrMagnitude > 0.0001f ? player.LastMoveDirection : Vector2.up;
+        }
+
+        player.KnockBackByDistance(direction.normalized, PlayerHitKnockbackDistance, PlayerHitKnockbackDuration);
+    }
+
+    private static void ApplyEnemyHit(PotionPhaseSpec spec, EnemyCombat enemy, Vector2? hitOrigin)
     {
         if (enemy == null) return;
         if (spec.damageTarget == DamageTargetType.PlayerOnly) return;
 
+        EnemyStatusController status = GetOrAdd<EnemyStatusController>(enemy.gameObject);
+
         if (spec.baseDamage > 0)
         {
             enemy.EnemyTakeDamage(spec.baseDamage);
+            if (hitOrigin.HasValue && status != null)
+            {
+                status.ApplyHitKnockback(hitOrigin.Value, EnemyHitKnockbackDistance, PlayerHitKnockbackDuration);
+            }
         }
 
-        EnemyStatusController status = GetOrAdd<EnemyStatusController>(enemy.gameObject);
         ApplyEffectsToEnemy(spec, enemy, status);
     }
 
-    private static void ApplyBossHit(PotionPhaseSpec spec, BossHealth boss)
+    private static void ApplyBossHit(PotionPhaseSpec spec, BossHealth boss, Vector2? hitOrigin)
     {
         if (boss == null) return;
         if (spec.damageTarget == DamageTargetType.PlayerOnly) return;
+
+        EnemyStatusController status = GetOrAdd<EnemyStatusController>(boss.gameObject);
 
         if (spec.baseDamage > 0)
         {
@@ -192,12 +246,16 @@ public static class PotionHitResolver
             float subAdjustedScale = combinedMultiplier / primaryMultiplier;
             int preAdjustedDamage = Mathf.RoundToInt(spec.baseDamage * subAdjustedScale);
             boss.TakeDamage(Mathf.Max(1, preAdjustedDamage), spec.primaryElement);
+            if (hitOrigin.HasValue && status != null)
+            {
+                status.ApplyHitKnockback(hitOrigin.Value, BossHitKnockbackDistance, PlayerHitKnockbackDuration);
+            }
         }
 
-        ApplyEffectsToBoss(spec, boss);
+        ApplyEffectsToBoss(spec, boss, status);
     }
 
-    private static void ApplyEffectsToPlayer(PotionPhaseSpec spec, PlayerHealth health, PlayerStatusController status)
+    private static void ApplyEffectsToPlayer(PotionPhaseSpec spec, PlayerHealth health, PlayerStatusController status, bool isSelfHit)
     {
         for (int i = 0; i < spec.onPlayerHitEffects.Count; i++)
         {
@@ -207,6 +265,10 @@ public static class PotionHitResolver
             switch (fx.effectType)
             {
                 case StatusEffectType.HealPlayerFlat:
+                    if (isSelfHit && spec.healsPlayerOnSelfHit)
+                    {
+                        break;
+                    }
                     health.HealWithOvercap(Mathf.Max(1, Mathf.RoundToInt(fx.magnitude)), 3);
                     break;
                 default:
@@ -228,14 +290,8 @@ public static class PotionHitResolver
             status);
     }
 
-    private static void ApplyEffectsToBoss(PotionPhaseSpec spec, BossHealth boss)
+    private static void ApplyEffectsToBoss(PotionPhaseSpec spec, BossHealth boss, EnemyStatusController status)
     {
-        EnemyStatusController status = boss.GetComponent<EnemyStatusController>();
-        if (status == null)
-        {
-            status = boss.GetComponentInParent<EnemyStatusController>();
-        }
-
         ApplyEnemyLikeEffects(
             spec.onEnemyHitEffects,
             () => boss.currentHP,
@@ -266,6 +322,17 @@ public static class PotionHitResolver
                     int currentHp = currentHpGetter != null ? currentHpGetter() : 0;
                     int healAmount = Mathf.RoundToInt(currentHp * (fx.magnitude / 100f));
                     heal?.Invoke(healAmount);
+                    break;
+                }
+                case StatusEffectType.BlindBlack:
+                case StatusEffectType.BlindWhite:
+                {
+                    Player player = Player.Instance;
+                    if (player != null)
+                    {
+                        PlayerStatusController playerStatus = GetOrAdd<PlayerStatusController>(player.gameObject);
+                        playerStatus?.ApplyEffect(fx);
+                    }
                     break;
                 }
                 default:
@@ -357,8 +424,7 @@ public static class PotionHitResolver
 
     private static bool IsCombatTargetCollider(Collider2D other)
     {
-        if (other.GetComponent<PlayerHealth>() != null || other.GetComponentInParent<PlayerHealth>() != null) return true;
-        if (other.GetComponent<EnemyCombat>() != null || other.GetComponentInParent<EnemyCombat>() != null) return true;
+        if (other.GetComponent<CombatTargetHitbox>() != null) return true;
         if (other.GetComponent<BossHealth>() != null || other.GetComponentInParent<BossHealth>() != null) return true;
         return false;
     }

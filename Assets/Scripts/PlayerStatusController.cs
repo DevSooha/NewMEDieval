@@ -15,7 +15,12 @@ public class PlayerStatusController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
 
     private readonly Dictionary<StatusEffectType, Coroutine> running = new();
+    private readonly Dictionary<StatusEffectType, float> effectEndTimes = new();
+    private readonly Dictionary<StatusEffectType, float> effectMagnitudes = new();
+    private readonly Dictionary<StatusEffectType, float> effectIntervals = new();
     private readonly Queue<TimedInput> delayedInputs = new();
+    private readonly Dictionary<string, Queue<float>> delayedButtonDowns = new();
+    private readonly Dictionary<string, Queue<float>> delayedButtonUps = new();
 
     private bool inputReversed;
     private float inputDelaySeconds;
@@ -25,6 +30,7 @@ public class PlayerStatusController : MonoBehaviour
     [Header("Blind Overlay")]
     [SerializeField, Range(0f, 1f)] private float blindBlackOverlayAlpha = 0.65f;
     [SerializeField, Range(0f, 1f)] private float blindWhiteOverlayAlpha = 0.55f;
+    [SerializeField, Min(0.05f)] private float blindTransitionDuration = 0.5f;
     private bool blindOverlayCaptured;
     private Color blindOriginalFadeColor = new Color(0f, 0f, 0f, 0f);
 
@@ -54,6 +60,9 @@ public class PlayerStatusController : MonoBehaviour
             }
         }
         running.Clear();
+        effectEndTimes.Clear();
+        effectMagnitudes.Clear();
+        effectIntervals.Clear();
 
         inputReversed = false;
         inputDelaySeconds = 0f;
@@ -69,6 +78,8 @@ public class PlayerStatusController : MonoBehaviour
         }
 
         RestoreBlindOverlay();
+        delayedButtonDowns.Clear();
+        delayedButtonUps.Clear();
     }
 
     public void ApplyEffect(StatusEffectSpec effect)
@@ -78,19 +89,24 @@ public class PlayerStatusController : MonoBehaviour
         switch (effect.effectType)
         {
             case StatusEffectType.StealthOnly:
-                StartOrRefresh(effect.effectType, StealthRoutine(effect.duration, effect.magnitude <= 0f ? 0.3f : effect.magnitude, false));
+                RefreshEffect(effect.effectType, effect.duration, effect.magnitude <= 0f ? 0.3f : effect.magnitude);
+                StartIfNeeded(effect.effectType, StealthRoutine(effect.effectType, false));
                 break;
             case StatusEffectType.StealthInvulnerable:
-                StartOrRefresh(effect.effectType, StealthRoutine(effect.duration, effect.magnitude <= 0f ? 0.3f : effect.magnitude, true));
+                RefreshEffect(effect.effectType, effect.duration, effect.magnitude <= 0f ? 0.3f : effect.magnitude);
+                StartIfNeeded(effect.effectType, StealthRoutine(effect.effectType, true));
                 break;
             case StatusEffectType.PlayerMoveSpeedMultiplier:
-                StartOrRefresh(effect.effectType, SpeedRoutine(effect.duration, effect.magnitude <= 0f ? 2f : effect.magnitude));
+                RefreshEffect(effect.effectType, effect.duration, effect.magnitude <= 0f ? 2f : effect.magnitude);
+                StartIfNeeded(effect.effectType, SpeedRoutine());
                 break;
             case StatusEffectType.PlayerInputReverse:
-                StartOrRefresh(effect.effectType, InputReverseRoutine(effect.duration));
+                RefreshEffect(effect.effectType, effect.duration);
+                StartIfNeeded(effect.effectType, InputReverseRoutine());
                 break;
             case StatusEffectType.PlayerInputDelay:
-                StartOrRefresh(effect.effectType, InputDelayRoutine(effect.duration, effect.magnitude <= 0f ? 2f : effect.magnitude));
+                RefreshEffect(effect.effectType, effect.duration, effect.magnitude <= 0f ? 2f : effect.magnitude);
+                StartIfNeeded(effect.effectType, InputDelayRoutine());
                 break;
             case StatusEffectType.BlindBlack:
             {
@@ -109,13 +125,16 @@ public class PlayerStatusController : MonoBehaviour
                 break;
             }
             case StatusEffectType.PlayerRedStateContactBurn:
-                StartOrRefresh(effect.effectType, RedStateRoutine(effect.duration, effect.magnitude <= 0f ? 50f : effect.magnitude, effect.interval <= 0f ? 0.5f : effect.interval));
+                RefreshEffect(effect.effectType, effect.duration, effect.magnitude <= 0f ? 50f : effect.magnitude, effect.interval <= 0f ? 0.5f : effect.interval);
+                StartIfNeeded(effect.effectType, RedStateRoutine());
                 break;
             case StatusEffectType.PlayerKnockbackImmune:
-                StartOrRefresh(effect.effectType, KnockbackImmuneRoutine(effect.duration));
+                RefreshEffect(effect.effectType, effect.duration);
+                StartIfNeeded(effect.effectType, KnockbackImmuneRoutine());
                 break;
             case StatusEffectType.PlayerStun:
-                StartOrRefresh(effect.effectType, StunRoutine(effect.duration));
+                RefreshEffect(effect.effectType, effect.duration);
+                StartIfNeeded(effect.effectType, StunRoutine());
                 break;
         }
     }
@@ -162,11 +181,74 @@ public class PlayerStatusController : MonoBehaviour
         return Vector2.zero;
     }
 
-    private void StartOrRefresh(StatusEffectType type, IEnumerator routine)
+    public bool ProcessActionButtonDown(string actionId, bool rawPressed)
+    {
+        return ProcessActionButton(actionId, rawPressed, delayedButtonDowns);
+    }
+
+    public bool ProcessActionButtonUp(string actionId, bool rawReleased)
+    {
+        return ProcessActionButton(actionId, rawReleased, delayedButtonUps);
+    }
+
+    private bool ProcessActionButton(string actionId, bool rawTriggered, Dictionary<string, Queue<float>> buffer)
+    {
+        if (string.IsNullOrWhiteSpace(actionId))
+        {
+            return rawTriggered;
+        }
+
+        if (inputDelaySeconds <= 0f)
+        {
+            if (buffer != null)
+            {
+                buffer.Clear();
+            }
+            return rawTriggered;
+        }
+
+        if (buffer == null)
+        {
+            return false;
+        }
+
+        if (!buffer.TryGetValue(actionId, out Queue<float> queuedTimes))
+        {
+            queuedTimes = new Queue<float>();
+            buffer[actionId] = queuedTimes;
+        }
+
+        if (rawTriggered)
+        {
+            queuedTimes.Enqueue(Time.time);
+        }
+
+        if (queuedTimes.Count <= 0)
+        {
+            return false;
+        }
+
+        if (Time.time - queuedTimes.Peek() < inputDelaySeconds)
+        {
+            return false;
+        }
+
+        queuedTimes.Dequeue();
+        return true;
+    }
+
+    private void RefreshEffect(StatusEffectType type, float duration, float magnitude = 0f, float interval = 0f)
+    {
+        effectEndTimes[type] = Time.time + Mathf.Max(0.05f, duration);
+        effectMagnitudes[type] = magnitude;
+        effectIntervals[type] = interval;
+    }
+
+    private void StartIfNeeded(StatusEffectType type, IEnumerator routine)
     {
         if (running.TryGetValue(type, out Coroutine existing) && existing != null)
         {
-            StopCoroutine(existing);
+            return;
         }
 
         running[type] = StartCoroutine(routine);
@@ -177,43 +259,84 @@ public class PlayerStatusController : MonoBehaviour
         return running.TryGetValue(type, out Coroutine routine) && routine != null;
     }
 
+    private bool IsEffectActive(StatusEffectType type)
+    {
+        return effectEndTimes.TryGetValue(type, out float endTime) && Time.time < endTime;
+    }
+
+    private float GetEffectMagnitude(StatusEffectType type, float fallback = 0f)
+    {
+        return effectMagnitudes.TryGetValue(type, out float magnitude) ? magnitude : fallback;
+    }
+
+    private float GetEffectInterval(StatusEffectType type, float fallback = 0f)
+    {
+        return effectIntervals.TryGetValue(type, out float interval) ? interval : fallback;
+    }
+
+    private float GetRemainingEffectDuration(StatusEffectType type)
+    {
+        if (!effectEndTimes.TryGetValue(type, out float endTime))
+        {
+            return 0f;
+        }
+
+        return Mathf.Max(0f, endTime - Time.time);
+    }
+
+    private void ClearEffect(StatusEffectType type)
+    {
+        running.Remove(type);
+        effectEndTimes.Remove(type);
+        effectMagnitudes.Remove(type);
+        effectIntervals.Remove(type);
+    }
+
     private void StartOrRefreshBlind(StatusEffectType type, float duration, Color color, float overlayAlpha)
     {
-        StopEffect(StatusEffectType.BlindBlack);
-        StopEffect(StatusEffectType.BlindWhite);
-        RestoreBlindOverlay();
-        running[type] = StartCoroutine(BlindRoutine(duration, color, type, overlayAlpha));
+        StatusEffectType otherType = type == StatusEffectType.BlindBlack
+            ? StatusEffectType.BlindWhite
+            : StatusEffectType.BlindBlack;
+
+        StopEffect(otherType);
+        RefreshEffect(type, duration, overlayAlpha);
+        StartIfNeeded(type, BlindRoutine(type, color));
     }
 
     private void StopEffect(StatusEffectType type)
     {
         if (!running.TryGetValue(type, out Coroutine existing) || existing == null)
         {
-            running.Remove(type);
+            ClearEffect(type);
             return;
         }
 
         StopCoroutine(existing);
-        running.Remove(type);
+        if (type == StatusEffectType.BlindBlack || type == StatusEffectType.BlindWhite)
+        {
+            RestoreBlindOverlay();
+        }
+        ClearEffect(type);
     }
 
-    private IEnumerator StealthRoutine(float duration, float alpha, bool invulnerable)
+    private IEnumerator StealthRoutine(StatusEffectType type, bool invulnerable)
     {
-        float safe = Mathf.Max(0.05f, duration);
-
-        if (spriteRenderer != null)
-        {
-            Color c = spriteRenderer.color;
-            c.a = Mathf.Clamp(alpha, 0.05f, 1f);
-            spriteRenderer.color = c;
-        }
-
         if (invulnerable && playerHealth != null)
         {
             playerHealth.SetInvulnerable(true);
         }
 
-        yield return new WaitForSeconds(safe);
+        while (IsEffectActive(type))
+        {
+            if (spriteRenderer != null)
+            {
+                Color c = spriteRenderer.color;
+                c.a = Mathf.Clamp(GetEffectMagnitude(type, 0.3f), 0.05f, 1f);
+                spriteRenderer.color = c;
+            }
+
+            yield return null;
+        }
 
         if (spriteRenderer != null)
         {
@@ -221,78 +344,119 @@ public class PlayerStatusController : MonoBehaviour
             c.a = 1f;
             spriteRenderer.color = c;
         }
-
         if (playerHealth != null)
         {
             playerHealth.SetInvulnerable(false);
         }
 
-        running.Remove(invulnerable ? StatusEffectType.StealthInvulnerable : StatusEffectType.StealthOnly);
+        ClearEffect(type);
     }
 
-    private IEnumerator SpeedRoutine(float duration, float multiplier)
+    private IEnumerator SpeedRoutine()
     {
-        float safe = Mathf.Max(0.05f, duration);
-        speedMultiplier = Mathf.Max(0.1f, multiplier);
-
-        if (player != null)
+        float lastAppliedEndTime = -1f;
+        while (IsEffectActive(StatusEffectType.PlayerMoveSpeedMultiplier))
         {
-            player.ApplySpeedBuff(safe);
+            speedMultiplier = Mathf.Max(0.1f, GetEffectMagnitude(StatusEffectType.PlayerMoveSpeedMultiplier, 2f));
+
+            if (player != null && effectEndTimes.TryGetValue(StatusEffectType.PlayerMoveSpeedMultiplier, out float endTime))
+            {
+                if (!Mathf.Approximately(lastAppliedEndTime, endTime))
+                {
+                    player.ApplySpeedBuff(Mathf.Max(0.05f, endTime - Time.time));
+                    lastAppliedEndTime = endTime;
+                }
+            }
+
+            yield return null;
         }
 
-        yield return new WaitForSeconds(safe);
-
         speedMultiplier = 1f;
-        running.Remove(StatusEffectType.PlayerMoveSpeedMultiplier);
+        ClearEffect(StatusEffectType.PlayerMoveSpeedMultiplier);
     }
 
-    private IEnumerator InputReverseRoutine(float duration)
+    private IEnumerator InputReverseRoutine()
     {
-        float safe = Mathf.Max(0.05f, duration);
         inputReversed = true;
 
-        yield return new WaitForSeconds(safe);
+        while (IsEffectActive(StatusEffectType.PlayerInputReverse))
+        {
+            yield return null;
+        }
 
         inputReversed = false;
-        running.Remove(StatusEffectType.PlayerInputReverse);
+        ClearEffect(StatusEffectType.PlayerInputReverse);
     }
 
-    private IEnumerator InputDelayRoutine(float duration, float delaySeconds)
+    private IEnumerator InputDelayRoutine()
     {
-        float safe = Mathf.Max(0.05f, duration);
-        inputDelaySeconds = Mathf.Clamp(delaySeconds, 0.05f, 5f);
         delayedInputs.Clear();
 
-        yield return new WaitForSeconds(safe);
+        while (IsEffectActive(StatusEffectType.PlayerInputDelay))
+        {
+            inputDelaySeconds = Mathf.Clamp(GetEffectMagnitude(StatusEffectType.PlayerInputDelay, 2f), 0.05f, 5f);
+            yield return null;
+        }
 
         inputDelaySeconds = 0f;
         delayedInputs.Clear();
-        running.Remove(StatusEffectType.PlayerInputDelay);
+        delayedButtonDowns.Clear();
+        delayedButtonUps.Clear();
+        ClearEffect(StatusEffectType.PlayerInputDelay);
     }
 
-    private IEnumerator BlindRoutine(float duration, Color color, StatusEffectType effectType, float overlayAlpha)
+    private IEnumerator BlindRoutine(StatusEffectType effectType, Color color)
     {
-        float safe = Mathf.Max(0.05f, duration);
-
         if (UIManager.Instance == null || UIManager.Instance.fadeImage == null)
         {
-            yield return new WaitForSeconds(safe);
-            running.Remove(effectType);
+            yield return new WaitForSeconds(GetRemainingEffectDuration(effectType));
+            ClearEffect(effectType);
             yield break;
         }
 
         CaptureBlindOverlay();
-        Color target = color;
-        target.a = Mathf.Clamp01(overlayAlpha);
+        Color start = blindOriginalFadeColor;
+        if (blindOverlayCaptured)
+        {
+            start = UIManager.Instance.fadeImage.color;
+        }
 
-        UIManager.Instance.fadeImage.color = target;
+        Color target = color;
+        target.a = Mathf.Clamp01(GetEffectMagnitude(effectType));
+
+        float transition = Mathf.Max(0.05f, blindTransitionDuration);
         UIManager.Instance.fadeImage.gameObject.SetActive(true);
         UIManager.Instance.fadeImage.transform.SetAsLastSibling();
 
-        yield return new WaitForSeconds(safe);
+        float elapsed = 0f;
+        while (elapsed < transition)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / transition);
+            UIManager.Instance.fadeImage.color = Color.Lerp(start, target, t);
+            yield return null;
+        }
+
+        UIManager.Instance.fadeImage.color = target;
+
+        while (IsEffectActive(effectType))
+        {
+            target.a = Mathf.Clamp01(GetEffectMagnitude(effectType));
+            UIManager.Instance.fadeImage.color = target;
+            yield return null;
+        }
+
+        elapsed = 0f;
+        while (elapsed < transition)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / transition);
+            UIManager.Instance.fadeImage.color = Color.Lerp(target, start, t);
+            yield return null;
+        }
 
         RestoreBlindOverlay();
-        running.Remove(effectType);
+        ClearEffect(effectType);
     }
 
     private void CaptureBlindOverlay()
@@ -316,11 +480,8 @@ public class PlayerStatusController : MonoBehaviour
         blindOverlayCaptured = false;
     }
 
-    private IEnumerator RedStateRoutine(float duration, float burnDamage, float tickInterval)
+    private IEnumerator RedStateRoutine()
     {
-        float safe = Mathf.Max(0.05f, duration);
-        float interval = Mathf.Max(0.05f, tickInterval);
-        float remaining = safe;
         Color original = spriteRenderer != null ? spriteRenderer.color : Color.white;
 
         if (spriteRenderer != null)
@@ -328,11 +489,11 @@ public class PlayerStatusController : MonoBehaviour
             spriteRenderer.color = new Color(1f, 0.7f, 0.7f, original.a);
         }
 
-        while (remaining > 0f)
+        while (IsEffectActive(StatusEffectType.PlayerRedStateContactBurn))
         {
-            ApplyContactBurn(Mathf.RoundToInt(burnDamage));
+            float interval = Mathf.Max(0.05f, GetEffectInterval(StatusEffectType.PlayerRedStateContactBurn, 0.5f));
+            ApplyContactBurn(Mathf.RoundToInt(GetEffectMagnitude(StatusEffectType.PlayerRedStateContactBurn, 50f)));
             yield return new WaitForSeconds(interval);
-            remaining -= interval;
         }
 
         if (spriteRenderer != null)
@@ -340,7 +501,7 @@ public class PlayerStatusController : MonoBehaviour
             spriteRenderer.color = original;
         }
 
-        running.Remove(StatusEffectType.PlayerRedStateContactBurn);
+        ClearEffect(StatusEffectType.PlayerRedStateContactBurn);
     }
 
     private void ApplyContactBurn(int damage)
@@ -353,9 +514,7 @@ public class PlayerStatusController : MonoBehaviour
             Collider2D hit = hits[i];
             if (hit == null) continue;
 
-            EnemyCombat enemy = hit.GetComponent<EnemyCombat>();
-            if (enemy == null) enemy = hit.GetComponentInParent<EnemyCombat>();
-            if (enemy != null)
+            if (CombatTargetHitbox.TryGetEnemyCombat(hit, out EnemyCombat enemy))
             {
                 enemy.EnemyTakeDamage(damage);
                 continue;
@@ -370,20 +529,21 @@ public class PlayerStatusController : MonoBehaviour
         }
     }
 
-    private IEnumerator KnockbackImmuneRoutine(float duration)
+    private IEnumerator KnockbackImmuneRoutine()
     {
-        float safe = Mathf.Max(0.05f, duration);
         knockbackImmune = true;
 
-        yield return new WaitForSeconds(safe);
+        while (IsEffectActive(StatusEffectType.PlayerKnockbackImmune))
+        {
+            yield return null;
+        }
 
         knockbackImmune = false;
-        running.Remove(StatusEffectType.PlayerKnockbackImmune);
+        ClearEffect(StatusEffectType.PlayerKnockbackImmune);
     }
 
-    private IEnumerator StunRoutine(float duration)
+    private IEnumerator StunRoutine()
     {
-        float safe = Mathf.Max(0.05f, duration);
         stunned = true;
 
         if (player != null)
@@ -391,7 +551,10 @@ public class PlayerStatusController : MonoBehaviour
             player.SetCanMove(false);
         }
 
-        yield return new WaitForSeconds(safe);
+        while (IsEffectActive(StatusEffectType.PlayerStun))
+        {
+            yield return null;
+        }
 
         stunned = false;
         if (player != null)
@@ -399,6 +562,6 @@ public class PlayerStatusController : MonoBehaviour
             player.SetCanMove(true);
         }
 
-        running.Remove(StatusEffectType.PlayerStun);
+        ClearEffect(StatusEffectType.PlayerStun);
     }
 }

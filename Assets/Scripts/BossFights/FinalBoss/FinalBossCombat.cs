@@ -175,13 +175,14 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     private void OnEnable()
     {
-        PlayerHealth.OnPlayerDeath += HandlePlayerDeath;
+        ResumeBossPresentation();
+        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
         ResolvePlayerTransform();
     }
 
     private void OnDisable()
     {
-        PlayerHealth.OnPlayerDeath -= HandlePlayerDeath;
+        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
         StopBattleRoutines();
         ClearOffensives();
     }
@@ -200,6 +201,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     public override void StartBattle()
     {
+        ResumeBossPresentation();
         if (isBattleRunning) return;
         if (!ResolvePlayerTransform()) return;
 
@@ -221,6 +223,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     public void PrepareIdleState(Transform overridePoint = null)
     {
+        ResumeBossPresentation();
         StopBattleRoutines();
         ClearOffensives();
         StopAttackAnimation();
@@ -1294,6 +1297,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
 
     private void HandlePlayerDeath()
     {
+        CleanupBossPresentationOnPlayerDeath();
         if (!isBattleRunning || isVictoryHandled) return;
         if (deathRoutine != null) return;
         deathRoutine = StartCoroutine(HandlePlayerDeathRoutine());

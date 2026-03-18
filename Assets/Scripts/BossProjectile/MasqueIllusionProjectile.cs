@@ -67,7 +67,10 @@ public class MasqueIllusionProjectile : BossProjectile
 
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(damage);
+                playerHealth.TryTakeDamage(
+                    damage,
+                    playerHealth.BossHitInvulnerableDuration
+                );
             }
 
             ReleasePlayer();

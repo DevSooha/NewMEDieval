@@ -28,7 +28,7 @@ public class WeaponSlotUI : MonoBehaviour
     {
         if (attackSystem == null)
         {
-            attackSystem = FindFirstObjectByType<PlayerAttackSystem>(FindObjectsInactive.Include);
+            ResolveAttackSystem();
         }
 
         if (inventoryUI == null)
@@ -61,17 +61,19 @@ public class WeaponSlotUI : MonoBehaviour
         }
     }
 
-    private void LateUpdate()
+    private void OnEnable()
     {
         Refresh();
     }
 
     private void Refresh()
     {
-        if (attackSystem == null || attackSystem.slots == null)
+        if (!ResolveAttackSystem() || attackSystem.slots == null)
         {
             return;
         }
+
+        attackSystem.SendMessage("EnsureCoreSlots", SendMessageOptions.DontRequireReceiver);
 
         for (int i = 0; i < slotRoots.Length; i++)
         {
@@ -99,7 +101,7 @@ public class WeaponSlotUI : MonoBehaviour
 
         WeaponSlot slot = attackSystem.slots[index];
 
-        if (slot.type == WeaponType.Melee)
+        if (slot.type == WeaponType.Melee || (index == 0 && slot.type != WeaponType.PotionBomb))
         {
             topSprite = meleeSprite;
             bottomSprite = null;
@@ -269,6 +271,23 @@ public class WeaponSlotUI : MonoBehaviour
         clickImage.preserveAspect = false;
 
         clickImage.transform.SetSiblingIndex(0);
+    }
+
+    private bool ResolveAttackSystem()
+    {
+        if (attackSystem != null && attackSystem.isActiveAndEnabled)
+        {
+            return true;
+        }
+
+        attackSystem = FindFirstObjectByType<PlayerAttackSystem>();
+        if (attackSystem != null)
+        {
+            return true;
+        }
+
+        attackSystem = FindFirstObjectByType<PlayerAttackSystem>(FindObjectsInactive.Include);
+        return attackSystem != null;
     }
 
     private bool TryResolveInventoryUI()
