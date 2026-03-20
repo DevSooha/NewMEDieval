@@ -83,6 +83,9 @@ public class UIManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        pauseRequestCount = 0;
+        dialogueActive = false;
+        Time.timeScale = 1f;
         if (messagePanel != null) messagePanel.SetActive(false);
         if (fadeImage != null)
         {
