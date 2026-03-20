@@ -23,6 +23,7 @@ public class BossBattleTrigger : MonoBehaviour
     private Transform playerTransform;
     private bool isSubscribedToBossEndEvent;
     private bool battleStarted;
+    private bool initialized;
 
     private void OnEnable()
     {
@@ -38,6 +39,13 @@ public class BossBattleTrigger : MonoBehaviour
 
         SetBlockades(false);
         TrySubscribeBossEndEvent();
+        StartCoroutine(EnableAfterFrame());
+    }
+
+    private IEnumerator EnableAfterFrame()
+    {
+        yield return null;
+        initialized = true;
     }
 
     private void TrySubscribeBossEndEvent()
@@ -121,6 +129,7 @@ public class BossBattleTrigger : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (!initialized) return;
         if (hasTriggered || (BossManager.Instance != null && BossManager.Instance.IsBossActive)) return;
 
         if (other.CompareTag("Player"))

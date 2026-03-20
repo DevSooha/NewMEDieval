@@ -200,7 +200,6 @@ public partial class PlayerAttackSystem : MonoBehaviour
         Camera mainCamera = Camera.main;
         if (mainCamera == null)
         {
-            Debug.LogWarning("[AttackSystem] Main Camera not found. Spawned visuals may be off-screen.");
             return;
         }
 
