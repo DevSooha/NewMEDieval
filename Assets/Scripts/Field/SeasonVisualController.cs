@@ -46,6 +46,7 @@ public class SeasonVisualController : MonoBehaviour
     private SeasonType currentSeason = SeasonType.Unknown;
     private bool isInitialized;
     private bool primaryBackgroundIsActive = true;
+    private bool frameLayoutDirty;
 
     private void Reset()
     {
@@ -57,7 +58,11 @@ public class SeasonVisualController : MonoBehaviour
     private void LateUpdate()
     {
         SyncBackgroundToCamera();
-        RefreshFrameLayouts();
+        if (frameLayoutDirty)
+        {
+            RefreshFrameLayouts();
+            frameLayoutDirty = false;
+        }
     }
 
     private void Awake()
@@ -92,7 +97,7 @@ public class SeasonVisualController : MonoBehaviour
     {
         ResolveFrameReferences();
         EnsureFrameLayers();
-        RefreshFrameLayouts();
+        frameLayoutDirty = true;
 
         if (!TryGetVisualSet(season, out SeasonVisualSet targetVisual))
         {
@@ -533,6 +538,7 @@ public class SeasonVisualController : MonoBehaviour
         ApplyImmediate(targetVisual);
         currentSeason = nextSeason;
         isInitialized = true;
+        frameLayoutDirty = true;
         transitionRoutine = null;
     }
 
