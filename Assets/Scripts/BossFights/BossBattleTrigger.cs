@@ -44,7 +44,7 @@ public class BossBattleTrigger : MonoBehaviour
 
     private IEnumerator EnableAfterFrame()
     {
-        yield return null;
+        yield return new WaitForSecondsRealtime(1f);
         initialized = true;
     }
 
