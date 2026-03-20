@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoomData
   roomID: spr_4
   roomPrefab: {fileID: 6043925461913827379, guid: f21bb40d13473db4f931c606da3fa2b1, type: 3}
-  north: {fileID: 11400000, guid: 828445048f308a74993b44203785affd, type: 2}
+  north: {fileID: 11400000, guid: ee2dda599af5b2f408c5a83de9f85b3c, type: 2}
   south: {fileID: 11400000, guid: d153c3b905d4bde428d051a24f53b523, type: 2}
   east: {fileID: 0}
   west: {fileID: 0}
   roomCoord: {x: 1, y: 3}
+  useSeasonOverride: 0
+  seasonOverride: 0
