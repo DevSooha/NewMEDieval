@@ -92,7 +92,7 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
-        if (Input.GetMouseButtonDown(1) && !IsPointerOverWeaponSlot())
+        if ((Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1)) && !IsPointerOverWeaponSlot())
         {
             CancelWeaponSlotSelection();
         }
