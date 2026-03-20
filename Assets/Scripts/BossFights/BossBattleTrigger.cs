@@ -73,10 +73,7 @@ public class BossBattleTrigger : MonoBehaviour
 
     private void OnDisable()
     {
-        if (Time.timeScale == 0f)
-        {
-            Time.timeScale = 1f;
-        }
+        UIManager.ForceResetPause();
 
         TryUnsubscribeBossEndEvent();
     }
@@ -136,8 +133,6 @@ public class BossBattleTrigger : MonoBehaviour
             Rigidbody2D rb = playerTransform.GetComponent<Rigidbody2D>();
             if (rb != null) rb.linearVelocity = Vector2.zero;
 
-            Time.timeScale = 0f;
-
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.ShowSelectPanel(
@@ -156,8 +151,6 @@ public class BossBattleTrigger : MonoBehaviour
 
     public void StartBossSequence()
     {
-        Time.timeScale = 1f;
-
         if (startPositionTF != null)
         {
             StartCoroutine(ForceMoveRoutine(startPositionTF.position, true));
@@ -170,8 +163,6 @@ public class BossBattleTrigger : MonoBehaviour
 
     public void CancelBattle()
     {
-        Time.timeScale = 1f;
-
         if (UIManager.Instance != null)
         {
             UIManager.Instance.HideSelectPanel();

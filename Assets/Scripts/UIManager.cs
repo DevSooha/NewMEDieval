@@ -13,6 +13,29 @@ public class UIManager : MonoBehaviour
     public static bool DialogueActive => dialogueActive;
     public static bool SelectionActive => Instance != null && Instance.SelectPanel != null && Instance.SelectPanel.activeSelf;
 
+    private static int pauseRequestCount = 0;
+
+    public static void RequestPause()
+    {
+        pauseRequestCount++;
+        Time.timeScale = 0f;
+    }
+
+    public static void ReleasePause()
+    {
+        pauseRequestCount = Mathf.Max(0, pauseRequestCount - 1);
+        if (pauseRequestCount == 0)
+        {
+            Time.timeScale = 1f;
+        }
+    }
+
+    public static void ForceResetPause()
+    {
+        pauseRequestCount = 0;
+        Time.timeScale = 1f;
+    }
+
     [Header("Fade Settings")]
     public Image fadeImage;
 
@@ -172,6 +195,7 @@ public class UIManager : MonoBehaviour
         currentDialogue = dialogue;
         currentLineIndex = 0;
         dialogueActive = true;
+        RequestPause();
 
         onDialogueEndedCallback = onEnd;
         SetDimmerActive(true);
@@ -227,11 +251,11 @@ public class UIManager : MonoBehaviour
         foreach (char letter in line.ToCharArray())
         {
             dialogueText.text += letter;
-            yield return new WaitForSeconds(typingSpeed);
+            yield return new WaitForSecondsRealtime(typingSpeed);
 
             if (letter == '.' || letter == '!' || letter == '?')
             {
-                yield return new WaitForSeconds(sentenceDelay);
+                yield return new WaitForSecondsRealtime(sentenceDelay);
             }
         }
 
@@ -260,6 +284,7 @@ public class UIManager : MonoBehaviour
     void EndDialogue()
     {
         dialogueActive = false;
+        ReleasePause();
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
         SetDimmerActive(false);
         currentDialogue = null;
@@ -294,8 +319,8 @@ public class UIManager : MonoBehaviour
 
     public void ShowSelectPanel(string selectLabel, string btn1Text, UnityAction action1, string btn2Text, UnityAction action2)
     {
-
         if (SelectPanel == null) return;
+        RequestPause();
         EnsureSelectBlocker();
         SetSelectBlockerActive(true);
         SelectPanel.SetActive(true);
@@ -339,6 +364,7 @@ public class UIManager : MonoBehaviour
     {
         if (SelectPanel == null) return;
         SelectPanel.SetActive(false);
+        ReleasePause();
         SetSelectBlockerActive(false);
         UpdateSelectButtonVisuals();
 
