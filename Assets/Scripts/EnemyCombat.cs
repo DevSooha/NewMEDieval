@@ -7,7 +7,11 @@ public class EnemyCombat : MonoBehaviour
     public float knockbackTileSize = 1f;
     public float knockbackTiles = 1f;
     public float knockbackDuration = 0.2f;
+    [Header("Enemy Self-Knockback (on collision with player)")]
+    public float selfKnockbackPixels = 64f;
+    public float selfKnockbackDuration = 0.2f;
     public int damageAmount = 1;
+    public ElementType currentElement = ElementType.None;
     private LayerMask playerLayer;
 
     [Header("Melee Attack")]
@@ -78,7 +82,28 @@ public class EnemyCombat : MonoBehaviour
         {
             return;
         }
+
+        ApplySelfKnockback(collision.transform.position);
         Attack();
+    }
+
+    private void ApplySelfKnockback(Vector3 playerPosition)
+    {
+        if (selfKnockbackPixels <= 0f) return;
+
+        Vector2 direction = ((Vector2)transform.position - (Vector2)playerPosition);
+        if (direction.sqrMagnitude < 0.0001f) direction = Vector2.right;
+        direction.Normalize();
+
+        float distanceUnits = selfKnockbackPixels / 32f;
+        if (rb != null)
+        {
+            rb.MovePosition(rb.position + direction * distanceUnits);
+        }
+        else
+        {
+            transform.position += (Vector3)(direction * distanceUnits);
+        }
     }
 
     public void Attack()
