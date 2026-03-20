@@ -19,3 +19,5 @@ MonoBehaviour:
   east: {fileID: 0}
   west: {fileID: 0}
   roomCoord: {x: 0, y: 7}
+  useSeasonOverride: 0
+  seasonOverride: 4

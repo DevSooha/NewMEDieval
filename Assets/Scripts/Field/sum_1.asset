@@ -20,4 +20,4 @@ MonoBehaviour:
   west: {fileID: 11400000, guid: d0d4da62cb60f484e826cfc73d21ed7d, type: 2}
   roomCoord: {x: 1, y: 4}
   useSeasonOverride: 0
-  seasonOverride: 0
+  seasonOverride: 2

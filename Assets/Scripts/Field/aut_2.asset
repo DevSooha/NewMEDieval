@@ -16,6 +16,8 @@ MonoBehaviour:
   roomPrefab: {fileID: 4350292270541437146, guid: 86a6fe83796af3648a381bedaeb6e9e3, type: 3}
   north: {fileID: 11400000, guid: 860e1fed1cf0e2d49b72be1781f1d9b6, type: 2}
   south: {fileID: 11400000, guid: 1465ed0872820f54f998940c6bbe967a, type: 2}
-  east: {fileID: 0}
+  east: {fileID: 11400000, guid: 36001664992ca8a4ca8c82326b4a68df, type: 2}
   west: {fileID: 0}
   roomCoord: {x: 0, y: 6}
+  useSeasonOverride: 0
+  seasonOverride: 3
