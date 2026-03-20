@@ -53,16 +53,7 @@ public partial class PlayerAttackSystem : MonoBehaviour
         interactionSensor = GetComponentInChildren<PlayerInteraction>();
         inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
 
-        if (floorTilemap == null)
-        {
-            GameObject groundObj = GameObject.FindGameObjectWithTag("Ground");
-            if (groundObj != null) floorTilemap = groundObj.GetComponent<Tilemap>();
-            else
-            {
-                GameObject floorObj = GameObject.Find("Floor");
-                if (floorObj != null) floorTilemap = floorObj.GetComponent<Tilemap>();
-            }
-        }
+        ResolveFloorTilemap();
 
         if (bombBlockLayer.value == 0)
         {
@@ -83,6 +74,7 @@ public partial class PlayerAttackSystem : MonoBehaviour
             return;
         }
 
+        ResolveFloorTilemap();
         UpdateAimDirection();
         EnsureCoreSlots();
         SyncPotionSlotCounts();
@@ -220,6 +212,41 @@ public partial class PlayerAttackSystem : MonoBehaviour
         {
             Debug.LogWarning($"[AttackSystem] {label} prefab layer '{LayerMask.LayerToName(layer)}' is excluded from camera culling mask.");
         }
+    }
+
+    private void ResolveFloorTilemap()
+    {
+        // 캐시된 타일맵이 유효하고, 현재 플레이어 위치에 타일이 있으면 유지
+        if (floorTilemap != null && floorTilemap.gameObject.activeInHierarchy)
+        {
+            Vector3Int cell = floorTilemap.WorldToCell(transform.position);
+            if (floorTilemap.HasTile(cell))
+                return;
+        }
+
+        // 활성 타일맵 중 플레이어 위치에 타일이 있는 Ground 타일맵을 찾음
+        floorTilemap = null;
+        Tilemap[] tilemaps = FindObjectsByType<Tilemap>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        Tilemap fallback = null;
+
+        for (int i = 0; i < tilemaps.Length; i++)
+        {
+            Tilemap tilemap = tilemaps[i];
+            if (!IsGroundTilemap(tilemap))
+                continue;
+
+            Vector3Int cell = tilemap.WorldToCell(transform.position);
+            if (tilemap.HasTile(cell))
+            {
+                floorTilemap = tilemap;
+                return;
+            }
+
+            if (fallback == null)
+                fallback = tilemap;
+        }
+
+        floorTilemap = fallback;
     }
 
     public void CancelTransientInputState()

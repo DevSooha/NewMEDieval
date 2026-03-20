@@ -24,14 +24,24 @@ public class CombatTargetHitbox : MonoBehaviour
     public static bool TryGetPlayerHealth(Collider2D other, out PlayerHealth health)
     {
         health = null;
-        CombatTargetHitbox hitbox = other != null ? other.GetComponent<CombatTargetHitbox>() : null;
-        if (hitbox == null || hitbox.playerHealth == null)
+        if (other == null) return false;
+
+        CombatTargetHitbox hitbox = other.GetComponent<CombatTargetHitbox>();
+        if (hitbox != null && hitbox.playerHealth != null)
         {
-            return false;
+            health = hitbox.playerHealth;
+            return true;
         }
 
-        health = hitbox.playerHealth;
-        return true;
+        // Fallback: 투사체가 Player 본체 콜라이더와 직접 충돌한 경우
+        if (other.CompareTag("Player"))
+        {
+            health = other.GetComponent<PlayerHealth>();
+            if (health == null) health = other.GetComponentInParent<PlayerHealth>();
+            return health != null;
+        }
+
+        return false;
     }
 
     public static bool TryGetEnemyCombat(Collider2D other, out EnemyCombat enemy)
