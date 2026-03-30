@@ -99,11 +99,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7594688620894736453}
+  - component: {fileID: 8888888888888888802}
   - component: {fileID: 6356957797149345804}
   - component: {fileID: 6670268892088937538}
   m_Layer: 7
   m_Name: Roliet
-  m_TagString: Enemy
+  m_TagString: Boss
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -128,6 +129,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &8888888888888888802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3343706604222949975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68cab13c36d39dc46bb45c74663347c7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BossHealth
+  bossName: "\uB85C\uB9AC\uC5E3"
+  maxHP: 2500
+  currentHP: 2500
+  currentElement: 0
 --- !u!61 &6356957797149345804
 BoxCollider2D:
   m_ObjectHideFlags: 0

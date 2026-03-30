@@ -5616,8 +5616,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ecf3290e88fabc4daf98775606c2af8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossBattleTrigger
-  assignedBoss: {fileID: 0}
-  blockadeParent: {fileID: 0}
+  assignedBoss: {fileID: 5555555555555555901}
+  blockadeParent: {fileID: 1411764615212158415}
   startPositionTF: {fileID: 7083089542393153890}
   pushDirection: {x: 0, y: -1}
   pushDistance: 2.5
@@ -6257,7 +6257,7 @@ PrefabInstance:
     - target: {fileID: 89104943762204597, guid: 845fa4de92853604499d57383646d629, type: 3}
       propertyPath: fireBallPrefab
       value: 
-      objectReference: {fileID: 4680612044409315822, guid: 048d628de03c8244d8177fe08f57300b, type: 3}
+      objectReference: {fileID: 4680612044409315822, guid: deaf0154333f11242b0485ff91000f7f, type: 3}
     - target: {fileID: 2179543347204458197, guid: 845fa4de92853604499d57383646d629, type: 3}
       propertyPath: m_Name
       value: Julmeo
@@ -6582,6 +6582,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
+--- !u!114 &5555555555555555901 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6670268892088937538, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
+  m_PrefabInstance: {fileID: 4074836179588241175}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa135a04d4b03fd41bea05c0557ffc63, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: '::'
 --- !u!224 &5902381713977608018 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7594688620894736453, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
