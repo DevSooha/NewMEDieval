@@ -166,7 +166,7 @@ public class BossBattleTrigger : MonoBehaviour
         }
         else
         {
-            ActivateBossBattle();
+            StartCoroutine(ActivateBossBattleRoutine());
         }
     }
 
@@ -243,7 +243,7 @@ public class BossBattleTrigger : MonoBehaviour
 
         if (isBossStart)
         {
-            ActivateBossBattle();
+            StartCoroutine(ActivateBossBattleRoutine());
         }
         else
         {
@@ -251,15 +251,19 @@ public class BossBattleTrigger : MonoBehaviour
         }
     }
 
-    private void ActivateBossBattle()
+    private IEnumerator ActivateBossBattleRoutine()
     {
+        if (UIManager.Instance != null)
+        {
+            yield return UIManager.Instance.FadeOut(0.5f);
+        }
+
         SetBlockades(true);
         ResolveAssignedBossIfNeeded();
 
         if (assignedBoss != null)
         {
             assignedBoss.gameObject.SetActive(true);
-            assignedBoss.StartBattle();
 
             if (BossManager.Instance != null)
             {
@@ -271,6 +275,16 @@ public class BossBattleTrigger : MonoBehaviour
         {
             Debug.LogError($"[BossTrigger] Assigned boss is missing on {gameObject.name}");
             SetBlockades(false);
+        }
+
+        if (UIManager.Instance != null)
+        {
+            yield return UIManager.Instance.FadeIn(0.5f);
+        }
+
+        if (assignedBoss != null)
+        {
+            assignedBoss.StartBattle();
         }
     }
 

@@ -10,6 +10,7 @@ public class StainedSwordProjectile : MonoBehaviour
     [SerializeField] private float homingDuration = 2.8f;
     [SerializeField] private float fadeOutDuration = 0.1f;
     [SerializeField] private int damage = 1;
+    [SerializeField] private bool ignoreObstacles;
 
     private Transform target;
     private Action<StainedSwordProjectile> onDestroyed;
@@ -27,6 +28,14 @@ public class StainedSwordProjectile : MonoBehaviour
         projectileCollider.enabled = false;
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
         particleSystems = GetComponentsInChildren<ParticleSystem>(true);
+    }
+
+    public void Configure(float speedOverride, float homingDurationOverride, float followStartDelayOverride = -1f, bool ignoreObstaclesOverride = false)
+    {
+        speedPerSecond = speedOverride;
+        homingDuration = homingDurationOverride;
+        if (followStartDelayOverride >= 0f) followStartDelay = followStartDelayOverride;
+        ignoreObstacles = ignoreObstaclesOverride;
     }
 
     public void Initialize(Transform followTarget, Action<StainedSwordProjectile> onDestroyedCallback)
@@ -144,7 +153,7 @@ public class StainedSwordProjectile : MonoBehaviour
 
             DestroyProjectile();
         }
-        else if (!other.isTrigger && !other.CompareTag("Boss"))
+        else if (!ignoreObstacles && !other.isTrigger && !other.CompareTag("Boss"))
         {
             DestroyProjectile();
         }
