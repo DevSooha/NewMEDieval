@@ -25,6 +25,7 @@ public class PlayerInteraction : MonoBehaviour
     private const int ControlRecoveryFrames = 3;
     private PlayerAttackSystem playerAttackSystem;
     private PlayerStatusController playerStatusController;
+    private bool interactionReady;
 
     public bool IsInteractable => canInteract;
     public bool HasImmediateInteractionTarget => currentItem != null || currentNPC != null || isCampfire;
@@ -69,6 +70,14 @@ public class PlayerInteraction : MonoBehaviour
         {
             inGameMenu.SetActive(false);
         }
+
+        StartCoroutine(EnableInteractionAfterDelay());
+    }
+
+    private IEnumerator EnableInteractionAfterDelay()
+    {
+        yield return new WaitForSecondsRealtime(1f);
+        interactionReady = true;
     }
 
     private void Update()
@@ -331,7 +340,7 @@ public class PlayerInteraction : MonoBehaviour
             isCampfire = true;
             canInteract = true;
 
-            if (UIManager.Instance != null)
+            if (interactionReady && UIManager.Instance != null)
             {
                 ShowCampfireSelectPanelIfNeeded();
             }

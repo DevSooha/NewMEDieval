@@ -52,7 +52,8 @@ public class PotionSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (eventData.button != PointerEventData.InputButton.Right)
+        if (eventData.button != PointerEventData.InputButton.Left
+            && eventData.button != PointerEventData.InputButton.Right)
         {
             return;
         }

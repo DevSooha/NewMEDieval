@@ -3,9 +3,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
-public class Player : MonoBehaviour
+public class Player : Singleton<Player>
 {
-    public static Player Instance { get; private set; }
 
     public enum PlayerState
     {
@@ -53,16 +52,9 @@ public class Player : MonoBehaviour
     private Coroutine knockbackRoutine;
     private Coroutine blinkRoutine;
 
-    void Awake()
+    protected override void Awake()
     {
-        // ??좎룞??????�?????좎럩??
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
+        base.Awake();
     }
 
     void Start()
@@ -925,7 +917,7 @@ public class Player : MonoBehaviour
         }
 
         // 2. ??좎럩????좎럡??
-        if (scene.name == "Field")
+        if (string.Equals(scene.name, "Field", System.StringComparison.OrdinalIgnoreCase))
         {
             if (hasSavedPosition)
             {

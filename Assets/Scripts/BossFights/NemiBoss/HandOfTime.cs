@@ -29,7 +29,7 @@ public class HandOfTime : MonoBehaviour
 
         if (emitterCtrl == null)
         {
-            emitterCtrl = FindObjectOfType<FateSeverSpearEmitterController>();
+            emitterCtrl = FindAnyObjectByType<FateSeverSpearEmitterController>();
         }
     }
 

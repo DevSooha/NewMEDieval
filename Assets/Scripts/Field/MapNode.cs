@@ -28,15 +28,14 @@ public class MapNode : MonoBehaviour
         myCollider = GetComponent<BoxCollider2D>();
     }
 
-    // �� ������ �� ���¸� ����
     private void Update()
     {
         if (myCollider == null) return;
 
-        bool isBossActive = IsBossBattleLocked();
+        bool shouldBeTrigger = nextRoom != null && !IsBossBattleLocked();
 
-        // ����� ���� ���ų� ������ ���̸� ������ ���
-        myCollider.isTrigger = nextRoom != null && !isBossActive;
+        if (myCollider.isTrigger != shouldBeTrigger)
+            myCollider.isTrigger = shouldBeTrigger;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

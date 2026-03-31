@@ -14,7 +14,7 @@ public class PearlBeamController : MonoBehaviour
     [SerializeField] private int laneStep = 2;
     [SerializeField] private int laneCount = 13;
 
-    [SerializeField] private float startVfxTime = 0.3f;
+    [SerializeField] private float startVfxTime = 0.8f;
 
     private int lockedLaneIndex = -1;
     private int lockedLaneLeftX = 0;
@@ -27,8 +27,6 @@ public class PearlBeamController : MonoBehaviour
 
     private Vector3Int lockedPlayerCell;
 
-    [SerializeField] private float fireDelay = 0.2f;
-
     [Header("Beam Range (Cell Y)")]
     [SerializeField] private int beamYStart = -8;
     [SerializeField] private int beamYEnd = 10;
@@ -39,7 +37,7 @@ public class PearlBeamController : MonoBehaviour
     [SerializeField] private GameObject vfxLoop;
     [SerializeField] private bool loopLengthOnX = true;
     [SerializeField] private Transform loopVisualRoot;
-    [SerializeField] private float sustainTime = 1.0f;
+    [SerializeField] private float sustainTime = 4.0f;
 
     [Header("Damage")]
     [SerializeField] private int damagePerHit = 1;
@@ -75,6 +73,24 @@ public class PearlBeamController : MonoBehaviour
         var go = new GameObject("[PearlBeam]KnockbackSenderDummy");
         go.hideFlags = HideFlags.HideInHierarchy;
         knockbackSenderDummy = go.transform;
+
+        ResolveVfxReferences();
+    }
+
+    private void ResolveVfxReferences()
+    {
+        if (vfxLoop != null && vfxLoop.transform.IsChildOf(transform))
+            return;
+
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            Transform child = transform.GetChild(i);
+            if (child.GetComponentInChildren<ParticleSystem>(true) != null)
+            {
+                vfxLoop = child.gameObject;
+                break;
+            }
+        }
     }
 
     private void OnDestroy()
@@ -101,22 +117,16 @@ public class PearlBeamController : MonoBehaviour
         
         Transform chosenEmitter = emitters[laneIndex];
 
-        yield return StartCoroutine(FireRoutine(chosenEmitter, laneIndex, lockedLaneLeftX));
+        yield return FireRoutine(chosenEmitter, laneIndex, lockedLaneLeftX);
     }
 
     public IEnumerator PlayOnce(Transform player)
     {
-        playerTF = player; 
-        //플레이어의 위치를 받는데 사용한다. 
+        playerTF = player;
 
-        yield return new WaitForSeconds(0.5f); 
-        //0.5초 동안 기다리는거
+        lockedPlayerCell = groundTilemap.WorldToCell(playerTF.position);
 
-        lockedPlayerCell = groundTilemap.WorldToCell(playerTF.position); 
-        //플레이어의 위치를 타일 좌표로 변환한다. 
-
-        yield return StartCoroutine(secondStage()); 
-        //기다리거나 그런게 아니라 동시에 실행됨. secondStage()와 같이 실행되고, 그리고 나서 끝나면 Playonce 다시 진행하는 것이다. 
+        yield return secondStage();
     }
 
     private IEnumerator FireRoutine(Transform emitter, int laneIndex, int laneLeftX)
@@ -148,8 +158,6 @@ public class PearlBeamController : MonoBehaviour
 
             vfxStart.SetActive(false);
         }
-
-        yield return new WaitForSeconds(fireDelay);
 
         float heightWorld = SetupBeamTransformAndCollider_AnchorAtMagicY(laneLeftX);
         PlayLoopVfx(heightWorld);
@@ -235,15 +243,27 @@ public class PearlBeamController : MonoBehaviour
 
     private void PlayLoopVfx(float heightWorld)
     {
-        if (vfxLoop == null || loopVisualRoot == null) return;
+        if (vfxLoop == null) return;
 
-        vfxLoop.transform.position = transform.position;
-        loopVisualRoot.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        // vfxLoop이 자식이 아닌 경우에만 직접 위치를 맞춤.
+        // 자식인 경우에는 부모(PearlBeam)를 따라 위치가 자동 동기화됨.
+        if (vfxLoop.transform.parent != transform)
+            vfxLoop.transform.position = transform.position;
 
-        Vector3 s = loopVisualRoot.localScale;
-        loopVisualRoot.localScale = loopLengthOnX
+        // loopVisualRoot가 PearlBeam 자신이거나 미할당이면 vfxLoop.transform을 직접 사용.
+        // PearlBeam 자신의 transform을 회전/스케일하면 BoxCollider2D까지 같이 영향을 받으므로 금지.
+        Transform visualRoot = (loopVisualRoot != null && loopVisualRoot != transform)
+            ? loopVisualRoot
+            : vfxLoop.transform;
+
+        Vector3 s = visualRoot.localScale;
+        visualRoot.localScale = loopLengthOnX
             ? new Vector3(heightWorld, s.y, s.z)
             : new Vector3(s.x, heightWorld, s.z);
+
+        // 빔 VFX가 로컬 X축 방향으로 늘어나므로, Z축 90° 회전하여 위를 향하게 함
+        if (loopLengthOnX)
+            visualRoot.localRotation = Quaternion.Euler(0, 0, 180f);
 
         vfxLoop.SetActive(false);
         vfxLoop.SetActive(true);

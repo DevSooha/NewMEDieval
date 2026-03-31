@@ -7,12 +7,17 @@ public class BedimmedWall : MonoBehaviour
     [SerializeField] private float knockbackDistance = 1f;
     [SerializeField] private float knockbackDuration = 0.2f;
 
-    private Transform targetTransform; // Vector3 대신 Transform 저장
+    private Transform targetTransform;
+    private Rigidbody2D rb;
     private float moveSpeed = 0f;
     private float boxHalfSize = 0f;
     private bool isActive = false;
 
-    // �ʱ�ȭ �� Vector3 center ��� Transform target�� ����
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
+
     public void Activate(Transform target, float speed, float safeZoneSize)
     {
         targetTransform = target;
@@ -20,32 +25,31 @@ public class BedimmedWall : MonoBehaviour
         boxHalfSize = safeZoneSize;
         isActive = true;
         gameObject.SetActive(true);
+
+        if (rb == null)
+            rb = GetComponent<Rigidbody2D>();
     }
 
     void Update()
     {
-        // Ȱ��ȭ ���°� �ƴϰų� ���� ����� ������� �ߴ�
-        if (!isActive || targetTransform == null) return;
+        if (!isActive || targetTransform == null || rb == null) return;
 
-        // �ǽð� ��� ��ġ �ľ�
         Vector3 currentTargetPos = targetTransform.position;
+        Vector2 newPos = Vector2.MoveTowards(rb.position, currentTargetPos, moveSpeed * Time.deltaTime);
 
-        // 1. �̵�: �ǽð� ��� ��ġ(currentTargetPos)�� ���� �̵�
-        transform.position = Vector3.MoveTowards(transform.position, currentTargetPos, moveSpeed * Time.deltaTime);
+        // Rigidbody와 Transform 둘 다 즉시 동기화
+        rb.position = newPos;
+        transform.position = new Vector3(newPos.x, newPos.y, transform.position.z);
 
-        // 2. �簢�� ���� üũ (AABB Check)
-        // ��� ������Ʈ�� ���� ��ġ�� �������� �Ÿ� ���
-        float diffX = Mathf.Abs(transform.position.x - currentTargetPos.x);
-        float diffY = Mathf.Abs(transform.position.y - currentTargetPos.y);
+        float diffX = Mathf.Abs(newPos.x - currentTargetPos.x);
+        float diffY = Mathf.Abs(newPos.y - currentTargetPos.y);
 
-        // �������� ������ ������ �Ҹ�
         if (diffX <= boxHalfSize && diffY <= boxHalfSize)
         {
             isActive = false;
             gameObject.SetActive(false);
         }
     }
-
 
     private void OnDisable()
     {
@@ -69,13 +73,10 @@ public class BedimmedWall : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        // ����� ���� ���� ����� �׸�
         if (targetTransform == null) return;
 
         Gizmos.color = Color.green;
         Vector3 size = new Vector3(boxHalfSize * 2, boxHalfSize * 2, 1f);
-
-        // ��� ������Ʈ�� ���� ��ġ�� �ڽ� ǥ��
         Gizmos.DrawWireCube(targetTransform.position, size);
     }
 }

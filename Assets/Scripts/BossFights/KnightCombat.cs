@@ -422,7 +422,7 @@ public class KnightCombat : BossCombatBase, IBossDamageModifier, IBossBattleRese
                     Transform cursor = t;
                     while (cursor != null)
                     {
-                        if (cursor.name == "aut_1")
+                        if (cursor.name == "aut_1" || cursor.name == "aut1")
                         {
                             aut1RespawnPoint = t;
                             return aut1RespawnPoint;

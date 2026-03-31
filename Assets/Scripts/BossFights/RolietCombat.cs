@@ -21,6 +21,12 @@ public class RolietCombat : BossCombatBase
 
     protected override bool UseCollisionInvulnerability => false;
 
+    private void Awake()
+    {
+        if (julmeo != null)
+            julmeo.gameObject.SetActive(false);
+    }
+
     public override void StartBattle()
     {
         if (rolietState == RolietState.Attack) return;
@@ -51,6 +57,7 @@ public class RolietCombat : BossCombatBase
 
         if (julmeo != null)
         {
+            julmeo.gameObject.SetActive(true);
             julmeo.StartBattle();
         }
 

@@ -19,3 +19,5 @@ MonoBehaviour:
   east: {fileID: 11400000, guid: d153c3b905d4bde428d051a24f53b523, type: 2}
   west: {fileID: 11400000, guid: 97adaad70f7af8e49b66ed4b806c33a5, type: 2}
   roomCoord: {x: 0, y: 2}
+  useSeasonOverride: 0
+  seasonOverride: 1

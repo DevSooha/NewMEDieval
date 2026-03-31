@@ -23,6 +23,7 @@ public class BossBattleTrigger : MonoBehaviour
     private Transform playerTransform;
     private bool isSubscribedToBossEndEvent;
     private bool battleStarted;
+    private bool initialized;
 
     private void OnEnable()
     {
@@ -38,6 +39,13 @@ public class BossBattleTrigger : MonoBehaviour
 
         SetBlockades(false);
         TrySubscribeBossEndEvent();
+        StartCoroutine(EnableAfterFrame());
+    }
+
+    private IEnumerator EnableAfterFrame()
+    {
+        yield return new WaitForSecondsRealtime(1f);
+        initialized = true;
     }
 
     private void TrySubscribeBossEndEvent()
@@ -73,10 +81,7 @@ public class BossBattleTrigger : MonoBehaviour
 
     private void OnDisable()
     {
-        if (Time.timeScale == 0f)
-        {
-            Time.timeScale = 1f;
-        }
+        UIManager.ForceResetPause();
 
         TryUnsubscribeBossEndEvent();
     }
@@ -124,6 +129,7 @@ public class BossBattleTrigger : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (!initialized) return;
         if (hasTriggered || (BossManager.Instance != null && BossManager.Instance.IsBossActive)) return;
 
         if (other.CompareTag("Player"))
@@ -135,8 +141,6 @@ public class BossBattleTrigger : MonoBehaviour
 
             Rigidbody2D rb = playerTransform.GetComponent<Rigidbody2D>();
             if (rb != null) rb.linearVelocity = Vector2.zero;
-
-            Time.timeScale = 0f;
 
             if (UIManager.Instance != null)
             {
@@ -156,22 +160,18 @@ public class BossBattleTrigger : MonoBehaviour
 
     public void StartBossSequence()
     {
-        Time.timeScale = 1f;
-
         if (startPositionTF != null)
         {
             StartCoroutine(ForceMoveRoutine(startPositionTF.position, true));
         }
         else
         {
-            ActivateBossBattle();
+            StartCoroutine(ActivateBossBattleRoutine());
         }
     }
 
     public void CancelBattle()
     {
-        Time.timeScale = 1f;
-
         if (UIManager.Instance != null)
         {
             UIManager.Instance.HideSelectPanel();
@@ -243,7 +243,7 @@ public class BossBattleTrigger : MonoBehaviour
 
         if (isBossStart)
         {
-            ActivateBossBattle();
+            StartCoroutine(ActivateBossBattleRoutine());
         }
         else
         {
@@ -251,15 +251,19 @@ public class BossBattleTrigger : MonoBehaviour
         }
     }
 
-    private void ActivateBossBattle()
+    private IEnumerator ActivateBossBattleRoutine()
     {
+        if (UIManager.Instance != null)
+        {
+            yield return UIManager.Instance.FadeOut(0.5f);
+        }
+
         SetBlockades(true);
         ResolveAssignedBossIfNeeded();
 
         if (assignedBoss != null)
         {
             assignedBoss.gameObject.SetActive(true);
-            assignedBoss.StartBattle();
 
             if (BossManager.Instance != null)
             {
@@ -271,6 +275,16 @@ public class BossBattleTrigger : MonoBehaviour
         {
             Debug.LogError($"[BossTrigger] Assigned boss is missing on {gameObject.name}");
             SetBlockades(false);
+        }
+
+        if (UIManager.Instance != null)
+        {
+            yield return UIManager.Instance.FadeIn(0.5f);
+        }
+
+        if (assignedBoss != null)
+        {
+            assignedBoss.StartBattle();
         }
     }
 

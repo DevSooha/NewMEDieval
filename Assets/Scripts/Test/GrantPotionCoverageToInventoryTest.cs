@@ -154,19 +154,23 @@ public class GrantPotionCoverageToInventoryTest : MonoBehaviour
             PotionTemperature temperature = temperatures[t];
             for (int i = 0; i < ingredients.Count; i++)
             {
-                ItemData first = ingredients[i];
-                PotionData crafted = PotionDesignCatalog.CraftPotion(first, first, temperature);
-                if (crafted == null) continue;
-                if (!HasMeaningfulEffect(crafted)) continue;
-
-                recipes.Add(new PotionRecipeEntry
+                for (int j = i; j < ingredients.Count; j++)
                 {
-                    index = index++,
-                    first = first,
-                    second = first,
-                    temperature = temperature,
-                    potionData = crafted
-                });
+                    ItemData first = ingredients[i];
+                    ItemData second = ingredients[j];
+                    PotionData crafted = PotionDesignCatalog.CraftPotion(first, second, temperature);
+                    if (crafted == null) continue;
+                    if (!HasMeaningfulEffect(crafted)) continue;
+
+                    recipes.Add(new PotionRecipeEntry
+                    {
+                        index = index++,
+                        first = first,
+                        second = second,
+                        temperature = temperature,
+                        potionData = crafted
+                    });
+                }
             }
         }
 

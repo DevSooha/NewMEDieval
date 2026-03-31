@@ -217,7 +217,10 @@ public static class PotionHitResolver
 
         if (spec.baseDamage > 0)
         {
-            enemy.EnemyTakeDamage(spec.baseDamage);
+            float combinedMultiplier = ElementManager.GetCombinedDamageMultiplier(
+                spec.primaryElement, spec.subElement, enemy.currentElement);
+            int finalDamage = Mathf.RoundToInt(spec.baseDamage * combinedMultiplier);
+            enemy.EnemyTakeDamage(Mathf.Max(1, finalDamage));
             if (hitOrigin.HasValue && status != null)
             {
                 status.ApplyHitKnockback(hitOrigin.Value, EnemyHitKnockbackDistance, PlayerHitKnockbackDuration);

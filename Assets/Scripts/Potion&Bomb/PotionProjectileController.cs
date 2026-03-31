@@ -376,6 +376,12 @@ public class PotionProjectileController : MonoBehaviour
     {
         if (!initialized || other == null || !contactDamageEnabled) return;
 
+        if (IsPoisonProjectile() && IsWaterElement(other))
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         bool consumedByCombat = PotionHitResolver.TryResolveHit(this, other);
         bool consumedByEnvironment = !consumedByCombat && PotionHitResolver.TryResolveEnvironmentHit(this, other);
 
@@ -385,6 +391,39 @@ public class PotionProjectileController : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private bool IsPoisonProjectile()
+    {
+        if (phaseSpec == null) return false;
+        return phaseSpec.subElement == ElementType.Poison
+            || phaseSpec.primaryElement == ElementType.Poison;
+    }
+
+    private static bool IsWaterElement(Collider2D other)
+    {
+        BossProjectile bossProj = other.GetComponent<BossProjectile>();
+        if (bossProj == null) bossProj = other.GetComponentInParent<BossProjectile>();
+        if (bossProj != null && bossProj.projectileElement == ElementType.Water)
+        {
+            return true;
+        }
+
+        PoisonZone poisonZone = other.GetComponent<PoisonZone>();
+        if (poisonZone == null) poisonZone = other.GetComponentInParent<PoisonZone>();
+        if (poisonZone != null)
+        {
+            return false;
+        }
+
+        IWaterElement waterElement = other.GetComponent<IWaterElement>();
+        if (waterElement == null) waterElement = other.GetComponentInParent<IWaterElement>();
+        if (waterElement != null)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private bool IsOffscreen()
