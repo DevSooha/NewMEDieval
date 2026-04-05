@@ -142,6 +142,34 @@ public class UIManager : MonoBehaviour
         fadeImage.color = new Color(0, 0, 0, 1);
     }
 
+    public IEnumerator FadeInWhite(float duration)
+    {
+        if (fadeImage == null) yield break;
+        fadeImage.transform.SetAsLastSibling();
+        float t = 0;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            fadeImage.color = new Color(1, 1, 1, 1f - (t / duration));
+            yield return null;
+        }
+        fadeImage.color = new Color(1, 1, 1, 0);
+    }
+
+    public IEnumerator FadeOutWhite(float duration)
+    {
+        if (fadeImage == null) yield break;
+        fadeImage.transform.SetAsLastSibling();
+        float t = 0;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            fadeImage.color = new Color(1, 1, 1, t / duration);
+            yield return null;
+        }
+        fadeImage.color = new Color(1, 1, 1, 1);
+    }
+
     IEnumerator LoadSceneWithFade(string sceneName)
     {
         if (Player.Instance != null) Player.Instance.SaveCurrentPosition();

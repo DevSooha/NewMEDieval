@@ -15,7 +15,11 @@ public class BossBattleTrigger : MonoBehaviour
     [Tooltip("Forced player position when the boss battle starts.")]
     public Transform startPositionTF;
 
-    [Header("4. Cancel/Exit Settings")]
+    [Header("4. Fade Settings")]
+    [Tooltip("Enable for Nemi boss — uses white fade instead of black.")]
+    [SerializeField] private bool useWhiteFade = false;
+
+    [Header("5. Cancel/Exit Settings")]
     public Vector2 pushDirection = Vector2.down;
     public float pushDistance = 3.0f;
 
@@ -260,7 +264,10 @@ public class BossBattleTrigger : MonoBehaviour
     {
         if (UIManager.Instance != null)
         {
-            yield return UIManager.Instance.FadeOut(0.5f);
+            if (useWhiteFade)
+                yield return UIManager.Instance.FadeOutWhite(0.5f);
+            else
+                yield return UIManager.Instance.FadeOut(0.5f);
         }
 
         SetBlockades(true);
@@ -288,7 +295,10 @@ public class BossBattleTrigger : MonoBehaviour
 
         if (UIManager.Instance != null)
         {
-            yield return UIManager.Instance.FadeIn(0.5f);
+            if (useWhiteFade)
+                yield return UIManager.Instance.FadeInWhite(0.5f);
+            else
+                yield return UIManager.Instance.FadeIn(0.5f);
         }
 
         if (assignedBoss != null)

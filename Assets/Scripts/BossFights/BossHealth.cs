@@ -30,6 +30,13 @@ public class BossHealth : MonoBehaviour
         if (phaseHandler == null) phaseHandler = GetComponentInParent<IBossPhaseHandler>();
     }
 
+    public void ResetToFull()
+    {
+        isDead = false;
+        isInvulnerable = false;
+        currentHP = maxHP;
+    }
+
     public void TakeDamage(float damage, ElementType attackType)
     {
         TakeDamage(Mathf.RoundToInt(damage), attackType);
