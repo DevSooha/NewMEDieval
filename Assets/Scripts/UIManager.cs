@@ -529,7 +529,12 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        if (RoomManager.Instance != null)
+        SaveData lastSave = SaveManager.Instance != null ? SaveManager.Instance.Load() : null;
+        if (lastSave != null)
+        {
+            SaveManager.Instance.ApplyLoadedData(lastSave);
+        }
+        else if (RoomManager.Instance != null)
         {
             RoomManager.Instance.SetRestartPositionToCurrentDoor();
         }

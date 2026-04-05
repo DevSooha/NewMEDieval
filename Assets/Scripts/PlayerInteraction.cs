@@ -19,6 +19,7 @@ public class PlayerInteraction : MonoBehaviour
 
     private bool canInteract;
     private bool isCampfire;
+    private Bonfire currentBonfire;
     private Coroutine craftingOpenTransitionRoutine;
     private Coroutine controlRecoveryRoutine;
     private const float CraftingOpenTransitionSeconds = 0.5f;
@@ -339,6 +340,7 @@ public class PlayerInteraction : MonoBehaviour
         {
             isCampfire = true;
             canInteract = true;
+            currentBonfire = other.GetComponent<Bonfire>();
 
             if (interactionReady && UIManager.Instance != null)
             {
@@ -411,10 +413,42 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         UIManager.Instance.ShowSelectPanel(
-            "Campfire?",
-            "Yes",
-            EnterCrafting,
-            "No",
+            "Bonfire",
+            "SAVE",
+            OnSaveSelected,
+            "POTION",
+            EnterCrafting
+        );
+    }
+
+    private void OnSaveSelected()
+    {
+        if (UIManager.Instance == null) return;
+
+        UIManager.Instance.ShowSelectPanel(
+            "Save progress?",
+            "YES",
+            () =>
+            {
+                if (SaveManager.Instance != null && currentBonfire != null)
+                {
+                    string roomId = RoomManager.Instance != null && RoomManager.Instance.currentRoomData != null
+                        ? RoomManager.Instance.currentRoomData.roomID
+                        : string.Empty;
+
+                    SaveManager.Instance.Save(
+                        currentBonfire.bonfireId,
+                        roomId,
+                        currentBonfire.transform.position
+                    );
+                }
+
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.ShowWarning("SAVED!");
+                }
+            },
+            "NO",
             () => { }
         );
     }
@@ -503,6 +537,7 @@ public class PlayerInteraction : MonoBehaviour
         if (other.CompareTag("Campfire"))
         {
             isCampfire = false;
+            currentBonfire = null;
 
             if (UIManager.Instance != null)
             {

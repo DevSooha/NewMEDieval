@@ -966,4 +966,10 @@ public class Player : Singleton<Player>
         hasSavedPosition = true;
         Debug.Log($"??�슦�?????좎럥�? {savedPosition}");
     }
+
+    public void SetSavedPosition(Vector3 pos)
+    {
+        savedPosition = pos;
+        hasSavedPosition = true;
+    }
 }
