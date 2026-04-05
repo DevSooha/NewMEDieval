@@ -6346,6 +6346,10 @@ PrefabInstance:
       propertyPath: m_IsTrigger
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8888888888888888801, guid: 845fa4de92853604499d57383646d629, type: 3}
+      propertyPath: bossName
+      value: Julmeo
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6576,6 +6580,10 @@ PrefabInstance:
     - target: {fileID: 7594688620894736453, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8888888888888888802, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
+      propertyPath: bossName
+      value: Roliet
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
