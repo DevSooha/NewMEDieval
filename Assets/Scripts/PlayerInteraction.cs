@@ -426,6 +426,8 @@ public class PlayerInteraction : MonoBehaviour
 
     private void BeginControlRecovery()
     {
+        if (!gameObject.activeInHierarchy) return;
+
         if (controlRecoveryRoutine != null)
         {
             StopCoroutine(controlRecoveryRoutine);

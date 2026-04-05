@@ -77,4 +77,31 @@ public class FateSeverSpearEmitterController : MonoBehaviour
 
         return closest;
     }
+
+    private void OnDrawGizmos()
+    {
+        // Y 에미터 (세로 발사 기준점) — 초록
+        if (fixedYEmitters != null)
+        {
+            Gizmos.color = new Color(0f, 1f, 0f, 0.6f);
+            foreach (var e in fixedYEmitters)
+            {
+                if (e == null) continue;
+                Gizmos.DrawSphere(e.position, 0.25f);
+                Gizmos.DrawLine(e.position, e.position + Vector3.down * 1.5f);
+            }
+        }
+
+        // X 에미터 (가로 발사 기준점) — 파랑
+        if (fixedXEmitters != null)
+        {
+            Gizmos.color = new Color(0f, 0.5f, 1f, 0.6f);
+            foreach (var e in fixedXEmitters)
+            {
+                if (e == null) continue;
+                Gizmos.DrawSphere(e.position, 0.25f);
+                Gizmos.DrawLine(e.position, e.position + Vector3.left * 1.5f);
+            }
+        }
+    }
 }

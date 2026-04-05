@@ -20,6 +20,9 @@ public class HandOfTimeProjectile : MonoBehaviour
     [Header("Offscreen Despawn")]
     [SerializeField] private float offscreenMargin = 0.2f;
 
+    [Header("Damage")]
+    [SerializeField] private int damage = 1;
+
     private Rigidbody2D rb;
     private Collider2D col;
 
@@ -30,9 +33,6 @@ public class HandOfTimeProjectile : MonoBehaviour
     private Camera cam;
 
     private float spawnProtection = 0.5f;
-
-    private Renderer[] renderers;
-    private ParticleSystem[] particles;
 
     private void Awake()
     {
@@ -49,48 +49,6 @@ public class HandOfTimeProjectile : MonoBehaviour
 
         cam = Camera.main;
         bornTime = Time.time;
-
-        renderers = GetComponentsInChildren<Renderer>(true);
-        particles = GetComponentsInChildren<ParticleSystem>(true);
-    }
-
-    private void Start()
-    {
-        Debug.Log($"[Projectile] Spawned at {transform.position}");
-
-        Debug.Log($"[Projectile] Scale {transform.localScale}");
-        Debug.Log($"[Projectile] Rotation {transform.rotation.eulerAngles}");
-
-        if (renderers.Length == 0)
-        {
-            Debug.LogError("[Projectile] Renderer 없음");
-        }
-        else
-        {
-            foreach (var r in renderers)
-            {
-                Debug.Log($"[Renderer] {r.name} layer={r.sortingLayerName} order={r.sortingOrder}");
-            }
-        }
-
-        if (particles.Length == 0)
-        {
-            Debug.LogWarning("[Projectile] ParticleSystem 없음");
-        }
-        else
-        {
-            foreach (var ps in particles)
-            {
-                Debug.Log($"[Particle] {ps.name} playing={ps.isPlaying}");
-            }
-        }
-
-        CheckCameraView();
-    }
-
-    private void OnDestroy()
-    {
-        Debug.Log("[Projectile] destroyed");
     }
 
     public void BeginFire(Vector3 targetWorld, float speedWorldPerSec, Axis axis)
@@ -114,8 +72,6 @@ public class HandOfTimeProjectile : MonoBehaviour
 
         state = State.Fired;
         col.enabled = true;
-
-        Debug.Log($"[Projectile] BeginFire dir={moveDir} speed={speed}");
     }
 
     private void FixedUpdate()
@@ -124,11 +80,8 @@ public class HandOfTimeProjectile : MonoBehaviour
 
         rb.MovePosition(rb.position + moveDir * speed * Time.fixedDeltaTime);
 
-        Debug.Log($"[Projectile] moving pos={rb.position}");
-
         if (Time.time - bornTime > maxLifeTime)
         {
-            Debug.Log("[Projectile] Destroyed by lifetime");
             Destroy(gameObject);
             return;
         }
@@ -138,7 +91,6 @@ public class HandOfTimeProjectile : MonoBehaviour
 
         if (IsOffscreen())
         {
-            Debug.Log("[Projectile] Destroyed by offscreen");
             Destroy(gameObject);
         }
     }
@@ -150,13 +102,7 @@ public class HandOfTimeProjectile : MonoBehaviour
 
         Vector3 vp = cam.WorldToViewportPoint(transform.position);
 
-        Debug.Log($"[Viewport] {vp}");
-
-        if (vp.z < 0f)
-        {
-            Debug.Log("[Projectile] Behind camera");
-            return true;
-        }
+        if (vp.z < 0f) return true;
 
         return
             vp.x < -offscreenMargin ||
@@ -165,40 +111,11 @@ public class HandOfTimeProjectile : MonoBehaviour
             vp.y > 1 + offscreenMargin;
     }
 
-    private void CheckCameraView()
-    {
-        if (cam == null) cam = Camera.main;
-        if (cam == null) return;
-
-        Vector3 vp = cam.WorldToViewportPoint(transform.position);
-
-        bool visible =
-            vp.x >= 0 && vp.x <= 1 &&
-            vp.y >= 0 && vp.y <= 1 &&
-            vp.z > 0;
-
-        Debug.Log($"[CameraCheck] viewport={vp} visible={visible}");
-    }
-
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (state != State.Fired) return;
-
         if (!other.CompareTag("Player")) return;
 
-        var player = other.GetComponent<Player>();
-        if (player == null) return;
-
-        Debug.Log("[Projectile] Player hit");
-
-        player.gameObject.SendMessage("TakeDamage", 1, SendMessageOptions.DontRequireReceiver);
-        player.KnockBack(transform, 12f, 0.2f);
-        player.gameObject.SendMessage("SetInvincible", 0.3f, SendMessageOptions.DontRequireReceiver);
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(transform.position, 0.5f);
+        BossHitResolver.TryApplyBossHit(other, damage, transform.position);
     }
 }

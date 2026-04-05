@@ -80,6 +80,12 @@ public class InventoryUI : MonoBehaviour
         CancelWeaponSlotSelection();
     }
 
+    private void OnDestroy()
+    {
+        if (weaponSlotDimmer != null)
+            Destroy(weaponSlotDimmer.gameObject);
+    }
+
     private void Update()
     {
         if (pendingUnequipSlotIndex >= 0 && Time.unscaledTime > pendingUnequipExpireTime)
