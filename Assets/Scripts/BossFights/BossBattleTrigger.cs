@@ -270,6 +270,10 @@ public class BossBattleTrigger : MonoBehaviour
                 battleStarted = true;
                 BossManager.Instance.NotifyBossStart();
             }
+            if (SoundManager.instance != null)
+            {
+                SoundManager.instance.PlayBGMForBoss();
+            }
         }
         else
         {

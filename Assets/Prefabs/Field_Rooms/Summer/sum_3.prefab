@@ -5476,8 +5476,8 @@ TilemapRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 2096632557
+  m_SortingLayer: 1
   m_SortingOrder: -2
   m_ChunkSize: {x: 32, y: 32, z: 32}
   m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
@@ -5616,7 +5616,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ecf3290e88fabc4daf98775606c2af8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossBattleTrigger
-  assignedBoss: {fileID: 5555555555555555901}
+  assignedBoss: {fileID: 7213983600562731861}
   blockadeParent: {fileID: 1411764615212158415}
   startPositionTF: {fileID: 7083089542393153890}
   pushDirection: {x: 0, y: -1}
@@ -6126,8 +6126,8 @@ TilemapRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 2096632557
-  m_SortingLayer: 1
+  m_SortingLayerID: 182476865
+  m_SortingLayer: 2
   m_SortingOrder: -2
   m_ChunkSize: {x: 32, y: 32, z: 32}
   m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
@@ -6582,7 +6582,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
---- !u!114 &5555555555555555901 stripped
+--- !u!224 &5902381713977608018 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7594688620894736453, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
+  m_PrefabInstance: {fileID: 4074836179588241175}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7213983600562731861 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6670268892088937538, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
   m_PrefabInstance: {fileID: 4074836179588241175}
@@ -6591,10 +6596,5 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa135a04d4b03fd41bea05c0557ffc63, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: '::'
---- !u!224 &5902381713977608018 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 7594688620894736453, guid: 2e65eb777c3662a4aa2d0177bd5503db, type: 3}
-  m_PrefabInstance: {fileID: 4074836179588241175}
-  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RolietCombat
