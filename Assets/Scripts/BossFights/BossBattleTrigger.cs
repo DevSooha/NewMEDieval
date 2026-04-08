@@ -160,6 +160,11 @@ public class BossBattleTrigger : MonoBehaviour
 
     public void StartBossSequence()
     {
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.HideSelectPanel();
+        }
+
         if (startPositionTF != null)
         {
             StartCoroutine(ForceMoveRoutine(startPositionTF.position, true));

@@ -336,14 +336,11 @@ public class UIManager : MonoBehaviour
 
         if (btn1 != null)
         {
+            btn1.gameObject.SetActive(true);
             TextMeshProUGUI btn1Label = btn1.GetComponentInChildren<TextMeshProUGUI>();
             if (btn1Label != null) btn1Label.text = btn1Text;
             btn1.onClick.RemoveAllListeners();
-            btn1.onClick.AddListener(() =>
-            {
-                action1?.Invoke();
-                HideSelectPanel();
-            });
+            btn1.onClick.AddListener(() => action1?.Invoke());
         }
 
         if (btn2 != null)
@@ -351,11 +348,7 @@ public class UIManager : MonoBehaviour
             TextMeshProUGUI btn2Label = btn2.GetComponentInChildren<TextMeshProUGUI>();
             if (btn2Label != null) btn2Label.text = btn2Text;
             btn2.onClick.RemoveAllListeners();
-            btn2.onClick.AddListener(() =>
-            {
-                action2?.Invoke();
-                HideSelectPanel();
-            });
+            btn2.onClick.AddListener(() => action2?.Invoke());
         }
 
         selectedChoiceIndex = 0;
@@ -366,6 +359,7 @@ public class UIManager : MonoBehaviour
     public void HideSelectPanel()
     {
         if (SelectPanel == null) return;
+        if (btn1 != null) btn1.gameObject.SetActive(true);
         SelectPanel.SetActive(false);
         ReleasePause();
         SetSelectBlockerActive(false);
@@ -377,16 +371,50 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    public void ReplaceSelectPanelContent(string selectLabel, string btn1Text, UnityAction action1, string btn2Text, UnityAction action2)
+    {
+        if (SelectPanel == null || !SelectPanel.activeSelf) return;
+
+        if (selectText != null) selectText.text = selectLabel;
+
+        bool showBtn1 = !string.IsNullOrEmpty(btn1Text);
+        if (btn1 != null)
+        {
+            btn1.gameObject.SetActive(showBtn1);
+            if (showBtn1)
+            {
+                TextMeshProUGUI lbl = btn1.GetComponentInChildren<TextMeshProUGUI>();
+                if (lbl != null) lbl.text = btn1Text;
+                btn1.onClick.RemoveAllListeners();
+                btn1.onClick.AddListener(() => action1?.Invoke());
+            }
+        }
+
+        if (btn2 != null)
+        {
+            TextMeshProUGUI lbl = btn2.GetComponentInChildren<TextMeshProUGUI>();
+            if (lbl != null) lbl.text = btn2Text;
+            btn2.onClick.RemoveAllListeners();
+            btn2.onClick.AddListener(() => action2?.Invoke());
+        }
+
+        selectedChoiceIndex = showBtn1 ? 0 : 1;
+        FocusSelectedChoice();
+    }
+
     private void HandleSelectPanelInput()
     {
         if (SelectPanel == null || !SelectPanel.activeSelf) return;
 
-        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
         {
-            selectedChoiceIndex = 0;
-            FocusSelectedChoice();
+            if (btn1 != null && btn1.gameObject.activeSelf)
+            {
+                selectedChoiceIndex = 0;
+                FocusSelectedChoice();
+            }
         }
-        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
         {
             selectedChoiceIndex = 1;
             FocusSelectedChoice();
@@ -552,6 +580,7 @@ public class UIManager : MonoBehaviour
 
     void QuitGame()
     {
+        HideSelectPanel();
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else

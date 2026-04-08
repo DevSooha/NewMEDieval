@@ -6,15 +6,18 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/TitleScene.unity
+    guid: 904a1a14849b5c649a88c04f0aa39050
+  - enabled: 1
     path: Assets/Scenes/FIeld.unity
     guid: 36dc659ca84be36429763cc63bc03eb0
   - enabled: 1
     path: Assets/Scenes/Hidden.unity
     guid: f9edae7a135aa3549962ff9608e1eab3
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/FinalBossTest.unity
     guid: 879bcb03b9a9f0048af687701b34cdb7
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/PotionTest.unity
     guid: 28da23fd18484e1585043232f0f86828
   m_configObjects:

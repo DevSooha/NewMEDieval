@@ -7,6 +7,8 @@ public class TitleScreenController : MonoBehaviour
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button continueButton;
 
+    private bool isLoading = false;
+
     private void Start()
     {
         if (newGameButton != null)
@@ -18,21 +20,51 @@ public class TitleScreenController : MonoBehaviour
         {
             continueButton.onClick.AddListener(OnContinue);
 
-            bool hasSave = SaveManager.Instance != null && SaveManager.Instance.HasSaveFile();
+            SaveManager saveManager = FindFirstObjectByType<SaveManager>();
+            bool hasSave = saveManager != null && saveManager.HasSaveFile();
             continueButton.interactable = hasSave;
+        }
+    }
+
+    private void Update()
+    {
+        if (isLoading) return;
+
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            StartGame();
+        }
+    }
+
+    private void StartGame()
+    {
+        isLoading = true;
+
+        SaveManager saveManager = FindFirstObjectByType<SaveManager>();
+        bool hasSave = saveManager != null && saveManager.HasSaveFile();
+
+        if (hasSave)
+        {
+            OnContinue();
+        }
+        else
+        {
+            OnNewGame();
         }
     }
 
     private void OnNewGame()
     {
-        if (SaveManager.Instance != null)
+        SaveManager saveManager = FindFirstObjectByType<SaveManager>();
+        if (saveManager != null)
         {
-            SaveManager.Instance.DeleteSave();
+            saveManager.DeleteSave();
         }
 
-        if (BossDefeatTracker.Instance != null)
+        BossDefeatTracker tracker = FindFirstObjectByType<BossDefeatTracker>();
+        if (tracker != null)
         {
-            BossDefeatTracker.Instance.ClearAll();
+            tracker.ClearAll();
         }
 
         SceneManager.LoadScene("Field");
@@ -40,16 +72,19 @@ public class TitleScreenController : MonoBehaviour
 
     private void OnContinue()
     {
-        if (SaveManager.Instance == null) return;
-
-        SaveData data = SaveManager.Instance.Load();
-        if (data == null)
+        SaveManager saveManager = FindFirstObjectByType<SaveManager>();
+        if (saveManager == null)
         {
-            Debug.LogWarning("[TitleScreen] No save data found.");
+            SceneManager.LoadScene("Field");
             return;
         }
 
-        SaveManager.Instance.ApplyLoadedData(data);
+        SaveData data = saveManager.Load();
+        if (data != null)
+        {
+            saveManager.ApplyLoadedData(data);
+        }
+
         SceneManager.LoadScene("Field");
     }
 }
