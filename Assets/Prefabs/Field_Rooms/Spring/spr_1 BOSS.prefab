@@ -5341,7 +5341,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68cab13c36d39dc46bb45c74663347c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossHealth
-  bossName: "\uB124\uBBF8"
+  bossName: Nemi
   maxHP: 5200
   currentHP: 1900
   currentElement: 0

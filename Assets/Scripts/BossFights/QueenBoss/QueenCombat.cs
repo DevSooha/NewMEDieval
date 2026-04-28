@@ -26,20 +26,14 @@ public class QueenCombat : BossCombatBase, IBossDamageModifier, IBossBattleReset
 
     private Transform aut3RespawnPoint;
 
-    private const string QueenDefeatedKey = "QueenDefeated";
-
     public event Action OnBattleReset;
 
     protected override bool UseCollisionInvulnerability => false;
 
     public static bool IsQueenDefeated
     {
-        get => PlayerPrefs.GetInt(QueenDefeatedKey, 0) == 1;
-        set
-        {
-            PlayerPrefs.SetInt(QueenDefeatedKey, value ? 1 : 0);
-            PlayerPrefs.Save();
-        }
+        get => BossDefeatTracker.Instance != null && BossDefeatTracker.Instance.IsDefeated("Queen");
+        set { if (value) BossDefeatTracker.Instance?.MarkDefeated("Queen"); }
     }
 
     private void Awake()

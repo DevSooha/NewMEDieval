@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8684582519390542535}
   - component: {fileID: 3205105243500157674}
+  - component: {fileID: 8523531964819211598}
   m_Layer: 5
   m_Name: InventoryManager
   m_TagString: Untagged
@@ -48,8 +49,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8067c3be0202ad478706690db98c7c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
-  inventoryUI: {fileID: 0}
   slotPerMaterialPage: 6
   slotPerPotionPage: 5
   currentMaterialPage: 0
   currentPotionPage: 0
+--- !u!114 &8523531964819211598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 350788919678288017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9382097789d06a4d8caee910d87757c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GrantPotionCoverageToInventoryTest
+  inventory: {fileID: 3205105243500157674}
+  attackSystem: {fileID: 0}
+  itemResourcesFolder: ItemData
+  quantityPerPotion: 3
+  clearExistingPotionsBeforeGrant: 1
+  autoEquipToPotionSlots: 1
+  grantOnStart: 1
+  restrictAutoGrantToTestScenes: 0
+  grantHotkey: 289
+  logSelectedPotions: 1

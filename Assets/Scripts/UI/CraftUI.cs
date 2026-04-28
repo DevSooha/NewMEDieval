@@ -497,9 +497,9 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         UIManager.Instance.ShowSelectPanel(
             "Discard the potion in progress?",
             "Yes",
-            () => { ResetCraftingState(); },
+            () => { UIManager.Instance.HideSelectPanel(); ResetCraftingState(); },
             "No",
-            () => { }
+            () => UIManager.Instance.HideSelectPanel()
         );
     }
 
@@ -522,11 +522,12 @@ public class CraftUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             "Yes",
             () =>
             {
+                UIManager.Instance.HideSelectPanel();
                 ResetCraftingState();
                 ForceCloseImmediate();
             },
             "No",
-            () => { }
+            () => UIManager.Instance.HideSelectPanel()
         );
     }
 

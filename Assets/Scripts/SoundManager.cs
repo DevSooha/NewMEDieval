@@ -3,14 +3,20 @@ using UnityEngine.SceneManagement;
 
 public class SoundManager : MonoBehaviour
 {
+    AudioSource audioSource;
+    public static SoundManager instance;
+    public RoomData roomData;
+    private string currentRoomID;
+
     [Header("BGM's")]
     public AudioClip springBGM;
     public AudioClip summerBGM;
     public AudioClip fallBGM;
 
-    AudioSource audioSource;
-    public static SoundManager instance;
 
+    [Header("Boss Music")]
+    public AudioClip witchesBGM;
+    public AudioClip rolietBGM;
     void Awake()
     {
         // 중복 방지 + 씬 전환 시 파괴 안됨
@@ -25,17 +31,14 @@ public class SoundManager : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
     }
 
-    public void OnSceneLoaded(RoomData roomData)
-    {        
-        if (roomData == null) return;
-        PlayBGMForScene(roomData.roomID);
-    }
+   
 
-    void PlayBGMForScene(string roomID)
+    public void PlayBGMForScene(string roomID)
     {
         AudioClip clip = null;
+        currentRoomID = roomID;
 
-        switch (roomID)
+        switch (currentRoomID)
         {
             case "spr_1" or "spr_2" or "spr_3" or "spr_4" or "spr_5" or "spr_6" or "spr_7":
                 clip = springBGM;
@@ -50,13 +53,38 @@ public class SoundManager : MonoBehaviour
         if (clip == null) return;
         if (audioSource.clip == clip && audioSource.isPlaying)
             return;
-
-        audioSource.clip = clip;
-        audioSource.loop = true;
-        audioSource.Play();  // AudioSource.Play로 재생[web:10]
-
+    
+        PlayNewClip(clip);
         Debug.Log("Playing music");
         
     }
+    public void PlayBGMForBoss()
+    {
+        
+        if (currentRoomID == null) return;
+
+        AudioClip clip = null;
+
+        switch (currentRoomID)
+        {
+            case "spr_4":
+                clip = witchesBGM;
+                break;
+            case "sum_3":
+                clip = rolietBGM;
+                break;
+        }
+        
+        PlayNewClip(clip);
+    }
+    public void PlayNewClip(AudioClip clip)
+    {
+        if (clip == null) return;
+        
+        audioSource.clip = clip;
+        audioSource.loop = true;
+        audioSource.Play();
+    }
+
 }
 

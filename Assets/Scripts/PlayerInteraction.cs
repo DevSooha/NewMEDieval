@@ -19,6 +19,7 @@ public class PlayerInteraction : MonoBehaviour
 
     private bool canInteract;
     private bool isCampfire;
+    private Bonfire currentBonfire;
     private Coroutine craftingOpenTransitionRoutine;
     private Coroutine controlRecoveryRoutine;
     private const float CraftingOpenTransitionSeconds = 0.5f;
@@ -339,6 +340,7 @@ public class PlayerInteraction : MonoBehaviour
         {
             isCampfire = true;
             canInteract = true;
+            currentBonfire = other.GetComponent<Bonfire>();
 
             if (interactionReady && UIManager.Instance != null)
             {
@@ -411,12 +413,48 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         UIManager.Instance.ShowSelectPanel(
-            "Campfire?",
-            "Yes",
-            EnterCrafting,
-            "No",
-            () => { }
+            "Bonfire",
+            "SAVE",
+            OnSaveSelected,
+            "POTION",
+            () => { UIManager.Instance.HideSelectPanel(); EnterCrafting(); }
         );
+    }
+
+    private void OnSaveSelected()
+    {
+        if (UIManager.Instance == null) return;
+
+        UIManager.Instance.ReplaceSelectPanelContent(
+            "Save progress?",
+            "YES", OnConfirmSave,
+            "NO",  () => UIManager.Instance.HideSelectPanel()
+        );
+    }
+
+    private void OnConfirmSave()
+    {
+        if (SaveManager.Instance != null && currentBonfire != null)
+        {
+            string roomId = RoomManager.Instance != null && RoomManager.Instance.currentRoomData != null
+                ? RoomManager.Instance.currentRoomData.roomID
+                : string.Empty;
+
+            SaveManager.Instance.Save(
+                currentBonfire.bonfireId,
+                roomId,
+                currentBonfire.transform.position
+            );
+        }
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ReplaceSelectPanelContent(
+                "SAVED!",
+                null, null,
+                "OK", () => UIManager.Instance.HideSelectPanel()
+            );
+        }
     }
 
     public void BeginControlRecoveryAfterCraftingClose()
@@ -505,6 +543,7 @@ public class PlayerInteraction : MonoBehaviour
         if (other.CompareTag("Campfire"))
         {
             isCampfire = false;
+            currentBonfire = null;
 
             if (UIManager.Instance != null)
             {
@@ -546,6 +585,12 @@ public class PlayerInteraction : MonoBehaviour
 
     private void OpenCraftingUiImmediate()
     {
+        if (craftUI == null && craftingMenu == null)
+        {
+            Debug.LogError("[PlayerInteraction] craftUI와 craftingMenu 모두 null. " +
+                           "Inspector에서 PlayerInteraction.craftUI 필드에 CraftUI 컴포넌트를 할당해주세요.");
+        }
+
         if (craftingMenu != null)
         {
             craftingMenu.SetActive(true);

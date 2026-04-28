@@ -256,6 +256,10 @@ public class RoomManager : MonoBehaviour
             mainCamera.transform.position = new Vector3(position.x, position.y, -10f);
         }
 
+        if (SoundManager.instance != null && currentRoomData != null)
+        {
+            SoundManager.instance.PlayBGMForScene(currentRoomData.roomID);
+        }
         StartCoroutine(StartSpawnProtection());
     }
 
@@ -455,6 +459,12 @@ public class RoomManager : MonoBehaviour
 
         UpdateNeighborPreload(nextRoom);
         SetPlayerInput(true);
+
+        //play bgm
+        if (SoundManager.instance != null && currentRoomData != null)
+        {
+            SoundManager.instance.PlayBGMForScene(currentRoomData.roomID);
+        }
 
         // ??[???�� ?�붽?] ??��???꾩쟾????�궃 ?? ???꾩튂(??????'??�쟾???꾩튂'�?媛깆??
         lastSafeEntryPosition = player.position;
