@@ -23,6 +23,11 @@ public class SaveManager : Singleton<SaveManager>
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
+    public static bool SaveFileExists()
+    {
+        return File.Exists(Path.Combine(Application.persistentDataPath, "save.json"));
+    }
+
     public bool HasSaveFile()
     {
         return File.Exists(SaveFilePath);
@@ -329,6 +334,49 @@ public class SaveManager : Singleton<SaveManager>
         }
 
         Inventory.Instance.NotifyChanged();
+    }
+
+    [ContextMenu("Debug: Print Save Data")]
+    public void DebugPrintSaveData()
+    {
+        if (!HasSaveFile())
+        {
+            Debug.Log("[SaveManager] 저장 파일 없음");
+            return;
+        }
+
+        SaveData d = Load();
+        if (d == null)
+        {
+            Debug.LogWarning("[SaveManager] 파일 파싱 실패");
+            return;
+        }
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("===== Save Data =====");
+        sb.AppendLine($"버전: {d.saveVersion}  |  저장 시각: {d.saveTimestamp}");
+        sb.AppendLine($"룸: {d.currentRoomId}  |  마지막 봉화: {d.lastBonfireId}  |  위치: ({d.bonfirePosX:F1}, {d.bonfirePosY:F1})");
+        sb.AppendLine($"HP: {d.currentHP} / {d.maxHP}");
+
+        sb.AppendLine($"재료 ({d.materialItems?.Count ?? 0}개):");
+        if (d.materialItems != null)
+            foreach (var item in d.materialItems)
+                sb.AppendLine($"  - {item.ingredientId} x{item.quantity}");
+
+        sb.AppendLine($"포션 ({d.potionItems?.Count ?? 0}개):");
+        if (d.potionItems != null)
+            foreach (var p in d.potionItems)
+                sb.AppendLine($"  - {p.displayName} x{p.quantity}  (dmg {p.damage1}/{p.damage2})");
+
+        sb.AppendLine($"무기 슬롯 ({d.weaponSlots?.Count ?? 0}개):");
+        if (d.weaponSlots != null)
+            foreach (var w in d.weaponSlots)
+                sb.AppendLine($"  - type={w.weaponType}  potionIndex={w.potionIndex}");
+
+        sb.AppendLine($"처치 보스 ({d.defeatedBossIds?.Count ?? 0}개): {string.Join(", ", d.defeatedBossIds ?? new System.Collections.Generic.List<string>())}");
+        sb.AppendLine("=====================");
+
+        Debug.Log(sb.ToString());
     }
 
     private void RestoreWeaponSlots(SaveData data)

@@ -6,6 +6,9 @@ public class TitleScreenController : MonoBehaviour
 {
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button continueButton;
+    [SerializeField] private Button settingsButton;
+    [SerializeField] private Button exitButton;
+    [SerializeField] private GameObject settingsNotReadyMessage;
 
     private bool isLoading = false;
 
@@ -19,11 +22,17 @@ public class TitleScreenController : MonoBehaviour
         if (continueButton != null)
         {
             continueButton.onClick.AddListener(OnContinue);
-
-            SaveManager saveManager = FindFirstObjectByType<SaveManager>();
-            bool hasSave = saveManager != null && saveManager.HasSaveFile();
-            continueButton.interactable = hasSave;
+            continueButton.interactable = SaveManager.SaveFileExists();
         }
+
+        if (settingsButton != null)
+            settingsButton.onClick.AddListener(OnSettings);
+
+        if (exitButton != null)
+            exitButton.onClick.AddListener(OnExit);
+
+        if (settingsNotReadyMessage != null)
+            settingsNotReadyMessage.SetActive(false);
     }
 
     private void Update()
@@ -68,6 +77,17 @@ public class TitleScreenController : MonoBehaviour
         }
 
         SceneManager.LoadScene("Field");
+    }
+
+    private void OnSettings()
+    {
+        if (settingsNotReadyMessage != null)
+            settingsNotReadyMessage.SetActive(true);
+    }
+
+    private void OnExit()
+    {
+        Application.Quit();
     }
 
     private void OnContinue()
