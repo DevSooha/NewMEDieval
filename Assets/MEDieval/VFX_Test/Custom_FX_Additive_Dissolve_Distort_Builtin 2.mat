@@ -38,9 +38,10 @@ Material:
     - _DissolveThreshold: 0
     - _DistortSpeed: 0
     - _DistortStrength: 0
+    - _GrabMix: 0.5
     - _NoiseScale: 30
     m_Colors:
     - _EdgeColor: {r: 1, g: 0.6, b: 0, a: 1}
-    - _Tint: {r: 0.4245283, g: 0.4245283, b: 0.4245283, a: 0.5254902}
+    - _Tint: {r: 0.6462264, g: 0.6462264, b: 0.6462264, a: 0.50980395}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

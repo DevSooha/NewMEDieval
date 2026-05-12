@@ -16,7 +16,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3005
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -24,7 +24,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 0288da4dcd9c40f4d88e8656d124917d, type: 3}
+        m_Texture: {fileID: 2800000, guid: a34213c75015512468cea15e72a7efef, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTex:
@@ -38,9 +38,10 @@ Material:
     - _DissolveThreshold: 0
     - _DistortSpeed: 0
     - _DistortStrength: 0
+    - _GrabMix: 0.5
     - _NoiseScale: 30
     m_Colors:
     - _EdgeColor: {r: 1, g: 0.6, b: 0, a: 1}
-    - _Tint: {r: 1, g: 1, b: 1, a: 1}
+    - _Tint: {r: 0.759434, g: 0.759434, b: 0.759434, a: 0.50980395}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
