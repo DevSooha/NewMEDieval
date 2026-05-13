@@ -9,7 +9,6 @@ public class SaveData
 
     // Player location
     public string lastBonfireId;
-    public string currentRoomId;
     public float bonfirePosX;
     public float bonfirePosY;
 

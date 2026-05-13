@@ -28,14 +28,13 @@ public class SaveManager : Singleton<SaveManager>
         return File.Exists(SaveFilePath);
     }
 
-    public void Save(string bonfireId, string roomId, Vector2 bonfireWorldPos)
+    public void Save(string bonfireId, Vector2 bonfireWorldPos)
     {
         SaveData data = new SaveData
         {
             saveVersion = CurrentSaveVersion,
             saveTimestamp = DateTime.Now.ToString("o"),
             lastBonfireId = bonfireId,
-            currentRoomId = roomId,
             bonfirePosX = bonfireWorldPos.x,
             bonfirePosY = bonfireWorldPos.y
         };
@@ -182,17 +181,19 @@ public class SaveManager : Singleton<SaveManager>
         // Store data for deferred application after scene load
         pendingLoadData = data;
 
-        // Apply immediately if Player already exists
+        // Apply immediately if Player already exists (death-restart path)
+        // Clear pendingLoadData to prevent double-apply when the scene reloads
         if (Player.Instance != null)
         {
             ApplyPlayerState(data);
+            pendingLoadData = null;
         }
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (pendingLoadData == null) return;
-        if (scene.name != "Field") return;
+        if (scene.name != "FIeld") return;
 
         // Defer one frame to let Player.Awake() finish
         StartCoroutine(ApplyAfterFrame());

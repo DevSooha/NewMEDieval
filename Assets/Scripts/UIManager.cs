@@ -603,7 +603,7 @@ public class UIManager : MonoBehaviour
             if (health != null) health.Resurrect();
         }
 
-        SceneManager.LoadScene("Field");
+        SceneManager.LoadScene("FIeld");
     }
 
     void QuitGame()

@@ -436,13 +436,8 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (SaveManager.Instance != null && currentBonfire != null)
         {
-            string roomId = RoomManager.Instance != null && RoomManager.Instance.currentRoomData != null
-                ? RoomManager.Instance.currentRoomData.roomID
-                : string.Empty;
-
             SaveManager.Instance.Save(
                 currentBonfire.bonfireId,
-                roomId,
                 currentBonfire.transform.position
             );
         }

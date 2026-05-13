@@ -19,10 +19,7 @@ public class TitleScreenController : MonoBehaviour
         if (continueButton != null)
         {
             continueButton.onClick.AddListener(OnContinue);
-
-            SaveManager saveManager = FindFirstObjectByType<SaveManager>();
-            bool hasSave = saveManager != null && saveManager.HasSaveFile();
-            continueButton.interactable = hasSave;
+            continueButton.interactable = SaveManager.Instance != null && SaveManager.Instance.HasSaveFile();
         }
     }
 
@@ -40,8 +37,7 @@ public class TitleScreenController : MonoBehaviour
     {
         isLoading = true;
 
-        SaveManager saveManager = FindFirstObjectByType<SaveManager>();
-        bool hasSave = saveManager != null && saveManager.HasSaveFile();
+        bool hasSave = SaveManager.Instance != null && SaveManager.Instance.HasSaveFile();
 
         if (hasSave)
         {
@@ -55,36 +51,27 @@ public class TitleScreenController : MonoBehaviour
 
     private void OnNewGame()
     {
-        SaveManager saveManager = FindFirstObjectByType<SaveManager>();
-        if (saveManager != null)
-        {
-            saveManager.DeleteSave();
-        }
+        SaveManager.Instance?.DeleteSave();
 
-        BossDefeatTracker tracker = FindFirstObjectByType<BossDefeatTracker>();
-        if (tracker != null)
-        {
-            tracker.ClearAll();
-        }
+        BossDefeatTracker.Instance?.ClearAll();
 
-        SceneManager.LoadScene("Field");
+        SceneManager.LoadScene("FIeld");
     }
 
     private void OnContinue()
     {
-        SaveManager saveManager = FindFirstObjectByType<SaveManager>();
-        if (saveManager == null)
+        if (SaveManager.Instance == null)
         {
-            SceneManager.LoadScene("Field");
+            SceneManager.LoadScene("FIeld");
             return;
         }
 
-        SaveData data = saveManager.Load();
+        SaveData data = SaveManager.Instance.Load();
         if (data != null)
         {
-            saveManager.ApplyLoadedData(data);
+            SaveManager.Instance.ApplyLoadedData(data);
         }
 
-        SceneManager.LoadScene("Field");
+        SceneManager.LoadScene("FIeld");
     }
 }
