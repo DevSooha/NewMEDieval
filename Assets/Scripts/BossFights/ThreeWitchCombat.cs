@@ -72,17 +72,16 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         StartCoroutine(AppearRoutine());
     }
 
-    private void OnEnable()
+    protected override void OnEnable()
     {
-        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
+        base.OnEnable();
         ResumeBossPresentation();
         isBattleStopped = false;
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
-        CleanupOffensivesOnDisable();
+        base.OnDisable();
     }
 
     public void OnBossHpChanged(int currentHp, int maxHp)
@@ -370,7 +369,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         UpdateAnimatorForState(BossState.Attack, resolvedDir);
     }
 
-    private void HandlePlayerDeath()
+    protected override void OnPlayerDied()
     {
         if (isBattleStopped)
         {

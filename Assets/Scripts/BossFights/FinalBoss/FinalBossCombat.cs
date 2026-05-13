@@ -173,16 +173,16 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         SetPreplacedLayoutObjectsActive(false);
     }
 
-    private void OnEnable()
+    protected override void OnEnable()
     {
+        base.OnEnable();
         ResumeBossPresentation();
-        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
         ResolvePlayerTransform();
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
+        base.OnDisable();
         StopBattleRoutines();
         ClearOffensives();
     }
@@ -1295,7 +1295,7 @@ public class FinalBossCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHa
         return ClampToRoom(target);
     }
 
-    private void HandlePlayerDeath()
+    protected override void OnPlayerDied()
     {
         CleanupBossPresentationOnPlayerDeath();
         if (!isBattleRunning || isVictoryHandled) return;

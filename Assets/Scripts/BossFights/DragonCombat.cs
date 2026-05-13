@@ -83,19 +83,18 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
         gameObject.SetActive(false);
     }
 
-    private void OnEnable()
+    protected override void OnEnable()
     {
+        base.OnEnable();
         ActiveInstance = this;
         ResumeBossPresentation();
         ApplyFlyingStandbyPose();
-        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
+        base.OnDisable();
         SetFlyingRestrictionZoneActive(false);
-        CleanupOffensivesOnDisable();
 
         if (ActiveInstance == this)
         {
@@ -399,7 +398,7 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
         }
     }
 
-    private void HandlePlayerDeath()
+    protected override void OnPlayerDied()
     {
         if (!isBattleActive || battleResultHandled)
         {

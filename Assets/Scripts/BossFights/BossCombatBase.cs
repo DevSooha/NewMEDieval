@@ -43,10 +43,24 @@ public abstract class BossCombatBase : MonoBehaviour
 
     public abstract void StartBattle();
 
-    private void OnDisable()
+    protected virtual void OnEnable()
     {
+        PlayerHealth.OnPlayerDeath -= InternalHandlePlayerDeath;
+        PlayerHealth.OnPlayerDeath += InternalHandlePlayerDeath;
+    }
+
+    protected virtual void OnDisable()
+    {
+        PlayerHealth.OnPlayerDeath -= InternalHandlePlayerDeath;
         CleanupOffensivesOnDisable();
     }
+
+    private void InternalHandlePlayerDeath()
+    {
+        OnPlayerDied();
+    }
+
+    protected virtual void OnPlayerDied() { }
 
     public void NotifyBossDefeatedCleanup()
     {
@@ -61,17 +75,6 @@ public abstract class BossCombatBase : MonoBehaviour
     protected void CleanupOffensivesOnBattleReset()
     {
         CleanupBossOffensives(BossOffensiveCleanupReason.BattleReset);
-    }
-
-    protected void RegisterPlayerDeathBaseHandler(Action handler)
-    {
-        PlayerHealth.OnPlayerDeath -= handler;
-        PlayerHealth.OnPlayerDeath += handler;
-    }
-
-    protected void UnregisterPlayerDeathBaseHandler(Action handler)
-    {
-        PlayerHealth.OnPlayerDeath -= handler;
     }
 
     protected void CleanupBossPresentationOnPlayerDeath()
