@@ -65,40 +65,18 @@ public class SaveManager : Singleton<SaveManager>
             }
         }
 
-        // Potions
+        // Potions — inventory (unequipped)
         data.potionItems = new List<SavedPotion>();
         if (Inventory.Instance != null)
         {
             foreach (Potion potion in Inventory.Instance.PotionItems)
             {
                 if (potion?.data == null) continue;
-                SavedPotion sp = new SavedPotion
-                {
-                    displayName = potion.data.GetDisplayName(),
-                    temperature = (int)potion.data.temperature,
-                    damage1 = potion.data.damage1,
-                    damage2 = potion.data.damage2,
-                    bulletType1 = (int)potion.data.bulletType1,
-                    bulletType2 = (int)potion.data.bulletType2,
-                    quantity = potion.quantity,
-                    isCraftedRuntime = potion.data.isCraftedRuntimeData
-                };
-
-                PotionPhaseSpec phase0 = potion.data.GetPhase(0);
-                PotionPhaseSpec phase1 = potion.data.GetPhase(1);
-                sp.phase0IngredientId = phase0?.ingredientId ?? string.Empty;
-                sp.phase1IngredientId = phase1?.ingredientId ?? string.Empty;
-
-                if (!potion.data.isCraftedRuntimeData)
-                {
-                    sp.potionAssetName = potion.data.name;
-                }
-
-                data.potionItems.Add(sp);
+                data.potionItems.Add(BuildSavedPotion(potion, isEquipped: false));
             }
         }
 
-        // Weapon slots
+        // Weapon slots — equipped potions appended to potionItems with isEquippedInSlot = true
         data.weaponSlots = new List<SavedWeaponSlot>();
         PlayerAttackSystem attackSystem = Player.Instance != null
             ? Player.Instance.GetComponent<PlayerAttackSystem>()
@@ -108,9 +86,10 @@ public class SaveManager : Singleton<SaveManager>
             foreach (WeaponSlot slot in attackSystem.slots)
             {
                 int potionIndex = -1;
-                if (slot.equippedPotion != null && Inventory.Instance != null)
+                if (slot.equippedPotion?.data != null)
                 {
-                    potionIndex = Inventory.Instance.PotionItems.IndexOf(slot.equippedPotion);
+                    potionIndex = data.potionItems.Count;
+                    data.potionItems.Add(BuildSavedPotion(slot.equippedPotion, isEquipped: true));
                 }
 
                 data.weaponSlots.Add(new SavedWeaponSlot
@@ -290,9 +269,11 @@ public class SaveManager : Singleton<SaveManager>
             }
         }
 
-        // Restore potions
+        // Restore potions (skip those saved as equipped-in-slot; RestoreWeaponSlots handles them)
         foreach (SavedPotion saved in data.potionItems)
         {
+            if (saved.isEquippedInSlot) continue;
+
             PotionData potionData;
 
             if (!saved.isCraftedRuntime && !string.IsNullOrEmpty(saved.potionAssetName))
@@ -345,12 +326,75 @@ public class SaveManager : Singleton<SaveManager>
                 type = (WeaponType)saved.weaponType
             };
 
-            if (saved.potionIndex >= 0 && saved.potionIndex < Inventory.Instance.PotionItems.Count)
+            if (saved.potionIndex >= 0 && data.potionItems != null && saved.potionIndex < data.potionItems.Count)
             {
-                slot.equippedPotion = Inventory.Instance.PotionItems[saved.potionIndex];
+                slot.equippedPotion = RebuildPotion(data.potionItems[saved.potionIndex]);
             }
 
             attackSystem.slots.Add(slot);
         }
+    }
+
+    private static SavedPotion BuildSavedPotion(Potion potion, bool isEquipped)
+    {
+        SavedPotion sp = new SavedPotion
+        {
+            displayName = potion.data.GetDisplayName(),
+            temperature = (int)potion.data.temperature,
+            damage1 = potion.data.damage1,
+            damage2 = potion.data.damage2,
+            bulletType1 = (int)potion.data.bulletType1,
+            bulletType2 = (int)potion.data.bulletType2,
+            quantity = potion.quantity,
+            isCraftedRuntime = potion.data.isCraftedRuntimeData,
+            isEquippedInSlot = isEquipped
+        };
+
+        PotionPhaseSpec phase0 = potion.data.GetPhase(0);
+        PotionPhaseSpec phase1 = potion.data.GetPhase(1);
+        sp.phase0IngredientId = phase0?.ingredientId ?? string.Empty;
+        sp.phase1IngredientId = phase1?.ingredientId ?? string.Empty;
+
+        if (!potion.data.isCraftedRuntimeData)
+        {
+            sp.potionAssetName = potion.data.name;
+        }
+
+        return sp;
+    }
+
+    private static Potion RebuildPotion(SavedPotion saved)
+    {
+        if (saved == null) return null;
+
+        PotionData potionData;
+
+        if (!saved.isCraftedRuntime && !string.IsNullOrEmpty(saved.potionAssetName))
+        {
+            potionData = Resources.Load<PotionData>(saved.potionAssetName);
+            if (potionData == null)
+            {
+                Debug.LogWarning($"[SaveManager] Potion asset not found: {saved.potionAssetName}");
+                return null;
+            }
+        }
+        else
+        {
+            potionData = ScriptableObject.CreateInstance<PotionData>();
+            potionData.isCraftedRuntimeData = true;
+            potionData.craftedDisplayName = saved.displayName;
+            potionData.temperature = (PotionTemperature)saved.temperature;
+            potionData.damage1 = saved.damage1;
+            potionData.damage2 = saved.damage2;
+            potionData.bulletType1 = (BulletType)saved.bulletType1;
+            potionData.bulletType2 = (BulletType)saved.bulletType2;
+
+            if (!string.IsNullOrEmpty(saved.phase0IngredientId))
+                potionData.phase1 = new PotionPhaseSpec { ingredientId = saved.phase0IngredientId };
+            if (!string.IsNullOrEmpty(saved.phase1IngredientId))
+                potionData.phase2 = new PotionPhaseSpec { ingredientId = saved.phase1IngredientId };
+        }
+
+        return new Potion(potionData, saved.quantity);
     }
 }

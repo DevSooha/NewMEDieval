@@ -52,6 +52,7 @@ public class SavedPotion
     public int quantity;
     public bool isCraftedRuntime;
     public string potionAssetName;
+    public bool isEquippedInSlot;
 }
 
 [Serializable]
