@@ -18,18 +18,14 @@ public class PlayerInteraction : MonoBehaviour
     [SerializeField] private InventoryUI inventoryUI;
 
     private bool canInteract;
-    private bool isCampfire;
-    private Bonfire currentBonfire;
     private Coroutine craftingOpenTransitionRoutine;
     private Coroutine controlRecoveryRoutine;
     private const float CraftingOpenTransitionSeconds = 0.5f;
     private const int ControlRecoveryFrames = 3;
     private PlayerAttackSystem playerAttackSystem;
     private PlayerStatusController playerStatusController;
-    private bool interactionReady;
-
     public bool IsInteractable => canInteract;
-    public bool HasImmediateInteractionTarget => currentItem != null || currentNPC != null || isCampfire;
+    public bool HasImmediateInteractionTarget => currentItem != null || currentNPC != null;
     public bool IsCraftingUiOpen => IsCraftingUiVisible();
 
     private void Start()
@@ -72,13 +68,6 @@ public class PlayerInteraction : MonoBehaviour
             inGameMenu.SetActive(false);
         }
 
-        StartCoroutine(EnableInteractionAfterDelay());
-    }
-
-    private IEnumerator EnableInteractionAfterDelay()
-    {
-        yield return new WaitForSecondsRealtime(1f);
-        interactionReady = true;
     }
 
     private void Update()
@@ -139,13 +128,6 @@ public class PlayerInteraction : MonoBehaviour
                 UIManager.Instance.AdvanceDialogue();
             }
 
-            CombatInputHelper.ConsumeAttackInputThisFrame();
-            return true;
-        }
-
-        if (isCampfire)
-        {
-            ShowCampfireSelectPanelIfNeeded();
             CombatInputHelper.ConsumeAttackInputThisFrame();
             return true;
         }
@@ -294,7 +276,7 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         currentItem = null;
-        canInteract = currentNPC != null || isCampfire;
+        canInteract = currentNPC != null;
 
         if (Player.Instance != null)
         {
@@ -336,17 +318,6 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        if (other.CompareTag("Campfire"))
-        {
-            isCampfire = true;
-            canInteract = true;
-            currentBonfire = other.GetComponent<Bonfire>();
-
-            if (interactionReady && UIManager.Instance != null)
-            {
-                ShowCampfireSelectPanelIfNeeded();
-            }
-        }
     }
 
     public void EnterCrafting()
@@ -371,7 +342,6 @@ public class PlayerInteraction : MonoBehaviour
             craftingOpenTransitionRoutine = null;
         }
 
-        isCampfire = false;
         EnsureCombatStateReset();
         BeginControlRecovery();
 
@@ -397,58 +367,6 @@ public class PlayerInteraction : MonoBehaviour
         if (Player.Instance != null)
         {
             Player.Instance.OnInteractionFinished();
-        }
-    }
-
-    private void ShowCampfireSelectPanelIfNeeded()
-    {
-        if (UIManager.Instance == null)
-        {
-            return;
-        }
-
-        if (UIManager.Instance.IsDialogueActive() || UIManager.Instance.IsSelectPanelActive())
-        {
-            return;
-        }
-
-        UIManager.Instance.ShowSelectPanel(
-            "Bonfire",
-            "SAVE",
-            OnSaveSelected,
-            "POTION",
-            () => { UIManager.Instance.HideSelectPanel(); EnterCrafting(); }
-        );
-    }
-
-    private void OnSaveSelected()
-    {
-        if (UIManager.Instance == null) return;
-
-        UIManager.Instance.ReplaceSelectPanelContent(
-            "Save progress?",
-            "YES", OnConfirmSave,
-            "NO",  () => UIManager.Instance.HideSelectPanel()
-        );
-    }
-
-    private void OnConfirmSave()
-    {
-        if (SaveManager.Instance != null && currentBonfire != null)
-        {
-            SaveManager.Instance.Save(
-                currentBonfire.bonfireId,
-                currentBonfire.transform.position
-            );
-        }
-
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.ReplaceSelectPanelContent(
-                "SAVED!",
-                null, null,
-                "OK", () => UIManager.Instance.HideSelectPanel()
-            );
         }
     }
 
@@ -535,24 +453,13 @@ public class PlayerInteraction : MonoBehaviour
             currentNPC = null;
         }
 
-        if (other.CompareTag("Campfire"))
-        {
-            isCampfire = false;
-            currentBonfire = null;
-
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.HideSelectPanel();
-            }
-        }
-
         WorldItem exitedItem = other.GetComponent<WorldItem>();
         if (exitedItem != null && exitedItem == currentItem)
         {
             currentItem = null;
         }
 
-        if (currentNPC == null && !isCampfire && currentItem == null)
+        if (currentNPC == null && currentItem == null)
         {
             canInteract = false;
         }
