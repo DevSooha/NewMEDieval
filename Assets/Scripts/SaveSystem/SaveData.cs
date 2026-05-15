@@ -1,33 +1,38 @@
 using System;
 using System.Collections.Generic;
 
+/// <summary>
+/// 세이브 슬롯 하나에 기록되는 전체 게임 상태.
+/// Newtonsoft.Json으로 직렬화된다(Dictionary 지원을 위해 JsonUtility 대신 사용).
+/// </summary>
 [Serializable]
 public class SaveData
 {
-    public int saveVersion = 1;
-    public string saveTimestamp;
+    public string saveVersion = "1.0";
+    public long timestamp;
 
-    // Player location
-    public string lastBonfireId;
-    public float bonfirePosX;
-    public float bonfirePosY;
+    /// <summary>마지막으로 사용한 SavePoint의 ID. 로드 시 스폰 위치 결정에 사용.</summary>
+    public string lastSavePointId;
 
-    // Player stats
+    public PlayerData player;
+
+    /// <summary>ISaveable 오브젝트들의 상태 맵. key = ISaveable.SaveId.</summary>
+    public Dictionary<string, object> worldStates = new();
+
+    public List<string> defeatedBossIds = new();
+}
+
+/// <summary>플레이어 상태 묶음. 새 포맷에서 SaveData.player에 중첩된다.</summary>
+[Serializable]
+public class PlayerData
+{
+    /// <summary>세이브 포인트 월드 좌표 = 리스폰 위치.</summary>
+    public Vector3Serializable spawnPosition;
     public int currentHP;
     public int maxHP;
-
-    // Inventory
     public List<SavedItem> materialItems = new();
     public List<SavedPotion> potionItems = new();
-
-    // Weapon slots
     public List<SavedWeaponSlot> weaponSlots = new();
-
-    // Boss defeat
-    public List<string> defeatedBossIds = new();
-
-    // World flags (Phase 2 extensibility)
-    public List<string> worldFlags = new();
 }
 
 [Serializable]
