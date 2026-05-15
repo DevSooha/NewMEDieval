@@ -19,7 +19,7 @@ public class TitleScreenController : MonoBehaviour
         if (continueButton != null)
         {
             continueButton.onClick.AddListener(OnContinue);
-            continueButton.interactable = SaveManager.Instance != null && SaveManager.Instance.HasSaveFile();
+            continueButton.interactable = SaveManager.Instance != null && SaveManager.Instance.HasSave();
         }
     }
 
@@ -37,7 +37,7 @@ public class TitleScreenController : MonoBehaviour
     {
         isLoading = true;
 
-        bool hasSave = SaveManager.Instance != null && SaveManager.Instance.HasSaveFile();
+        bool hasSave = SaveManager.Instance != null && SaveManager.Instance.HasSave();
 
         if (hasSave)
         {
@@ -66,7 +66,7 @@ public class TitleScreenController : MonoBehaviour
             return;
         }
 
-        SaveData data = SaveManager.Instance.Load();
+        SaveData data = SaveManager.Instance.LoadGame();
         if (data != null)
         {
             SaveManager.Instance.ApplyLoadedData(data);

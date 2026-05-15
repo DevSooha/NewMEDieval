@@ -585,7 +585,7 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        SaveData lastSave = SaveManager.Instance != null ? SaveManager.Instance.Load() : null;
+        SaveData lastSave = SaveManager.Instance != null ? SaveManager.Instance.LoadGame() : null;
         if (lastSave != null)
         {
             SaveManager.Instance.ApplyLoadedData(lastSave);
