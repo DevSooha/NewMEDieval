@@ -68,16 +68,16 @@ public class QueenCombat : BossCombatBase, IBossDamageModifier, IBossBattleReset
 
     }
 
-    private void OnEnable()
+    protected override void OnEnable()
     {
+        base.OnEnable();
         ResumeBossPresentation();
-        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
         TryResolvePlayerTransform(ref playerTF);
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
+        base.OnDisable();
 
         if (bossHealth != null && bossHealth.currentHP <= 0)
         {
@@ -94,8 +94,6 @@ public class QueenCombat : BossCombatBase, IBossDamageModifier, IBossBattleReset
         {
             knightGhost.StopPattern();
         }
-
-        CleanupOffensivesOnDisable();
     }
 
     public override void StartBattle()
@@ -150,7 +148,7 @@ public class QueenCombat : BossCombatBase, IBossDamageModifier, IBossBattleReset
         return bossHealth != null && bossHealth.currentHP <= 0;
     }
 
-    private void HandlePlayerDeath()
+    protected override void OnPlayerDied()
     {
         CleanupBossPresentationOnPlayerDeath();
 

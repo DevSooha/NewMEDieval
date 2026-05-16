@@ -80,16 +80,15 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         StartCoroutine(AppearRoutine());
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         StopCombat();
 
         if (bedimmedWallGroup != null)
         {
             bedimmedWallGroup.gameObject.SetActive(false);
         }
-
-        CleanupOffensivesOnDisable();
     }
 
     public float ModifyDamageMultiplier(ElementType attackType, float baseMultiplier)

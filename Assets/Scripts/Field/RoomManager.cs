@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,6 +6,12 @@ using System.Collections.Generic;
 public class RoomManager : MonoBehaviour
 {
     public static RoomManager Instance;
+
+    /// <summary>
+    /// 씬 로드 후 방 프리로드가 완료됐을 때 발화된다.
+    /// SaveManager.OnSceneLoaded에서 구독해 ISaveable 복원 타이밍을 맞춘다.
+    /// </summary>
+    public static event Action OnRoomSystemReady;
 
     public static Vector3? restartPointOverride = null;
 
@@ -191,6 +198,9 @@ public class RoomManager : MonoBehaviour
 
         // 5. 蹂듦????꾩튂??'??�쟾???꾩튂'�?湲곗�?
         lastSafeEntryPosition = player.position;
+
+        // 방 프리로드 완료 — ISaveable 복원 타이밍 신호
+        OnRoomSystemReady?.Invoke();
     }
 
     private void RefreshRoomState()
@@ -261,6 +271,9 @@ public class RoomManager : MonoBehaviour
             SoundManager.instance.PlayBGMForScene(currentRoomData.roomID);
         }
         StartCoroutine(StartSpawnProtection());
+
+        // 새 게임 경로에서도 방 초기화 완료 신호 발화
+        OnRoomSystemReady?.Invoke();
     }
 
     public void RequestMove(Vector2 direction, RoomData nextRoom, float distanceOverride = 0f)

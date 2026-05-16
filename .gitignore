@@ -101,3 +101,8 @@ Assets/Scripts/Utils/Settings/Build Profiles
 .plastic/plastic.wktree
 .plastic/plastic.changes
 .idea
+
+# Claude Code
+CLAUDE.md
+.claude.local.md
+.claude/worktrees/

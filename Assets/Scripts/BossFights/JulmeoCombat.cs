@@ -26,10 +26,10 @@ public class JulmeoCombat : BossCombatBase
         Debug.Log("Julmeo spawned & attacking!");
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         StopAllCoroutines();
-        CleanupOffensivesOnDisable();
     }
 
     IEnumerator BattleRoutine()
