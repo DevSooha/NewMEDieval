@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -31,7 +30,10 @@ public class SaveManager : Singleton<SaveManager>
     // 사망 재시작 경로에서 Player 상태를 이미 적용했으면 ApplyPendingState에서 재적용을 막는 플래그.
     private bool pendingPlayerStateApplied;
 
+    private const string FieldSceneName = "FIeld";
+
     private ItemData[] _cachedAllItems;
+    private Dictionary<string, ItemData> _itemLookup;
 
     // ── 생명주기 ─────────────────────────────────────────────────────────────
 
@@ -122,7 +124,7 @@ public class SaveManager : Singleton<SaveManager>
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (pendingLoadData == null) return;
-        if (scene.name != "FIeld") return;
+        if (scene.name != FieldSceneName) return;
 
         // RoomManager.OnRoomSystemReady가 발화될 때 방과 ISaveable 오브젝트가 모두 준비됨이 보장된다.
         RoomManager.OnRoomSystemReady -= ApplyPendingState;
@@ -142,7 +144,6 @@ public class SaveManager : Singleton<SaveManager>
             RestoreWorldStates(pendingLoadData.worldStates);
 
         pendingLoadData = null;
-        pendingPlayerStateApplied = false;
     }
 
     // ── 세이브 데이터 빌드 ────────────────────────────────────────────────────
@@ -198,8 +199,8 @@ public class SaveManager : Singleton<SaveManager>
                 int potionIndex = -1;
                 if (slot.equippedPotion?.data != null)
                 {
-                    potionIndex = pd.potionItems.Count;
                     pd.potionItems.Add(BuildSavedPotion(slot.equippedPotion, isEquipped: true));
+                    potionIndex = pd.potionItems.Count - 1;
                 }
                 pd.weaponSlots.Add(new SavedWeaponSlot
                 {
@@ -216,7 +217,7 @@ public class SaveManager : Singleton<SaveManager>
     {
         var states = new Dictionary<string, object>();
 
-        foreach (ISaveable saveable in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>())
+        foreach (ISaveable saveable in FindObjectsByType<ISaveable>(FindObjectsSortMode.None))
         {
             if (string.IsNullOrEmpty(saveable.SaveId))
             {
@@ -231,7 +232,7 @@ public class SaveManager : Singleton<SaveManager>
 
     private void RestoreWorldStates(Dictionary<string, object> worldStates)
     {
-        foreach (ISaveable saveable in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>())
+        foreach (ISaveable saveable in FindObjectsByType<ISaveable>(FindObjectsSortMode.None))
         {
             if (worldStates.TryGetValue(saveable.SaveId, out object state))
                 saveable.RestoreState(state);
@@ -284,11 +285,15 @@ public class SaveManager : Singleton<SaveManager>
         // 재료 복원
         if (savedItems != null)
         {
-            _cachedAllItems ??= Resources.LoadAll<ItemData>("ItemData");
+            if (_cachedAllItems == null)
+            {
+                _cachedAllItems = Resources.LoadAll<ItemData>("ItemData");
+                _itemLookup = new Dictionary<string, ItemData>(_cachedAllItems.Length);
+                foreach (ItemData d in _cachedAllItems) _itemLookup[d.GetIngredientId()] = d;
+            }
             foreach (SavedItem saved in savedItems)
             {
-                ItemData match = _cachedAllItems.FirstOrDefault(d => d.GetIngredientId() == saved.ingredientId);
-                if (match != null)
+                if (_itemLookup.TryGetValue(saved.ingredientId, out ItemData match))
                     Inventory.Instance.AddItem(match, saved.quantity);
                 else
                     Debug.LogWarning($"[SaveManager] 아이템을 찾을 수 없음: {saved.ingredientId}");

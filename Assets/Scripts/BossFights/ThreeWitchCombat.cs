@@ -79,11 +79,6 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
         isBattleStopped = false;
     }
 
-    protected override void OnDisable()
-    {
-        base.OnDisable();
-    }
-
     public void OnBossHpChanged(int currentHp, int maxHp)
     {
         int nextPhase = 1;

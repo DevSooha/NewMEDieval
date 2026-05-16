@@ -45,19 +45,14 @@ public abstract class BossCombatBase : MonoBehaviour
 
     protected virtual void OnEnable()
     {
-        PlayerHealth.OnPlayerDeath -= InternalHandlePlayerDeath;
-        PlayerHealth.OnPlayerDeath += InternalHandlePlayerDeath;
+        PlayerHealth.OnPlayerDeath -= OnPlayerDied;
+        PlayerHealth.OnPlayerDeath += OnPlayerDied;
     }
 
     protected virtual void OnDisable()
     {
-        PlayerHealth.OnPlayerDeath -= InternalHandlePlayerDeath;
+        PlayerHealth.OnPlayerDeath -= OnPlayerDied;
         CleanupOffensivesOnDisable();
-    }
-
-    private void InternalHandlePlayerDeath()
-    {
-        OnPlayerDied();
     }
 
     protected virtual void OnPlayerDied() { }
@@ -125,8 +120,6 @@ public abstract class BossCombatBase : MonoBehaviour
 
     protected void CleanupBossOffensives(BossOffensiveCleanupReason reason)
     {
-        _ = reason;
-
         if (isCleaningUpOffensives || trackedOffensives.Count == 0)
         {
             return;

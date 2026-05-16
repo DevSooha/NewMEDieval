@@ -37,11 +37,6 @@ public class NemiBossCombat : BossCombatBase, IBossPhaseHandler
         if (handOfTime == null) handOfTime = GetComponentInChildren<HandOfTime>();
     }
 
-    protected override void OnEnable()
-    {
-        base.OnEnable();
-    }
-
     // ===========================
     // StartBattle — BossBattleTrigger에서 호출
     // ===========================
