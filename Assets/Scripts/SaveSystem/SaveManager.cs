@@ -217,11 +217,11 @@ public class SaveManager : Singleton<SaveManager>
     {
         var states = new Dictionary<string, object>();
 
-        foreach (ISaveable saveable in FindObjectsByType<ISaveable>(FindObjectsSortMode.None))
+        foreach (SaveableBehaviour saveable in FindObjectsByType<SaveableBehaviour>(FindObjectsSortMode.None))
         {
             if (string.IsNullOrEmpty(saveable.SaveId))
             {
-                Debug.LogWarning($"[SaveManager] ISaveable on '{((MonoBehaviour)saveable).gameObject.name}'에 SaveId가 없어 건너뜁니다.");
+                Debug.LogWarning($"[SaveManager] ISaveable on '{saveable.gameObject.name}'에 SaveId가 없어 건너뜁니다.");
                 continue;
             }
             states[saveable.SaveId] = saveable.CaptureState();
@@ -232,7 +232,7 @@ public class SaveManager : Singleton<SaveManager>
 
     private void RestoreWorldStates(Dictionary<string, object> worldStates)
     {
-        foreach (ISaveable saveable in FindObjectsByType<ISaveable>(FindObjectsSortMode.None))
+        foreach (SaveableBehaviour saveable in FindObjectsByType<SaveableBehaviour>(FindObjectsSortMode.None))
         {
             if (worldStates.TryGetValue(saveable.SaveId, out object state))
                 saveable.RestoreState(state);
