@@ -701,8 +701,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!4 &3476378466343347345 stripped
-Transform:
+--- !u!224 &3476378466343347345 stripped
+RectTransform:
   m_CorrespondingSourceObject: {fileID: 291694721163546958, guid: c3cbdb9d6f3eb804797d5ccd367c08de, type: 3}
   m_PrefabInstance: {fileID: 3761311657905173983}
   m_PrefabAsset: {fileID: 0}
