@@ -68,7 +68,7 @@ public partial class PlayerAttackSystem : MonoBehaviour
 
     void Update()
     {
-        if (interactionSensor != null && interactionSensor.IsCraftingUiOpen)
+        if (UIManager.CraftingUiActive)
         {
             CancelTransientInputState();
             return;

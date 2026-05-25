@@ -51,6 +51,7 @@ public class Player : Singleton<Player>
     private RigidbodyType2D defaultBodyType;
     private Coroutine knockbackRoutine;
     private Coroutine blinkRoutine;
+    private Tilemap cachedGroundTilemap;
 
     protected override void Awake()
     {
@@ -150,7 +151,7 @@ public class Player : Singleton<Player>
 
     void HandleInteractionOnly()
     {
-        if (playerInteraction != null && playerInteraction.IsCraftingUiOpen)
+        if (UIManager.CraftingUiActive)
         {
             moveInput = Vector2.zero;
             ChangeState(PlayerState.Idle);
@@ -176,9 +177,7 @@ public class Player : Singleton<Player>
 
     void HandleMovement()
     {
-        if (UIManager.DialogueActive
-            || UIManager.SelectionActive
-            || (playerInteraction != null && playerInteraction.IsCraftingUiOpen))
+        if (UIManager.IsInputBlocked)
         {
             moveInput = Vector2.zero;
             ChangeState(PlayerState.Idle);
@@ -284,10 +283,7 @@ public class Player : Singleton<Player>
 
     void HandleAttack()
     {
-        if (playerInteraction != null && playerInteraction.IsCraftingUiOpen)
-        {
-            return;
-        }
+        if (UIManager.CraftingUiActive) return;
 
         if (IsInteractOrAttackPressed())
         {
@@ -298,9 +294,8 @@ public class Player : Singleton<Player>
                 return;
             }
 
-            // 1. ??�????좎럩???믪눦?? ??좎럥??
             // Potion usage is handled by PlayerAttackSystem; do not play melee attack motion.
-            if (IsPotionWeaponSelected())
+            if (attackSystem != null && attackSystem.IsCurrentSlotPotion())
             {
                 return;
             }
@@ -312,34 +307,6 @@ public class Player : Singleton<Player>
         }
     }
 
-    private bool IsPotionWeaponSelected()
-    {
-        if (attackSystem == null)
-        {
-            attackSystem = GetComponent<PlayerAttackSystem>();
-        }
-
-        if (attackSystem == null)
-        {
-            return false;
-        }
-
-        if (attackSystem.IsCurrentSlotPotion())
-        {
-            return true;
-        }
-
-        if (attackSystem.slots == null || attackSystem.slots.Count == 0)
-        {
-            return false;
-        }
-
-        WeaponSlot currentSlot = attackSystem.slots[0];
-        return currentSlot != null
-            && currentSlot.type == WeaponType.PotionBomb
-            && currentSlot.equippedPotion != null
-            && currentSlot.equippedPotion.quantity > 0;
-    }
     bool IsInteractOrAttackPressed()
     {
         return CombatInputHelper.IsAttackPressed(statusController);
@@ -371,7 +338,7 @@ public class Player : Singleton<Player>
 
     IEnumerator PerformAttack()
     {
-        if (IsPotionWeaponSelected())
+        if (attackSystem != null && attackSystem.IsCurrentSlotPotion())
         {
             ChangeState(PlayerState.Idle);
             yield break;
@@ -651,6 +618,14 @@ public class Player : Singleton<Player>
 
     private Tilemap ResolveGroundTilemap(Vector3 worldPosition)
     {
+        if (cachedGroundTilemap != null && cachedGroundTilemap.gameObject.activeInHierarchy)
+        {
+            Vector3Int cell = cachedGroundTilemap.WorldToCell(worldPosition);
+            if (cachedGroundTilemap.HasTile(cell))
+                return cachedGroundTilemap;
+        }
+
+        cachedGroundTilemap = null;
         Tilemap[] tilemaps = FindObjectsByType<Tilemap>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         Tilemap fallback = null;
 
@@ -665,7 +640,8 @@ public class Player : Singleton<Player>
             Vector3Int cell = tilemap.WorldToCell(worldPosition);
             if (tilemap.HasTile(cell))
             {
-                return tilemap;
+                cachedGroundTilemap = tilemap;
+                return cachedGroundTilemap;
             }
 
             if (fallback == null)
@@ -674,7 +650,8 @@ public class Player : Singleton<Player>
             }
         }
 
-        return fallback;
+        cachedGroundTilemap = fallback;
+        return cachedGroundTilemap;
     }
 
     private static bool IsGroundTilemap(Tilemap tilemap)

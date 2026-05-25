@@ -13,6 +13,11 @@ public class UIManager : MonoBehaviour
     public static bool DialogueActive => dialogueActive;
     public static bool SelectionActive => Instance != null && Instance.SelectPanel != null && Instance.SelectPanel.activeSelf;
 
+    private static Func<bool> craftingUiChecker;
+    public static void RegisterCraftingUiChecker(Func<bool> getter) => craftingUiChecker = getter;
+    public static bool CraftingUiActive => craftingUiChecker?.Invoke() ?? false;
+    public static bool IsInputBlocked => DialogueActive || SelectionActive || CraftingUiActive;
+
     private static int pauseRequestCount = 0;
 
     public static void RequestPause()

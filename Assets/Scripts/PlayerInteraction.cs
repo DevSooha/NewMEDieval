@@ -68,6 +68,7 @@ public class PlayerInteraction : MonoBehaviour
             inGameMenu.SetActive(false);
         }
 
+        UIManager.RegisterCraftingUiChecker(IsCraftingUiVisible);
     }
 
     private void Update()
