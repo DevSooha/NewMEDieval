@@ -488,28 +488,17 @@ public class PlayerInteraction : MonoBehaviour
 
     private void OpenCraftingUiImmediate()
     {
-        if (craftUI == null && craftingMenu == null)
-        {
-            Debug.LogError("[PlayerInteraction] craftUI와 craftingMenu 모두 null. " +
-                           "Inspector에서 PlayerInteraction.craftUI 필드에 CraftUI 컴포넌트를 할당해주세요.");
-        }
-
         if (craftingMenu != null)
         {
             craftingMenu.SetActive(true);
         }
-        else if (craftUI == null)
-        {
-            Debug.LogError("[PlayerInteraction] EnterCrafting failed: CraftingMenu reference is missing.");
-        }
-
-        if (craftUI != null)
+        else if (craftUI != null)
         {
             craftUI.gameObject.SetActive(true);
         }
         else
         {
-            Debug.LogError("[PlayerInteraction] EnterCrafting failed: CraftUI reference is missing.");
+            Debug.LogError("[PlayerInteraction] EnterCrafting failed: CraftingMenu/CraftUI reference is missing.");
         }
 
         if (inGameMenu != null)
