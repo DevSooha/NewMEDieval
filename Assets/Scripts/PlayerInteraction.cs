@@ -399,20 +399,18 @@ public class PlayerInteraction : MonoBehaviour
             {
                 craftingMenu.SetActive(false);
             }
-
-            if (craftUI != null)
+            else if (craftUI != null)
             {
                 craftUI.gameObject.SetActive(false);
-            }
-
-            if (inventoryUI != null)
-            {
-                inventoryUI.gameObject.SetActive(false);
             }
 
             if (inGameMenu != null)
             {
                 inGameMenu.SetActive(false);
+            }
+            else if (inventoryUI != null)
+            {
+                inventoryUI.gameObject.SetActive(false);
             }
 
             if (UIManager.Instance != null)
@@ -492,7 +490,7 @@ public class PlayerInteraction : MonoBehaviour
         {
             craftingMenu.SetActive(true);
         }
-        else if (craftUI != null)
+        if (craftUI != null)
         {
             craftUI.gameObject.SetActive(true);
         }

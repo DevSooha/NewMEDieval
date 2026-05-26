@@ -77,7 +77,7 @@ public class SavePoint : MonoBehaviour
     private void OpenCrafting()
     {
         UIManager.Instance?.HideSelectPanel();
-        Player.Instance?.GetComponent<PlayerInteraction>()?.EnterCrafting();
+        Player.Instance?.GetComponentInChildren<PlayerInteraction>(true)?.EnterCrafting();
     }
 
 #if UNITY_EDITOR
