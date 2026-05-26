@@ -422,7 +422,8 @@ public class RoomManager : MonoBehaviour
         SetPlayerInput(false);
 
         // ????�??�몄????�? 濡쒕�??�뼱 ??�떎�? ?�ы봽??�떆?????�� "?꾩옱 ???λ�??꾩튂"??蹂댁??
-        RefreshTargetRoom(nextRoom);
+        if (!loadedRooms.ContainsKey(nextRoom.roomID))
+            RefreshTargetRoom(nextRoom);
 
         Vector3 startCameraPos = mainCamera.transform.position;
         Vector3 startPlayerPos = player.position;
@@ -470,7 +471,7 @@ public class RoomManager : MonoBehaviour
         }
         runtimeRoomPositions[currentRoomData.roomID] = settledRoomPos;
 
-        UpdateNeighborPreload(nextRoom);
+        StartCoroutine(UpdateNeighborPreloadAsync(nextRoom));
         SetPlayerInput(true);
 
         //play bgm
@@ -628,6 +629,90 @@ public class RoomManager : MonoBehaviour
         }
 
         // keep ????�??뱀???�쇱�??�쑝�??�쒖�?(以묎�????��??깊솕??�?���???�뒗 ?�??�뒪 諛⑹?)
+        foreach (var id in neighborsToKeep)
+        {
+            if (loadedRooms.TryGetValue(id, out var obj) && obj != null && !obj.activeSelf)
+            {
+                obj.SetActive(true);
+                DLog($"Keep room re-activated [{id}]");
+            }
+        }
+    }
+
+    private IEnumerator UpdateNeighborPreloadAsync(RoomData current)
+    {
+        if (current == null) yield break;
+
+        if (!runtimeRoomPositions.ContainsKey(current.roomID))
+        {
+            Vector3 fallback = CalculateRoomPosition(current);
+            runtimeRoomPositions[current.roomID] = fallback;
+            DWarn($"UpdateNeighborPreload: current [{current.roomID}] runtimePos missing -> fallback to roomCoord pos={fallback}");
+        }
+
+        (RoomData room, Vector2 dir)[] neighbors =
+        {
+            (current.north, Vector2.up),
+            (current.south, Vector2.down),
+            (current.east,  Vector2.right),
+            (current.west,  Vector2.left),
+        };
+
+        // neighborsToKeep 먼저 확정 (far room 처리에 필요)
+        HashSet<string> neighborsToKeep = new HashSet<string> { current.roomID };
+        foreach (var (neighbor, _) in neighbors)
+        {
+            if (neighbor != null) neighborsToKeep.Add(neighbor.roomID);
+        }
+
+        // 멀어진 방 비활성화/제거 (빠른 작업)
+        List<string> roomsToHandle = new List<string>();
+        foreach (var loadedID in loadedRooms.Keys)
+        {
+            if (!neighborsToKeep.Contains(loadedID))
+                roomsToHandle.Add(loadedID);
+        }
+        foreach (var id in roomsToHandle)
+        {
+            if (!loadedRooms.TryGetValue(id, out var obj) || obj == null) continue;
+            if (deactivateFarRoomsInsteadOfDestroy)
+            {
+                obj.SetActive(false);
+                DLog($"Far room handled: Deactivate [{id}] pos={obj.transform.position}");
+            }
+            else
+            {
+                DLog($"Far room handled: Destroy [{id}] pos={obj.transform.position}");
+                Destroy(obj);
+                loadedRooms.Remove(id);
+                roomSpawnPoints.Remove(id);
+            }
+        }
+
+        // 이웃 방 스폰/활성화 — 새 스폰마다 1프레임 양보
+        foreach (var (neighbor, dir) in neighbors)
+        {
+            if (neighbor == null) continue;
+
+            if (!loadedRooms.ContainsKey(neighbor.roomID))
+            {
+                Vector3 intended = GetIntendedRoomPosition(neighbor, current, dir, 0f);
+                DLog($"Preload neighbor: current=[{current.roomID}] -> neighbor=[{neighbor.roomID}] dir={dir} intendedPos={intended} neighborCoord=({neighbor.roomCoord.x},{neighbor.roomCoord.y})");
+                SpawnRoom(neighbor, intended);
+                yield return null; // 다음 프레임으로 분산
+            }
+            else
+            {
+                if (loadedRooms.TryGetValue(neighbor.roomID, out var neighborObj) && neighborObj != null)
+                {
+                    neighborObj.SetActive(true);
+                    if (!runtimeRoomPositions.ContainsKey(neighbor.roomID))
+                        runtimeRoomPositions[neighbor.roomID] = neighborObj.transform.position;
+                }
+            }
+        }
+
+        // keep 목록 방 재활성화
         foreach (var id in neighborsToKeep)
         {
             if (loadedRooms.TryGetValue(id, out var obj) && obj != null && !obj.activeSelf)
