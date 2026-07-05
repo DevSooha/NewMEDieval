@@ -9,11 +9,14 @@ public partial class PlayerAttackSystem
         {
             StartCoroutine(MeleeAttackRoutine());
         }
+        
     }
 
     IEnumerator MeleeAttackRoutine()
     {
         isAttack = true;
+
+        SoundManager.instance?.PlayPlayerAttackSFX();
 
         Vector2 forward = aimDirection.sqrMagnitude > 0.001f ? aimDirection.normalized : Vector2.down;
         Vector2 attackPos = (Vector2)transform.position + (forward * (tileSize + meleeForwardOffset));
