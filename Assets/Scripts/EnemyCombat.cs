@@ -87,6 +87,10 @@ public class EnemyCombat : MonoBehaviour
         Attack();
     }
 
+    // BUG-6: 단발 순간이동이 "확 튀는" 움직임의 1순위 원인이라 분할 이동으로 완화
+    private Coroutine selfKnockbackRoutine;
+    private const float selfKnockbackMoveDuration = 0.18f;
+
     private void ApplySelfKnockback(Vector3 playerPosition)
     {
         if (selfKnockbackPixels <= 0f) return;
@@ -96,15 +100,31 @@ public class EnemyCombat : MonoBehaviour
         direction.Normalize();
 
         float distanceUnits = selfKnockbackPixels / 32f;
-        // BUG-4: 벽/방 경계 앞에서만 이동 거리를 줄이는 클램프 경유 (문틈 이탈 방지)
-        if (rb != null)
+        // BUG-4: 충돌·방 셀 클램프 유지 (목적지는 클램프 결과로 확정)
+        Vector2 origin = rb != null ? rb.position : (Vector2)transform.position;
+        Vector2 destination = EnemyStatusController.ResolveKnockbackDestination(rb, origin, direction, distanceUnits);
+
+        if (selfKnockbackRoutine != null) StopCoroutine(selfKnockbackRoutine);
+        selfKnockbackRoutine = StartCoroutine(SelfKnockbackRoutine(origin, destination));
+    }
+
+    private IEnumerator SelfKnockbackRoutine(Vector2 origin, Vector2 destination)
+    {
+        if (rb != null) rb.linearVelocity = Vector2.zero;
+
+        float elapsed = 0f;
+        while (elapsed < selfKnockbackMoveDuration)
         {
-            rb.MovePosition(EnemyStatusController.ResolveKnockbackDestination(rb, rb.position, direction, distanceUnits));
+            elapsed += Time.fixedDeltaTime;
+            Vector2 next = Vector2.Lerp(origin, destination, Mathf.Clamp01(elapsed / selfKnockbackMoveDuration));
+
+            if (rb != null) rb.MovePosition(next);
+            else transform.position = next;
+
+            yield return new WaitForFixedUpdate();
         }
-        else
-        {
-            transform.position = EnemyStatusController.ResolveKnockbackDestination(null, transform.position, direction, distanceUnits);
-        }
+
+        selfKnockbackRoutine = null;
     }
 
     public void Attack()

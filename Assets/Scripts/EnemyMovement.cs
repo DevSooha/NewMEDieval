@@ -17,6 +17,9 @@ public class EnemyMovement : MonoBehaviour
     public float attackCooldown = 2f;
     public float attackCooldownTimer;
 
+    // BUG-6: 사거리 이탈 임계 배수 (진입 1.0x / 이탈 1.2x)
+    private const float attackRangeExitMultiplier = 1.2f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -109,7 +112,14 @@ public class EnemyMovement : MonoBehaviour
                 enemyCombat.SetAttackDirection(dirToPlayer);
             }
 
-            if (distance <= attackRange)
+            // BUG-6: 사거리 경계 stop-go 완화 히스테리시스.
+            // 추격 중에는 attackRange(진입 1.0x)에서 멈추고,
+            // 일단 멈춘 뒤에는 1.2x를 벗어나야 다시 추격을 시작한다.
+            float effectiveAttackRange = enemyState == EnemyState.Chasing
+                ? attackRange
+                : attackRange * attackRangeExitMultiplier;
+
+            if (distance <= effectiveAttackRange)
             {
                 bool started = enemyCombat != null && enemyCombat.TryAttack();
                 if (started || (enemyCombat != null && enemyCombat.IsAttacking))
@@ -121,7 +131,7 @@ public class EnemyMovement : MonoBehaviour
                     ChangeState(EnemyState.Idle);
                 }
             }
-            else if (distance <= detectRange && distance > attackRange)
+            else if (distance <= detectRange)
             {
                 ChangeState(EnemyState.Chasing);
             }
