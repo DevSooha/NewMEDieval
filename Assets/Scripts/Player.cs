@@ -283,8 +283,7 @@ public class Player : Singleton<Player>
 
     void HandleAttack()
     {
-        // 대화/선택창 중 공격 차단은 timeScale=0에 기대지 않고 로직으로 보장한다 (QS-14)
-        if (UIManager.IsInputBlocked) return;
+        if (UIManager.CraftingUiActive) return;
 
         if (IsInteractOrAttackPressed())
         {
@@ -294,6 +293,10 @@ public class Player : Singleton<Player>
             {
                 return;
             }
+
+            // 대화/선택창 중에도 위의 상호작용(대화 진행) 경로는 살리고,
+            // 공격 시작만 차단한다 — timeScale=0에 기대지 않는 로직 보장 (QS-14 회귀 수정)
+            if (UIManager.IsInputBlocked) return;
 
             // Potion usage is handled by PlayerAttackSystem; do not play melee attack motion.
             if (attackSystem != null && attackSystem.IsCurrentSlotPotion())
