@@ -604,6 +604,21 @@ public class Player : Singleton<Player>
         return transform.position;
     }
 
+    // 현재 위치가 실제 걸을 수 있는 지면 타일 위인지 (읽기 전용 판정).
+    // ConstrainToWalkablePosition은 지면 타일맵을 못 찾으면 위치를 그대로 통과시키고,
+    // fallback 탐색이 실패하면 현재 위치를 반환하는 조용한 실패 경로가 있어,
+    // 방 전환 검증(RoomManager)과 QA 감시는 이 판정으로 실패를 감지한다.
+    public bool IsOnWalkableGround()
+    {
+        Tilemap groundTilemap = ResolveGroundTilemap(transform.position);
+        if (groundTilemap == null) return false;
+
+        Vector3Int cell = groundTilemap.WorldToCell(transform.position);
+        if (!groundTilemap.HasTile(cell)) return false;
+
+        return IsWalkablePosition(groundTilemap, transform.position);
+    }
+
     public void SnapToWalkablePosition()
     {
         Vector3 constrainedPosition = ConstrainToWalkablePosition(transform.position);

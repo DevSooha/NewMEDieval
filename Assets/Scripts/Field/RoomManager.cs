@@ -485,9 +485,13 @@ public class RoomManager : MonoBehaviour
         // 플레이어가 새 방 셀 밖에 있으면 전환 전체를 롤백한다.
         Vector2Int playerCell = CalculateGridCoord(player.position);
         Vector2Int roomCell = CalculateGridCoord(settledRoomPos);
-        if (playerCell != roomCell)
+
+        // 같은 셀이라도 벽 테두리 바깥(지면 타일 없음)에 떨어지면 갇히므로 지면 판정도 검증
+        bool onWalkableGround = playerComponent == null || playerComponent.IsOnWalkableGround();
+
+        if (playerCell != roomCell || !onWalkableGround)
         {
-            Debug.LogWarning($"[RoomManager] 전환 롤백: [{nextRoom.roomID}] 진입 실패 — 플레이어 셀 {playerCell} != 방 셀 {roomCell}. (막힌 통로로의 이동 시도 의심)");
+            Debug.LogWarning($"[RoomManager] 전환 롤백: [{nextRoom.roomID}] 진입 실패 — 플레이어 셀 {playerCell} / 방 셀 {roomCell} / 지면 위 {onWalkableGround}. (막힌 통로 또는 벽 바깥 착지 의심)");
 
             currentRoomData = previousRoom;
             ApplySeasonVisuals(previousRoom, true);
