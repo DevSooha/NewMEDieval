@@ -105,4 +105,4 @@ Assets/Scripts/Utils/Settings/Build Profiles
 # Claude Code
 CLAUDE.md
 .claude.local.md
-.claude/worktrees/
+.claude/
