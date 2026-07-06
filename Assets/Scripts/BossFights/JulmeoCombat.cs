@@ -15,9 +15,36 @@ public class JulmeoCombat : BossCombatBase
     private bool isSpawnable;
     private bool canMove;
 
+    // QS-12: 공격당 24발 × 웨이브 겹침(수명 3s vs 공격 주기 ~2.9s) 대비
+    private const int FireBallPoolInitialSize = 48;
+
+    private BossProjectilePool fireBallPool;
+    private Transform fireBallPoolRoot;
+
     void Start()
     {
         canMove = true;
+        EnsureFireBallPool();
+    }
+
+    // QS-12: 풀 루트는 보스 자식이 아닌 독립 오브젝트로 둔다.
+    // Julmeo는 매 루프 순간이동하므로 보스를 루트로 쓰면 비행 중인 탄이
+    // 부모를 따라 끌려가 탄도가 변한다 — 기존 Instantiate(씬 루트)와
+    // 동일한 월드 공간을 유지하기 위한 분리.
+    private void EnsureFireBallPool()
+    {
+        if (fireBallPool != null || fireBallPrefab == null) return;
+
+        fireBallPoolRoot = new GameObject("JulmeoFireBallPoolRoot").transform;
+        fireBallPool = new BossProjectilePool(fireBallPrefab, FireBallPoolInitialSize, fireBallPoolRoot);
+    }
+
+    void OnDestroy()
+    {
+        if (fireBallPoolRoot != null)
+        {
+            Destroy(fireBallPoolRoot.gameObject);
+        }
     }
     public override void StartBattle()
     {
@@ -83,9 +110,22 @@ public class JulmeoCombat : BossCombatBase
                 Quaternion rot = Quaternion.Euler(0, 0, baseAngle + angle);
                 Vector3 bulletPos = transform.position + (rot * Vector3.right * 0.5f);
 
-                GameObject projectile = Instantiate(fireBallPrefab, bulletPos, rot);
-                RegisterBossOffensive(projectile);
-                projectile.GetComponent<BossProjectile>()?.Setup(ElementType.Water);                
+                EnsureFireBallPool();
+                BossProjectile fireBall = fireBallPool != null ? fireBallPool.Rent() : null;
+                if (fireBall != null)
+                {
+                    // QS-12 조건: Rent 직후 매번 등록 (재사용 인스턴스는 딕셔너리 덮어쓰기)
+                    RegisterBossOffensive(fireBall.gameObject);
+                    fireBall.transform.SetPositionAndRotation(bulletPos, rot);
+                    fireBall.Setup(ElementType.Water);
+                }
+                else
+                {
+                    // 풀 구성 실패(프리팹 미배선 등) 시 기존 경로 그대로 유지
+                    GameObject projectile = Instantiate(fireBallPrefab, bulletPos, rot);
+                    RegisterBossOffensive(projectile);
+                    projectile.GetComponent<BossProjectile>()?.Setup(ElementType.Water);
+                }
                 }
                 yield return new WaitForSeconds(0.1f);
             
