@@ -93,8 +93,12 @@ public class BossProjectile : MonoBehaviour
     {
         if (other.CompareTag("Boss")) return;
 
-        if (other.CompareTag("Player"))
+        if (CombatTargetHitbox.IsPlayerHitCandidate(other))
         {
+            // BUG-5: 정밀 히트박스(0.6배)가 있으면 본체 캡슐 명중은 무시하고
+            // 히트박스 명중만 유효 처리 — 근접 판정과 동일 기준 복구.
+            if (CombatTargetHitbox.ShouldDeferToPreciseHitbox(other)) return;
+
             Vector2 fallbackDirection = useCustomDirection ? customDirection : (Vector2)transform.right;
             BossHitResolver.TryApplyBossHit(
                 other,
