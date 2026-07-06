@@ -13,6 +13,12 @@ public class RoomManager : MonoBehaviour
     /// </summary>
     public static event Action OnRoomSystemReady;
 
+    /// <summary>
+    /// QS-80: 플레이어의 현재 방이 확정될 때마다 발화된다 (최초 진입/복원/전환 성공).
+    /// 전환 롤백 시에는 발화되지 않는다. RoomContentRespawner가 재입장 리롤 판정에 사용.
+    /// </summary>
+    public static event Action<string, GameObject> OnPlayerEnteredRoom;
+
     public static Vector3? restartPointOverride = null;
 
     [Header("Settings")]
@@ -234,6 +240,7 @@ public class RoomManager : MonoBehaviour
 
             UpdateNeighborPreload(matchData);
             SyncCameraToPlayer();
+            NotifyPlayerEnteredRoom(matchData);
         }
         else
         {
@@ -242,6 +249,14 @@ public class RoomManager : MonoBehaviour
             Debug.LogError($"[RoomManager] RefreshRoomState 실패: playerPos={player.position} gridCoord={gridCoord} 와 일치하는 RoomData가 allMapRooms({allMapRooms.Count}개)에 없습니다. 방이 스폰되지 않습니다.");
             DWarn($"RefreshRoomState: No RoomData matched for playerPos={player.position} gridCoord={gridCoord}. (allMapRooms??roomCoord媛 ??�젣 諛곗??? ?�덉?�移?�븷 ????�쓬)");
         }
+    }
+
+    // QS-80: 현재 방 확정 시점 공통 발화 헬퍼
+    private void NotifyPlayerEnteredRoom(RoomData room)
+    {
+        if (room == null) return;
+        loadedRooms.TryGetValue(room.roomID, out GameObject roomObj);
+        OnPlayerEnteredRoom?.Invoke(room.roomID, roomObj);
     }
 
     public void SetRestartPositionToCurrentDoor()
@@ -281,6 +296,7 @@ public class RoomManager : MonoBehaviour
 
         // 새 게임 경로에서도 방 초기화 완료 신호 발화
         OnRoomSystemReady?.Invoke();
+        NotifyPlayerEnteredRoom(startRoom);
     }
 
     public void RequestMove(Vector2 direction, RoomData nextRoom, float distanceOverride = 0f)
@@ -519,6 +535,8 @@ public class RoomManager : MonoBehaviour
 
         // ??[???�� ?�붽?] ??��???꾩쟾????�궃 ?? ???꾩튂(??????'??�쟾???꾩튂'�?媛깆??
         lastSafeEntryPosition = player.position;
+
+        NotifyPlayerEnteredRoom(nextRoom); // QS-80: 롤백 검증 통과 후에만 발화
 
         if (loadedRooms.TryGetValue(nextRoom.roomID, out GameObject roomObj))
         {
@@ -867,6 +885,7 @@ public class RoomManager : MonoBehaviour
         roomObj.name = data.roomID;
         loadedRooms.Add(data.roomID, roomObj);
         CacheRoomSpawnPoint(roomObj, data.roomID);
+        RoomContentRespawner.TryAttach(data.roomID, roomObj); // QS-80: allowlist 방만 런타임 주입
 
         // ?�????꾩튂 ?뺤젙 ????
         runtimeRoomPositions[data.roomID] = position;
