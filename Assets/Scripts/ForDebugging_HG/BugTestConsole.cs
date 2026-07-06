@@ -1,4 +1,5 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -38,11 +39,16 @@ public class BugTestConsole : MonoBehaviour
         GameObject go = new GameObject("BugTestConsole (DEV)");
         DontDestroyOnLoad(go);
         instance = go.AddComponent<BugTestConsole>();
-        Debug.Log("[QA] BugTestConsole 활성 — F4 시각화 / F5 보스처치 / F6~F9 방이동. 자동 감시: 몹 셀 이탈, 보스전 문 개방");
+        Debug.Log("[QA] BugTestConsole 활성 — F1 연결/보스방 / F2 보스방 자동이동 / F4 시각화 / F5 보스처치 / F6~F9 방이동. 자동 감시: 몹 셀 이탈, 보스전 문 개방");
     }
+
+    private Coroutine autoRouteRoutine;
+    private int bossRoomCycleIndex;
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.F1)) LogRoomConnections();
+        if (Input.GetKeyDown(KeyCode.F2)) AutoRouteToNextBossRoom();
         if (Input.GetKeyDown(KeyCode.F4)) colliderOverlay = !colliderOverlay;
         if (Input.GetKeyDown(KeyCode.F5)) KillActiveBosses();
         if (Input.GetKeyDown(KeyCode.F6)) MoveRoom(Vector2.up);
@@ -112,6 +118,177 @@ public class BugTestConsole : MonoBehaviour
 
         // 공식 전환 경로 — 보스 잠금/전환 중/쿨다운이면 내부에서 거부된다.
         rm.RequestMove(direction, next);
+    }
+
+    // ── F1: 현재 방 연결 + 보스방 목록 출력 ────────────────────────────────
+
+    private void LogRoomConnections()
+    {
+        RoomManager rm = RoomManager.Instance;
+        if (rm == null || rm.currentRoomData == null)
+        {
+            Debug.Log("[QA] RoomManager 또는 currentRoomData 없음");
+            return;
+        }
+
+        RoomData cur = rm.currentRoomData;
+        Debug.Log($"[QA] 현재 방 [{cur.roomID}] coord=({cur.roomCoord.x},{cur.roomCoord.y}) | " +
+                  $"북={RoomLabel(cur.north)} 남={RoomLabel(cur.south)} 동={RoomLabel(cur.east)} 서={RoomLabel(cur.west)}");
+
+        List<RoomData> bossRooms = GetBossRooms(rm);
+        if (bossRooms.Count == 0)
+        {
+            Debug.Log("[QA] BossBattleTrigger를 가진 보스방 없음");
+            return;
+        }
+
+        var sb = new System.Text.StringBuilder("[QA] 보스방 목록: ");
+        foreach (RoomData room in bossRooms)
+        {
+            bool reachable = room == cur || FindPath(cur, room) != null;
+            sb.Append($"{room.roomID}({room.roomCoord.x},{room.roomCoord.y}){(reachable ? "" : "[경로없음]")}  ");
+        }
+        Debug.Log(sb.ToString());
+    }
+
+    private static string RoomLabel(RoomData room) => room != null ? room.roomID : "-";
+
+    private static List<RoomData> GetBossRooms(RoomManager rm)
+    {
+        List<RoomData> result = new List<RoomData>();
+        foreach (RoomData room in rm.allMapRooms)
+        {
+            if (room == null || room.roomPrefab == null || result.Contains(room)) continue;
+            if (room.roomPrefab.GetComponentInChildren<BossBattleTrigger>(true) != null)
+            {
+                result.Add(room);
+            }
+        }
+        return result;
+    }
+
+    // ── F2: 다음 보스방으로 자동 이동 (공식 RequestMove 다단 경로) ──────────
+    // 임의 좌표 텔레포트는 RoomManager 상태/트리거/세이브 위치와 어긋나
+    // 카메라-플레이어 갈라짐을 재발시킬 수 있어 넣지 않는다.
+
+    private void AutoRouteToNextBossRoom()
+    {
+        RoomManager rm = RoomManager.Instance;
+        if (rm == null || rm.currentRoomData == null)
+        {
+            Debug.Log("[QA] RoomManager 또는 currentRoomData 없음");
+            return;
+        }
+
+        List<RoomData> bossRooms = GetBossRooms(rm);
+        if (bossRooms.Count == 0)
+        {
+            Debug.Log("[QA] 보스방 없음");
+            return;
+        }
+
+        RoomData target = bossRooms[bossRoomCycleIndex % bossRooms.Count];
+        bossRoomCycleIndex++;
+
+        if (target == rm.currentRoomData)
+        {
+            Debug.Log($"[QA] 이미 보스방 [{target.roomID}] — F2 다시 누르면 다음 보스방");
+            return;
+        }
+
+        List<(Vector2 dir, RoomData room)> path = FindPath(rm.currentRoomData, target);
+        if (path == null)
+        {
+            Debug.LogWarning($"[QA] [{target.roomID}]까지 이웃 그래프 경로 없음 — F2 다시 누르면 다음 보스방");
+            return;
+        }
+
+        if (autoRouteRoutine != null) StopCoroutine(autoRouteRoutine);
+        Debug.Log($"[QA] 보스방 [{target.roomID}]로 자동 이동 시작 ({path.Count}단계)");
+        autoRouteRoutine = StartCoroutine(AutoRouteRoutine(rm, path, target));
+    }
+
+    private IEnumerator AutoRouteRoutine(RoomManager rm, List<(Vector2 dir, RoomData room)> path, RoomData target)
+    {
+        foreach ((Vector2 dir, RoomData next) in path)
+        {
+            float waitUntil = Time.unscaledTime + 8f;
+            while (!rm.CanProcessMoveRequest)
+            {
+                if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
+                {
+                    Debug.LogWarning("[QA] 자동 이동 중단: 보스전 진행 중");
+                    yield break;
+                }
+                if (Time.unscaledTime > waitUntil)
+                {
+                    Debug.LogWarning("[QA] 자동 이동 중단: 전환 대기 시간 초과");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            rm.RequestMove(dir, next);
+            yield return null;
+
+            waitUntil = Time.unscaledTime + 8f;
+            while (!rm.CanProcessMoveRequest && Time.unscaledTime < waitUntil)
+            {
+                yield return null;
+            }
+
+            if (rm.currentRoomData != next)
+            {
+                Debug.LogWarning($"[QA] 자동 이동 중단: [{next.roomID}] 진입 실패 (전환 롤백/차단 의심)");
+                yield break;
+            }
+        }
+
+        Debug.Log($"[QA] 보스방 [{target.roomID}] 도착");
+        autoRouteRoutine = null;
+    }
+
+    // 이웃 그래프 BFS 경로 탐색 (방향 포함). 경로 없으면 null.
+    private static List<(Vector2 dir, RoomData room)> FindPath(RoomData start, RoomData goal)
+    {
+        var cameFrom = new Dictionary<RoomData, (RoomData from, Vector2 dir)>();
+        var seen = new HashSet<RoomData> { start };
+        var queue = new Queue<RoomData>();
+        queue.Enqueue(start);
+
+        while (queue.Count > 0)
+        {
+            RoomData cur = queue.Dequeue();
+            if (cur == goal) break;
+
+            var neighbors = new (RoomData room, Vector2 dir)[]
+            {
+                (cur.north, Vector2.up),
+                (cur.south, Vector2.down),
+                (cur.east,  Vector2.right),
+                (cur.west,  Vector2.left),
+            };
+
+            foreach ((RoomData room, Vector2 dir) in neighbors)
+            {
+                if (room == null || !seen.Add(room)) continue;
+                cameFrom[room] = (cur, dir);
+                queue.Enqueue(room);
+            }
+        }
+
+        if (!cameFrom.ContainsKey(goal)) return null;
+
+        var path = new List<(Vector2 dir, RoomData room)>();
+        RoomData node = goal;
+        while (node != start)
+        {
+            (RoomData from, Vector2 dir) = cameFrom[node];
+            path.Add((dir, node));
+            node = from;
+        }
+        path.Reverse();
+        return path;
     }
 
     // ── 자동 감시: 몬스터 방 셀 이탈 (BUG-3/4 회귀) ─────────────────────────
