@@ -49,6 +49,7 @@ public class BugTestConsole : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F1)) LogRoomConnections();
         if (Input.GetKeyDown(KeyCode.F2)) AutoRouteToNextBossRoom();
+        if (Input.GetKeyDown(KeyCode.F3)) DamageActiveBosses();
         if (Input.GetKeyDown(KeyCode.F4)) colliderOverlay = !colliderOverlay;
         if (Input.GetKeyDown(KeyCode.F5)) KillActiveBosses();
         if (Input.GetKeyDown(KeyCode.F6)) MoveRoom(Vector2.up);
@@ -61,6 +62,77 @@ public class BugTestConsole : MonoBehaviour
             nextWatchTime = Time.unscaledTime + watchInterval;
             WatchMonsterCellEscape();
             WatchBossDoorLock();
+            WatchPlayerPosition();
+        }
+    }
+
+    // ── F3: 보스 강데미지 (페이즈 전환 테스트 — 즉사 아님) ──────────────────
+
+    private void DamageActiveBosses()
+    {
+        BossHealth[] bosses = FindObjectsByType<BossHealth>(FindObjectsSortMode.None);
+        if (bosses.Length == 0)
+        {
+            Debug.Log("[QA] 활성 보스 없음");
+            return;
+        }
+
+        foreach (BossHealth boss in bosses)
+        {
+            if (boss == null || boss.CurrentHP <= 0) continue;
+
+            if (boss.IsInvulnerable)
+            {
+                Debug.LogWarning($"[QA] {boss.bossName} 무적 상태 — 데미지 생략");
+                continue;
+            }
+
+            // 공식 데미지 경로 사용 - 페이즈 핸들러(OnBossHpChanged)가 정상 동작한다.
+            // maxHP의 25%씩 깎아 페이즈 경계를 단계적으로 넘겨볼 수 있게 한다.
+            int damage = Mathf.Max(1, boss.MaxHP / 4);
+            int before = boss.CurrentHP;
+            boss.TakeDamage(damage, ElementType.None);
+            Debug.Log($"[QA] 보스 강데미지: {boss.bossName} HP {before} -> {boss.CurrentHP} (요청 {damage})");
+        }
+    }
+
+    // ── 자동 감시: 플레이어 비정상 위치 (방 셀 불일치 / 지면 밖) ────────────
+
+    private bool playerPositionWarned;
+
+    private void WatchPlayerPosition()
+    {
+        Player player = Player.Instance;
+        RoomManager rm = RoomManager.Instance;
+        if (player == null || !player.gameObject.activeInHierarchy || rm == null || rm.mainCamera == null)
+        {
+            playerPositionWarned = false;
+            return;
+        }
+
+        // 전환/쿨다운/보스전 중에는 일시적 불일치가 정상이므로 감시하지 않는다
+        if (!rm.CanProcessMoveRequest) return;
+
+        // 카메라는 항상 현재 방 중심에 스냅되므로 플레이어 셀과의 비교로 갈라짐을 감지
+        Vector2 playerPos = player.transform.position;
+        Vector2 cameraPos = rm.mainCamera.transform.position;
+        bool cellMismatch =
+            Mathf.RoundToInt(playerPos.x / rm.gridWidth) != Mathf.RoundToInt(cameraPos.x / rm.gridWidth) ||
+            Mathf.RoundToInt(playerPos.y / rm.gridHeight) != Mathf.RoundToInt(cameraPos.y / rm.gridHeight);
+
+        bool offGround = !player.IsOnWalkableGround();
+
+        if (cellMismatch || offGround)
+        {
+            if (!playerPositionWarned)
+            {
+                playerPositionWarned = true;
+                Debug.LogWarning($"[QA] 플레이어 비정상 위치 감지: pos={playerPos} 셀불일치={cellMismatch} 지면밖={offGround} (전환 갈라짐/벽 바깥 갇힘 의심)");
+            }
+        }
+        else
+        {
+            playerPositionWarned = false;
         }
     }
 
