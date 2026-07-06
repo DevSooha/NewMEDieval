@@ -106,3 +106,6 @@ Assets/Scripts/Utils/Settings/Build Profiles
 CLAUDE.md
 .claude.local.md
 .claude/
+
+# AI 작업 문서 (로컬 전용, 저장소 비포함)
+Docs/
