@@ -96,13 +96,14 @@ public class EnemyCombat : MonoBehaviour
         direction.Normalize();
 
         float distanceUnits = selfKnockbackPixels / 32f;
+        // BUG-4: 벽/방 경계 앞에서만 이동 거리를 줄이는 클램프 경유 (문틈 이탈 방지)
         if (rb != null)
         {
-            rb.MovePosition(rb.position + direction * distanceUnits);
+            rb.MovePosition(EnemyStatusController.ResolveKnockbackDestination(rb, rb.position, direction, distanceUnits));
         }
         else
         {
-            transform.position += (Vector3)(direction * distanceUnits);
+            transform.position = EnemyStatusController.ResolveKnockbackDestination(null, transform.position, direction, distanceUnits);
         }
     }
 
