@@ -86,6 +86,10 @@ public class RoomManager : MonoBehaviour
         roomSpawnPoints.Clear();
         runtimeRoomPositions.Clear();
 
+        // BUG-1 안전망: allMapRooms에 누락된 방을 이웃/문 참조 순회로 보강한다.
+        // (누락된 방에서 사망/재시작하면 RefreshRoomState가 방을 하나도 스폰하지 못함)
+        ExpandAllMapRoomsWithReachableRooms();
+
         EnsureMainCamera();
 
         // 1. ???��??�뼱 李몄???뺣낫
@@ -233,6 +237,9 @@ public class RoomManager : MonoBehaviour
         }
         else
         {
+            // BUG-1 진단: 방이 하나도 스폰되지 않는 코어 루프 파손 상태이므로
+            // debugLogs 설정과 무관하게 항상 에러로 남긴다.
+            Debug.LogError($"[RoomManager] RefreshRoomState 실패: playerPos={player.position} gridCoord={gridCoord} 와 일치하는 RoomData가 allMapRooms({allMapRooms.Count}개)에 없습니다. 방이 스폰되지 않습니다.");
             DWarn($"RefreshRoomState: No RoomData matched for playerPos={player.position} gridCoord={gridCoord}. (allMapRooms??roomCoord媛 ??�젣 諛곗??? ?�덉?�移?�븷 ????�쓬)");
         }
     }
@@ -512,6 +519,62 @@ public class RoomManager : MonoBehaviour
             if (roomX == coord.x && roomY == coord.y) return data;
         }
         return null;
+    }
+
+    // BUG-1 안전망: allMapRooms에 빠진 방을 도달 가능 그래프 순회로 보강한다.
+    //
+    // 방 연결은 두 채널로 존재한다:
+    //   1) RoomData.north/south/east/west (이웃 프리로드용)
+    //   2) 방 프리팹 내 MapNode.nextRoom (실제 문 통과용 — 예: spr_4 북쪽 문 -> Ending)
+    // 평상시 이동은 이 참조들로 동작해 allMapRooms 누락이 드러나지 않지만,
+    // 사망/재시작 복원(RefreshRoomState -> GetRoomDataByCoord)은 allMapRooms만 검색하므로
+    // 누락된 방(예: aut_3, Ending)에서 재시작하면 방이 하나도 스폰되지 않는다.
+    //
+    // 발견된 방은 목록 "끝"에 추가한다. GetRoomDataByCoord는 첫 매치를 반환하므로
+    // 좌표가 중복된 경우(예: sum_1과 Ending이 같은 (1,4)) 기존 목록의 우선순위가 유지된다.
+    private void ExpandAllMapRoomsWithReachableRooms()
+    {
+        HashSet<RoomData> known = new HashSet<RoomData>();
+        Queue<RoomData> pending = new Queue<RoomData>();
+
+        foreach (var room in allMapRooms)
+        {
+            if (room != null && known.Add(room)) pending.Enqueue(room);
+        }
+
+        if (startRoomData != null && known.Add(startRoomData))
+        {
+            allMapRooms.Add(startRoomData);
+            pending.Enqueue(startRoomData);
+            Debug.LogWarning($"[RoomManager] allMapRooms에 startRoomData [{startRoomData.roomID}]가 누락되어 자동 추가했습니다. (씬/프리팹 데이터 보수 필요)");
+        }
+
+        while (pending.Count > 0)
+        {
+            RoomData current = pending.Dequeue();
+
+            TryAddReachableRoom(current.north, known, pending);
+            TryAddReachableRoom(current.south, known, pending);
+            TryAddReachableRoom(current.east, known, pending);
+            TryAddReachableRoom(current.west, known, pending);
+
+            if (current.roomPrefab == null) continue;
+
+            MapNode[] doors = current.roomPrefab.GetComponentsInChildren<MapNode>(true);
+            foreach (var door in doors)
+            {
+                if (door != null) TryAddReachableRoom(door.nextRoom, known, pending);
+            }
+        }
+    }
+
+    private void TryAddReachableRoom(RoomData room, HashSet<RoomData> known, Queue<RoomData> pending)
+    {
+        if (room == null || !known.Add(room)) return;
+
+        allMapRooms.Add(room);
+        pending.Enqueue(room);
+        Debug.LogWarning($"[RoomManager] allMapRooms에 누락된 방 [{room.roomID}] coord=({room.roomCoord.x},{room.roomCoord.y})를 자동 추가했습니다. 이 방에서 재시작 시 맵이 비는 버그(BUG-1)의 원인이므로 씬/프리팹의 allMapRooms 데이터 보수가 필요합니다.");
     }
 
     private void RefreshTargetRoom(RoomData targetRoom)
