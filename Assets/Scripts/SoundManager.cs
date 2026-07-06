@@ -18,7 +18,7 @@ public class SoundManager : MonoBehaviour
     public AudioClip witchesBGM;
     public AudioClip rolietBGM;
 
-    [Header("Combat SFX")]
+        [Header("Combat SFX")]
     public AudioClip playerAttackSFX;
     public AudioClip bossHitSFX;
     public AudioClip bossDeathSFX;
@@ -35,8 +35,7 @@ public class SoundManager : MonoBehaviour
 
         audioSource = GetComponent<AudioSource>();
     }
-
-    public void PlaySFX(AudioClip clip)
+public void PlaySFX(AudioClip clip)
     {
         if (clip == null || audioSource == null) return;
 
@@ -57,6 +56,7 @@ public class SoundManager : MonoBehaviour
     {
         PlaySFX(bossDeathSFX);
     }
+   
 
     public void PlayBGMForScene(string roomID)
     {
@@ -110,6 +110,8 @@ public class SoundManager : MonoBehaviour
         audioSource.loop = true;
         audioSource.Play();
     }
+
+
 
 }
 
