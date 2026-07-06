@@ -26,3 +26,19 @@
 - 추가 조사: `spr_1 BOSS` 에셋(guid c9f16b7c...)은 씬/프리팹 어디서도 미참조 — 고아 데이터. `Ending`은 spr_4 프리팹 MapNode.nextRoom으로만 연결(이웃 그래프에 없음) → 순회를 RoomData 이웃 + 프리팹 MapNode.nextRoom 두 채널로 설계.
 - 커밋 `7322560` (RoomManager.cs, 순수 추가 63줄): `ExpandAllMapRoomsWithReachableRooms()` BFS 안전망 + `RefreshRoomState` 매칭 실패 시 debugLogs 무관 LogError.
 - 오너 에디터 작업 대기: T-109(데이터 보수), T-110(aut_3 사망→재시작 재현 검증).
+
+## 2026-07-06 — 세션 계속: BUG-1 해결 확정 + BUG-2 근본 원인 감사 (Fable)
+
+**오너 보고 반영**:
+- BUG-1 검증 완료: 여러 방에서 사망 → 맵 정상 로드 확인. T-109/T-110 완료 처리.
+- 오너가 spr_4 문을 sum_1로 직접 수정 (Ending은 알파테스트 레거시).
+- 좌표 혼재 구조 = 조건부 스토리 연결 기획 대기 → "기획 대기 항목"으로 분리, AI 임의 정리 금지.
+- aut_3은 현재 실제 진입 불가 (spr_6 위쪽은 spr_7).
+
+**BUG-2 READ-ONLY 감사 결과**: 근본 원인 확인.
+- `BossBattleTrigger.SetBlockades(true)`는 blockadeParent 자식 중 MapNode를 SetActive(false), 비-MapNode를 SetActive(true) 처리.
+- spr_4/spr_7/aut_3의 blockadeParent = "MapNodes" 컨테이너 (자식 전원 MapNode) → 보스전 시작 시 문 4개 전부 꺼짐 + 차단벽 0개 → 통로 완전 개방. MapNode.Update의 보스 잠금 solid 전환 설계와 모순.
+- sum_3은 blockadeParent 자식 0개 → SetBlockades 자체가 no-op.
+- 수정안(결정 카드 #2026-07-06-4): SetBlockades에서 MapNode는 항상 활성 유지 (~5줄, 코드-온리).
+
+**T-106 부분 진행**: dirty 상태 CombatInputHelper.cs 확인 — 주석/가독성 정리(프로퍼티 추출)만 있고 로직 동일. BUG-4와 무관. 오너 소유 미커밋 변경으로 계속 미접촉.

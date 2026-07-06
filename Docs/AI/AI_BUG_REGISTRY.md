@@ -7,8 +7,8 @@
 
 | ID | 증상 | 상태 | 우선순위 | 코드만으로 수정 | 에디터 확인 |
 |---|---|---|---|---|---|
-| BUG-1 | 사망/재시작 후 매니저·플레이어·카메라·UI만 있고 방/맵 없음 | **근본 원인 확인됨** | 1 | 부분 가능 (완전 수정은 씬/프리팹 데이터 보수 병행 권장) | 필요 (재현 확인 + 데이터 수정 승인) |
-| BUG-2 | spr_4 보스전 중 위쪽 문이 안 막힘 | 조사 중 (구조 파악 완료) | 2 | 미정 | 필요 |
+| BUG-1 | 사망/재시작 후 매니저·플레이어·카메라·UI만 있고 방/맵 없음 | **해결됨 (오너 검증 완료 2026-07-06)** | - | 완료 | 완료 |
+| BUG-2 | spr_4 보스전 중 위쪽 문이 안 막힘 | **근본 원인 확인됨 (결정 대기)** | 1 | **가능** (SetBlockades 수정) | 필요 (수정 후 플레이테스트) |
 | BUG-3 | 필드 몬스터가 방 문을 무시하고 통과 | 원인 구조 확인됨 | 2 | 부분 가능 (레이어/콜라이더 정책 결정 필요) | 필요 |
 | BUG-4 | 문 근처에서 찌르기 넉백 시 몬스터가 위로 튕겨 나감 | 미조사 | 3 | 미정 | 필요 |
 | BUG-5 | 보스 투사체 콜라이더/판정 범위 불일치 | 미조사 | 4 | 미정 | 필요 (프리팹 콜라이더 실측) |
@@ -16,7 +16,19 @@
 
 ---
 
-## BUG-1: 사망/재시작 후 방/맵 미로드 — 근본 원인 확인됨
+## 기획 대기 항목 (버그 아님 — 오너 확인 2026-07-06)
+
+- **좌표 혼재(같은 좌표에 복수 방)**: 조건부(스토리 진행별) 방 연결 예정이나 linear 스토리 시스템 기획 미완으로 진행 불가. 코드/데이터로 임의 정리 금지.
+- **Ending 방**: 알파테스트용 레거시. 오너가 spr_4 north 문을 sum_1로 직접 수정함. 혼재 구조 정리는 기획 확정 후.
+- **aut_3**: 현재 spr_6 위쪽 연결은 spr_7이며 aut_3은 실제 진입 불가 상태(추후 연결 예정).
+
+## BUG-1: 사망/재시작 후 방/맵 미로드 — **해결됨**
+
+- 코드 안전망: 커밋 `7322560` (도달 그래프 BFS 자동 보강 + 매칭 실패 LogError).
+- 데이터 보수: 오너가 에디터에서 수행 (allMapRooms 보수 + spr_4 문 → sum_1).
+- 검증: 오너가 여러 방에서 사망 → 맵 정상 로드 확인 (2026-07-06).
+
+### (해결 전 감사 기록)
 
 1. **증상**: 사망 → Restart 후 Camera, EventSystem, NewPlayer, MainCanvas, DontDestroyOnLoad(Sound/Inventory/Game/SaveManager), Debug Updater만 남고 방이 하나도 스폰되지 않음.
 2. **재현 경로(가설)**: `allMapRooms`에 등록되지 않은 방(아래 목록)에서 저장하거나 사망 → Restart → `RoomManager.RefreshRoomState()`가 좌표 매칭 실패 → 방 0개 스폰.
@@ -37,17 +49,22 @@
 8. **위험도**: 코드-온리 BFS 확장 = 낮음. 씬/프리팹 데이터 수정 = 중간(에디터에서 수행해야 안전).
 9. **Codex 실행 가능 태스크**: `RoomManager.Start()`에 "allMapRooms 이웃 그래프 확장 + 누락 방 경고 로그" 추가 (코드-온리, 직렬화 이름 무변경, ~30줄).
 
-## BUG-2: spr_4 보스전 중 위쪽 문 미차단
+## BUG-2: spr_4 보스전 중 위쪽 문 미차단 — 근본 원인 확인됨 (결정 대기)
 
 1. **증상**: spr_4(ThreeWitch 보스전) 중 북쪽 문이 막히지 않음.
-2. **재현 경로**: spr_4 진입 → BossBattleTrigger로 전투 시작 → 북쪽 문으로 도주 시도.
-3. **의심 파일/클래스**: `MapNode.cs`(Update의 isTrigger 토글, `IsBossBattleLocked`), `BossManager.cs`(IsBossActive 설정 시점), `BossBattleTrigger`, `ThreeWitchCombat.cs`, `spr_4.prefab`(MapNode_4toe: 북쪽, BoxCollider2D 6×1, y=+8.5).
-4. **코드 근거(현재까지)**: 북쪽 MapNode는 `nextRoom=Ending`(비null)이라 보스 잠금이 안 걸리면 isTrigger=true(통과 가능). 잠금은 `BossManager.IsBossActive` 또는 "Boss" 태그/BossCombatBase 스캔(0.2s 캐시)에 의존. 남쪽 문과 동일 로직이므로 "북쪽만" 뚫린다면 콜라이더 크기/위치(6×1, y=8.5)가 통로를 다 못 덮거나, 벽 타일 갭 문제 가능성.
-5. **코드만으로 수정 가능?**: 미정 — 원인이 콜라이더 기하라면 프리팹 수정 필요.
-6. **에디터 확인 필요?**: 필요 — 보스전 중 북쪽 문 isTrigger 상태와 콜라이더 범위를 Scene 뷰에서 실측.
-7. **권장 다음 행동**: BUG-1 처리 후, 보스전 중 MapNode 상태 로그(임시 진단) 추가 여부 결정.
-8. **위험도**: 진단 로그 = 낮음.
-9. **Codex 태스크**: 보류 (에디터 실측 선행).
+2. **재현 경로**: spr_4 진입 → BossBattleTrigger "Fight the boss?" → Yes → 북쪽 통로로 걸어 나감.
+3. **의심 파일/클래스**: `BossBattleTrigger.cs`의 `SetBlockades()`, `MapNode.cs`의 Update isTrigger 토글, `spr_4.prefab`(blockadeParent 배선).
+4. **코드 근거 (확정)**:
+   - `BossBattleTrigger.SetBlockades(true)`는 `blockadeParent` 자식 중 MapNode를 **SetActive(false)**, 그 외(차단벽)를 SetActive(true) 처리.
+   - 그런데 **spr_4의 blockadeParent는 "MapNodes" 컨테이너 자체**이고 자식 4개가 전부 MapNode → 보스전 시작 시 **4개 문 오브젝트(콜라이더 포함)가 전부 꺼지고, 활성화될 차단벽은 0개**.
+   - MapNode가 꺼지면 `MapNode.Update`의 보스 잠금 solid 전환(isTrigger=false)도, "You cannot flee!" 안내도, 물리 차단도 전부 사라짐 → 통로가 완전 개방.
+   - 동일 배선이 `spr_7.prefab`, `aut_3.prefab`에도 존재 → **모든 보스방 공통 결함**. spr_4 북쪽만 눈에 띈 것은 다른 통로가 지형상 덜 노출되기 때문으로 추정. (`sum_3.prefab`은 blockadeParent 자식이 0개라 SetBlockades가 아예 no-op.)
+   - MapNode 자체는 보스 잠금 시 solid로 바뀌어 통로를 막도록 설계되어 있음 — SetBlockades의 MapNode 비활성화가 이 설계를 무력화하는 모순.
+5. **코드만으로 수정 가능?**: **가능.** `SetBlockades()`에서 MapNode 자식은 비활성화하지 않고 항상 활성 유지(차단은 MapNode의 solid 전환이 담당). 프리팹/씬 무수정.
+6. **에디터 확인 필요?**: 수정 자체는 불필요. 수정 후 보스전 플레이테스트 필요(문 차단 + "You cannot flee!" + 전투 종료 후 문 재개방 + 전투 중 투사체가 solid 문과 상호작용하는지).
+7. **권장 다음 행동**: 결정 카드 #2026-07-06-4 승인 시 즉시 수정 커밋.
+8. **위험도**: 낮음~중간 — 모든 보스방 문 동작이 일괄 변경됨. 원래 의도(문을 아예 숨기는 연출?)가 있었을 가능성은 낮지만 배제 못 함.
+9. **Codex 태스크**: `BossBattleTrigger.SetBlockades`에서 MapNode 분기 수정 (~5줄).
 
 ## BUG-3: 필드 몬스터가 문을 무시
 

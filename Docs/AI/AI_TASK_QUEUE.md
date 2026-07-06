@@ -10,11 +10,12 @@
 | T-101 | BUG-1 read-only 감사 (사망→재시작 방 미로드) | BUG-1 | **완료** | 근본 원인 확인: allMapRooms 누락 (aut_3/Ending/spr_1 BOSS) |
 | T-102 | BUG-1 오너 결정: **C안 확정** (B 즉시 + A 에디터 병행) | BUG-1 | **완료** | 결정 카드: AI_DECISION_LOG #2026-07-06-1 |
 | T-103 | RoomManager allMapRooms 도달 그래프 확장 + 미매칭 LogError 승격 | BUG-1 | **완료** | 커밋 `7322560`, 순수 추가 63줄 |
-| T-109 | [오너 에디터] A안 데이터 보수: allMapRooms에 aut_3·Ending 추가, spr_4 north 정리 | BUG-1 | 대기 | 에이전트는 씬/프리팹 수정 금지 |
-| T-110 | [오너 에디터] BUG-1 재현 검증: aut_3에서 사망→재시작 → 경고 로그 + 맵 정상 로드 확인 | BUG-1 | 대기 | debugLogs 꺼져 있어도 자동추가 경고/LogError는 출력됨 |
-| T-104 | spr_4 보스전 문 잠금 진단 (에디터 플레이테스트 필요) | BUG-2 | 대기 | 오너 에디터 테스트 필요 |
+| T-109 | [오너 에디터] A안 데이터 보수 | BUG-1 | **완료** | 오너가 allMapRooms 보수 + spr_4 문 → sum_1 직접 반영 |
+| T-110 | [오너 에디터] BUG-1 재현 검증 | BUG-1 | **완료** | 여러 방 사망 → 맵 정상 로드 확인 (2026-07-06) |
+| T-104 | spr_4 보스전 문 잠금 진단 | BUG-2 | **완료** | 근본 원인: SetBlockades가 MapNode 전체 비활성화, 차단벽 부재. 결정 카드 #2026-07-06-4 |
+| T-111 | (승인 시) BossBattleTrigger.SetBlockades MapNode 비활성화 제거 | BUG-2 | 대기 | 코드-온리 ~5줄, 수정 후 오너 플레이테스트 필요 |
 | T-105 | 몬스터-문 차단 정책 결정 (레이어/콜라이더 vs 이동 클램프) | BUG-3 | 대기 | 오너 결정 필요 |
-| T-106 | EnemyCombat/EnemyStatusController 넉백 경로 read-only 감사 | BUG-4 | 예정 | CombatInputHelper.cs dirty 변경 내용 확인 포함 |
+| T-106 | EnemyCombat/EnemyStatusController 넉백 경로 read-only 감사 | BUG-4 | 진행 중 | CombatInputHelper.cs dirty 변경은 주석/가독성 정리로 확인(로직 무변화, BUG-4 무관) |
 | T-107 | 보스 투사체 프리팹 콜라이더 실측 read-only 감사 | BUG-5 | 예정 | |
 | T-108 | EnemyMovement read-only 감사 | BUG-6 | 예정 | BUG-3/4 근원 공유 여부 먼저 판단 |
 

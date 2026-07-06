@@ -20,6 +20,22 @@
 - `2558003`(스파이크) 통째 체리픽 금지 유지. `refactor/roommanager-split`의 분리 커밋 3개는 가져오지 않음.
 - 기존 dirty 파일(.gitignore, MainCanvas.prefab, FIeld.unity, CombatInputHelper.cs, ProjectSettings.asset)은 오너 소유 미커밋 변경으로 간주, 커밋에 포함하지 않음.
 
+## #2026-07-06-4 — [오너 결정 필요] BUG-2 수정 방식
+
+**배경**: `BossBattleTrigger.SetBlockades()`가 보스전 시작 시 blockadeParent 자식 중 MapNode를 비활성화하는데, spr_4/spr_7/aut_3은 blockadeParent가 "MapNodes" 컨테이너라 **문 4개가 전부 꺼지고 세워지는 차단벽은 없음** → 보스전 중 통로 완전 개방.
+
+**제안 (코드-온리, ~5줄)**: `SetBlockades()`에서 MapNode 자식은 항상 활성 유지. 차단은 이미 설계된 `MapNode.Update`의 보스 잠금 solid 전환이 담당 ("You cannot flee!" 안내 포함). 프리팹 무수정, 모든 보스방에 일괄 적용.
+
+**검증 필요 (오너 플레이테스트)**: 보스전 중 4방향 문 차단, 종료 후 재개방, 전투 중 보스 투사체·플레이어 넉백이 solid 문 콜라이더와 이상 상호작용 없는지.
+
+**결정**: (대기)
+
+## #2026-07-06-5 — 기획 대기 확정 (오너 통보)
+
+- 좌표 혼재(동일 좌표 복수 방)는 조건부 연결 기획 미완으로 현재 해결 불가 — AI는 임의 정리 금지.
+- Ending은 레거시, 오너가 spr_4 문을 sum_1로 직접 수정 완료.
+- aut_3은 현재 실제 진입 불가(spr_6 위쪽은 spr_7).
+
 ## #2026-07-06-3 — 진단 관련 관찰 (오너 참고)
 
 - 작업 트리의 미커밋 `FIeld.unity` 변경에 RoomManager `debugLogs: 0` 설정이 포함되어 있음 → BUG-1 진단에 필요한 `No RoomData matched` 경고가 콘솔에 안 뜸. **재현 테스트 전에 에디터에서 debugLogs를 다시 켜는 것을 권장** (씬 파일은 에이전트가 수정하지 않음).
