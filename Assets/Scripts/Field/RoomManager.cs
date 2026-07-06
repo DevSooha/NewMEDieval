@@ -456,6 +456,7 @@ public class RoomManager : MonoBehaviour
 
         ZeroPlayerVelocity();
 
+        RoomData previousRoom = currentRoomData;
         currentRoomData = nextRoom;
         ApplySeasonVisuals(nextRoom, false);
 
@@ -477,6 +478,31 @@ public class RoomManager : MonoBehaviour
             }
         }
         runtimeRoomPositions[currentRoomData.roomID] = settledRoomPos;
+
+        // 전환 검증: 목적지가 걸을 수 없는 곳(막힌 통로 등)이면
+        // ClampPlayerToWalkablePosition이 플레이어를 이전 방 쪽으로 되돌릴 수 있다.
+        // 그대로 진행하면 카메라/방 상태만 다음 방으로 넘어가 플레이어가 갇히므로,
+        // 플레이어가 새 방 셀 밖에 있으면 전환 전체를 롤백한다.
+        Vector2Int playerCell = CalculateGridCoord(player.position);
+        Vector2Int roomCell = CalculateGridCoord(settledRoomPos);
+        if (playerCell != roomCell)
+        {
+            Debug.LogWarning($"[RoomManager] 전환 롤백: [{nextRoom.roomID}] 진입 실패 — 플레이어 셀 {playerCell} != 방 셀 {roomCell}. (막힌 통로로의 이동 시도 의심)");
+
+            currentRoomData = previousRoom;
+            ApplySeasonVisuals(previousRoom, true);
+            mainCamera.transform.position = startCameraPos;
+            player.position = startPlayerPos;
+            ClampPlayerToWalkablePosition();
+            ZeroPlayerVelocity();
+            lastSafeEntryPosition = player.position;
+            SetPlayerInput(true);
+
+            yield return new WaitForSeconds(0.3f); // 물리/입력 안정화 대기
+            isTransitioning = false;
+            isCoolingDown = false;
+            yield break;
+        }
 
         StartCoroutine(UpdateNeighborPreloadAsync(nextRoom));
         SetPlayerInput(true);
