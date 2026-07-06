@@ -125,9 +125,17 @@ public class BossBattleTrigger : MonoBehaviour
         foreach (Transform child in blockadeParent.transform)
         {
             bool isMapNode = child.GetComponent<MapNode>() != null;
-            // Some rooms wire MapNodes as blockadeParent.
-            // In that setup, "blockades active" means map nodes must be disabled.
-            child.gameObject.SetActive(isMapNode ? !isActive : isActive);
+            if (isMapNode)
+            {
+                // BUG-2: MapNode는 보스전 중에도 활성 상태를 유지해야 한다.
+                // 잠금 중 통로 차단은 MapNode.Update가 콜라이더를 solid(isTrigger=false)로
+                // 전환해 담당하며 "You cannot flee!" 안내도 그 경로에서 나온다.
+                // 여기서 비활성화하면 통로에 콜라이더가 아예 사라져 보스전 중 문이 열린다.
+                child.gameObject.SetActive(true);
+                continue;
+            }
+
+            child.gameObject.SetActive(isActive);
         }
     }
 
