@@ -21,7 +21,9 @@ public class JulmeoCombat : BossCombatBase
     private BossProjectilePool fireBallPool;
     private Transform fireBallPoolRoot;
 
-    void Start()
+    // QS-82: Start()는 SetActive(true) 직후 동기 호출되는 StartBattle()보다 늦게 실행돼
+    // canMove=false 가드에 걸린다. Awake는 SetActive 시점에 동기 실행되므로 여기서 초기화.
+    void Awake()
     {
         canMove = true;
         EnsureFireBallPool();
