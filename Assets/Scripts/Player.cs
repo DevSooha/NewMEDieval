@@ -283,7 +283,8 @@ public class Player : Singleton<Player>
 
     void HandleAttack()
     {
-        if (UIManager.CraftingUiActive) return;
+        // 대화/선택창 중 공격 차단은 timeScale=0에 기대지 않고 로직으로 보장한다 (QS-14)
+        if (UIManager.IsInputBlocked) return;
 
         if (IsInteractOrAttackPressed())
         {
