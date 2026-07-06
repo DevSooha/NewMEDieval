@@ -12,7 +12,7 @@
 - 오너의 미커밋 dirty 파일 5개는 건드리지도 커밋하지도 말 것 (목록: AI_GUARDRAILS.md).
 
 ## 버그 현황 (상세: AI_BUG_REGISTRY.md)
-- **BUG-1 (최우선, 근본 원인 확인)**: `allMapRooms`에 `aut_3`/`Ending`/`spr_1 BOSS` 누락 → 그 방에서 사망/재시작 시 `RefreshRoomState()` 좌표 매칭 실패 → 방 0개 스폰. 오너 결정 대기: `AI_DECISION_LOG.md #2026-07-06-1` (A 데이터 보수 / B 코드 BFS 확장 / C 병행).
+- **BUG-1 (근본 원인 확인, C안 진행 중)**: `allMapRooms`에 `aut_3`/`Ending` 누락 → 그 방에서 사망/재시작 시 `RefreshRoomState()` 좌표 매칭 실패 → 방 0개 스폰. **B(코드 안전망) 완료 = 커밋 `7322560`** (BFS 자동 보강 + LogError 승격). A(에디터 데이터 보수)와 재현 검증은 오너 대기 (T-109/T-110). `spr_1 BOSS` 에셋은 미참조 고아 데이터로 확인.
 - BUG-2: spr_4(ThreeWitch) 북쪽 문 미차단 — MapNode isTrigger 토글 구조는 확인, 콜라이더 실측 필요.
 - BUG-3: 문이 평상시 isTrigger=true라 몬스터를 물리적으로 못 막음 (차단 로직 부재) — 정책 결정 필요.
 - BUG-4/5/6: 미조사 (순서와 의심 파일은 레지스트리 참조).
@@ -26,6 +26,6 @@
 - 미커밋 FIeld.unity 변경에 `debugLogs: 0` 포함 → 콘솔 경고가 꺼져 있음 (오너에게 켜달라고 요청할 것).
 
 ## 다음 행동
-1. 오너의 BUG-1 결정(A/B/C) 확인 → 승인 시 T-103 실행.
+1. 오너의 T-110 재현 검증 결과 확인 (aut_3 사망→재시작).
 2. BUG-2: 오너 에디터 테스트 결과 대기 or MapNode 임시 진단 로그 제안.
 3. T-106/107/108 read-only 감사 순차 진행.

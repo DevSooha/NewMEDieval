@@ -19,3 +19,10 @@
 **산출물**: Docs/AI 6종 신규 작성. 코드 무변경 (읽기 전용 감사만).
 
 **오너 대기 항목**: BUG-1 결정 카드(A/B/C), 에디터에서 debugLogs 재활성화, spr_4 보스전 플레이테스트.
+
+## 2026-07-06 — 세션 계속: BUG-1 C안 실행 (Fable)
+
+- 오너가 결정 카드 #2026-07-06-1에서 **C안(코드 안전망 + 에디터 데이터 보수 병행)** 확정.
+- 추가 조사: `spr_1 BOSS` 에셋(guid c9f16b7c...)은 씬/프리팹 어디서도 미참조 — 고아 데이터. `Ending`은 spr_4 프리팹 MapNode.nextRoom으로만 연결(이웃 그래프에 없음) → 순회를 RoomData 이웃 + 프리팹 MapNode.nextRoom 두 채널로 설계.
+- 커밋 `7322560` (RoomManager.cs, 순수 추가 63줄): `ExpandAllMapRoomsWithReachableRooms()` BFS 안전망 + `RefreshRoomState` 매칭 실패 시 debugLogs 무관 LogError.
+- 오너 에디터 작업 대기: T-109(데이터 보수), T-110(aut_3 사망→재시작 재현 검증).
