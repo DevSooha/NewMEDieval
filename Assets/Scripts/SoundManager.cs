@@ -17,6 +17,11 @@ public class SoundManager : MonoBehaviour
     [Header("Boss Music")]
     public AudioClip witchesBGM;
     public AudioClip rolietBGM;
+
+    [Header("Combat SFX")]
+    public AudioClip playerAttackSFX;
+    public AudioClip bossHitSFX;
+    public AudioClip bossDeathSFX;
     void Awake()
     {
         // 중복 방지 + 씬 전환 시 파괴 안됨
@@ -31,7 +36,27 @@ public class SoundManager : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
     }
 
-   
+    public void PlaySFX(AudioClip clip)
+    {
+        if (clip == null || audioSource == null) return;
+
+        audioSource.PlayOneShot(clip);
+    }
+
+    public void PlayPlayerAttackSFX()
+    {
+        PlaySFX(playerAttackSFX);
+    }
+
+    public void PlayBossHitSFX()
+    {
+        PlaySFX(bossHitSFX);
+    }
+
+    public void PlayBossDeathSFX()
+    {
+        PlaySFX(bossDeathSFX);
+    }
 
     public void PlayBGMForScene(string roomID)
     {
