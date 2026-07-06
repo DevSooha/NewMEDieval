@@ -558,10 +558,15 @@ public class RoomManager : MonoBehaviour
     //
     // 발견된 방은 목록 "끝"에 추가한다. GetRoomDataByCoord는 첫 매치를 반환하므로
     // 좌표가 중복된 경우(예: sum_1과 Ending이 같은 (1,4)) 기존 목록의 우선순위가 유지된다.
+    // 자동 추가 경고가 씬 리로드마다 도배되지 않도록, 프로세스 세션 동안 이미
+    // 경고한 방 ID를 기억한다 (경고 자체는 유지하되 방당 1회로 제한).
+    private static readonly HashSet<string> warnedMissingRoomIds = new HashSet<string>();
+
     private void ExpandAllMapRoomsWithReachableRooms()
     {
         HashSet<RoomData> known = new HashSet<RoomData>();
         Queue<RoomData> pending = new Queue<RoomData>();
+        List<string> addedThisRun = new List<string>();
 
         foreach (var room in allMapRooms)
         {
@@ -572,35 +577,49 @@ public class RoomManager : MonoBehaviour
         {
             allMapRooms.Add(startRoomData);
             pending.Enqueue(startRoomData);
-            Debug.LogWarning($"[RoomManager] allMapRooms에 startRoomData [{startRoomData.roomID}]가 누락되어 자동 추가했습니다. (씬/프리팹 데이터 보수 필요)");
+            addedThisRun.Add($"{startRoomData.roomID}(startRoomData)");
         }
 
         while (pending.Count > 0)
         {
             RoomData current = pending.Dequeue();
 
-            TryAddReachableRoom(current.north, known, pending);
-            TryAddReachableRoom(current.south, known, pending);
-            TryAddReachableRoom(current.east, known, pending);
-            TryAddReachableRoom(current.west, known, pending);
+            TryAddReachableRoom(current.north, known, pending, addedThisRun);
+            TryAddReachableRoom(current.south, known, pending, addedThisRun);
+            TryAddReachableRoom(current.east, known, pending, addedThisRun);
+            TryAddReachableRoom(current.west, known, pending, addedThisRun);
 
             if (current.roomPrefab == null) continue;
 
             MapNode[] doors = current.roomPrefab.GetComponentsInChildren<MapNode>(true);
             foreach (var door in doors)
             {
-                if (door != null) TryAddReachableRoom(door.nextRoom, known, pending);
+                if (door != null) TryAddReachableRoom(door.nextRoom, known, pending, addedThisRun);
             }
+        }
+
+        if (addedThisRun.Count == 0) return;
+
+        // 새로 경고할 방이 있을 때만 요약 1줄 출력 (재시작 반복 시 침묵)
+        List<string> newlyWarned = new List<string>();
+        foreach (string entry in addedThisRun)
+        {
+            if (warnedMissingRoomIds.Add(entry)) newlyWarned.Add(entry);
+        }
+
+        if (newlyWarned.Count > 0)
+        {
+            Debug.LogWarning($"[RoomManager] allMapRooms 누락 방 자동 추가: {string.Join(", ", newlyWarned)} — 이 방에서 재시작 시 맵이 비는 버그(BUG-1)의 원인이므로 씬/프리팹의 allMapRooms 데이터 보수가 필요합니다.");
         }
     }
 
-    private void TryAddReachableRoom(RoomData room, HashSet<RoomData> known, Queue<RoomData> pending)
+    private void TryAddReachableRoom(RoomData room, HashSet<RoomData> known, Queue<RoomData> pending, List<string> addedThisRun)
     {
         if (room == null || !known.Add(room)) return;
 
         allMapRooms.Add(room);
         pending.Enqueue(room);
-        Debug.LogWarning($"[RoomManager] allMapRooms에 누락된 방 [{room.roomID}] coord=({room.roomCoord.x},{room.roomCoord.y})를 자동 추가했습니다. 이 방에서 재시작 시 맵이 비는 버그(BUG-1)의 원인이므로 씬/프리팹의 allMapRooms 데이터 보수가 필요합니다.");
+        addedThisRun.Add($"{room.roomID}({room.roomCoord.x},{room.roomCoord.y})");
     }
 
     private void RefreshTargetRoom(RoomData targetRoom)
