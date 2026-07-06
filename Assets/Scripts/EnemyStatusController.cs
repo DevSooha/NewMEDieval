@@ -100,7 +100,7 @@ public class EnemyStatusController : MonoBehaviour
             direction = Vector2.right;
         }
 
-        ApplyKnockback(distanceUnits * 64f, direction.normalized);
+        ApplyKnockback(distanceUnits * 64f, direction.normalized, durationSeconds);
     }
 
     private void RefreshEffect(StatusEffectType type, float duration, float magnitude = 0f, float interval = 0f)
@@ -220,7 +220,11 @@ public class EnemyStatusController : MonoBehaviour
         ClearEffect(StatusEffectType.PoisonDot);
     }
 
-    private void ApplyKnockback(float distancePixels, Vector2? overrideDirection = null)
+    // durationSeconds > 0이면 그 시간 동안 분할 이동한다.
+    // (ApplyHitKnockback이 duration을 받고도 무시하던 원래 의도를 복구 — 즉발 순간이동 방지)
+    private Coroutine knockbackMoveRoutine;
+
+    private void ApplyKnockback(float distancePixels, Vector2? overrideDirection = null, float durationSeconds = 0f)
     {
         float distanceUnits = distancePixels / 64f;
         if (distanceUnits <= 0f)
@@ -235,13 +239,42 @@ public class EnemyStatusController : MonoBehaviour
             if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
         }
 
-        if (rb != null)
+        Vector2 origin = rb != null ? rb.position : (Vector2)transform.position;
+        Vector2 destination = ResolveKnockbackDestination(rb, origin, dir, distanceUnits);
+
+        if (durationSeconds > 0.01f && isActiveAndEnabled)
         {
-            rb.MovePosition(ResolveKnockbackDestination(rb, rb.position, dir, distanceUnits));
+            if (knockbackMoveRoutine != null) StopCoroutine(knockbackMoveRoutine);
+            knockbackMoveRoutine = StartCoroutine(KnockbackMoveRoutine(origin, destination, durationSeconds));
             return;
         }
 
-        transform.position = ResolveKnockbackDestination(null, transform.position, dir, distanceUnits);
+        if (rb != null)
+        {
+            rb.MovePosition(destination);
+            return;
+        }
+
+        transform.position = destination;
+    }
+
+    private IEnumerator KnockbackMoveRoutine(Vector2 origin, Vector2 destination, float durationSeconds)
+    {
+        if (rb != null) rb.linearVelocity = Vector2.zero;
+
+        float elapsed = 0f;
+        while (elapsed < durationSeconds)
+        {
+            elapsed += Time.fixedDeltaTime;
+            Vector2 next = Vector2.Lerp(origin, destination, Mathf.Clamp01(elapsed / durationSeconds));
+
+            if (rb != null) rb.MovePosition(next);
+            else transform.position = next;
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        knockbackMoveRoutine = null;
     }
 
     // ── BUG-4: 넉백 이동 클램프 ──────────────────────────────────────────────
