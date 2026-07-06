@@ -14,8 +14,6 @@ public class EnemyMovement : MonoBehaviour
     public float attackRange = 1f;
     public float detectRange = 5f;
     public LayerMask playerLayer;
-    public float attackCooldown = 2f;
-    public float attackCooldownTimer;
 
     // BUG-6: 사거리 이탈 임계 배수 (진입 1.0x / 이탈 1.2x)
     private const float attackRangeExitMultiplier = 1.2f;
