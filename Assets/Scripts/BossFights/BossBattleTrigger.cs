@@ -74,6 +74,10 @@ public class BossBattleTrigger : MonoBehaviour
         {
             if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
             {
+                // QS-78: assignedBoss(1기)만 보고 종료하면 듀얼 보스방(sum_3)에서
+                // 첫 보스 사망 시 전투가 조기 종료된다. 방에 생존 보스가 남아 있으면 유지.
+                if (BossHealth.HasAliveBossInRoom(transform.root)) return;
+
                 BossManager.Instance.EndBossBattle();
                 return;
             }

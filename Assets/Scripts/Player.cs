@@ -294,6 +294,10 @@ public class Player : Singleton<Player>
                 return;
             }
 
+            // 대화/선택창 중에도 위의 상호작용(대화 진행) 경로는 살리고,
+            // 공격 시작만 차단한다 — timeScale=0에 기대지 않는 로직 보장 (QS-14 회귀 수정)
+            if (UIManager.IsInputBlocked) return;
+
             // Potion usage is handled by PlayerAttackSystem; do not play melee attack motion.
             if (attackSystem != null && attackSystem.IsCurrentSlotPotion())
             {
