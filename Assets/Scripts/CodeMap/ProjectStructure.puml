@@ -1,0 +1,187 @@
+@startuml
+left to right direction
+
+title Unity Project — Script Structure
+caption 파일명 기준 시스템 분류도
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam classAttributeIconSize 0
+
+package "Core / Game Flow" {
+  class Singleton
+  class SaveManager
+  class SaveData
+  class SoundManager
+  class UIManager
+  class TitleScreenController
+  class EndingEvent
+  class BossDefeatTracker
+  class TestGameStarter
+}
+
+package "Player" {
+  class Player
+  class PlayerHealth
+  class PlayerInteraction
+  class PlayerDeathCleanup
+  class PlayerStatusController
+  class PlayerAttackSystem
+  class "PlayerAttackSystem.Melee" as PlayerAttackMelee
+  class "PlayerAttackSystem.Bombs" as PlayerAttackBombs
+  class "PlayerAttackSystem.Slots" as PlayerAttackSlots
+  class PlayerBeamHitGuard
+  class CombatInputHelper
+}
+
+package "Combat / Enemy" {
+  class CombatTargetHitbox
+  class EnemyCombat
+  class EnemyMovement
+  class EnemyStatusController
+  class LatentThornHitbox
+}
+
+package "Inventory / Item" {
+  class Inventory
+  class InventorySlot
+  class Item
+  class ItemData
+  class WorldItem
+  class WeaponSlot
+  class WeaponSlotClickHandler
+  class WeaponSlotUI
+  class TestInventory
+  class GrantAllItemDataToInventoryTest
+}
+
+package "Potion System" {
+  class PotionCraft
+  class PotionCraftRules
+  class PotionData
+  class PotionDesignCatalog
+  class PotionHitResolver
+  class PotionProjectileController
+  class PotionVisualParts
+  class PotionVisualResolver
+  class PotionAreaHazard
+  class PotionSlot
+  class PotionTestHarness
+  class GrantPotionCoverageToInventoryTest
+}
+
+package "Dialogue / NPC" {
+  class DialogueData
+  class DialogueManager
+  class NPC
+}
+
+package "Map / Room / Season" {
+  class MapNode
+  class RoomData
+  class RoomManager
+  class RoomSeasonResolver
+  class SeasonType
+  class SeasonVisualController
+  class Spawner
+  class PosionSwamp
+  class Bonfire
+}
+
+package "Boss System" {
+  class BossBattleTrigger
+  class InstantBossBattleTrigger
+  class FinalBossBattleTrigger
+  class FinalBossEntryTrigger
+  class BossCombatBase
+  class BossHealth
+  class BossHitResolver
+  class BossManager
+  class BossProjectile
+  class BossProjectilePool
+}
+
+package "Boss Characters" {
+  class DragonCombat
+  class JulmeoCombat
+  class KnightCombat
+  class RolietCombat
+  class ShaperkeaseCombat
+  class ThreeWitchCombat
+  class NemiBossCombat
+  class QueenCombat
+  class FinalBossCombat
+}
+
+package "Boss Skills / Projectiles" {
+  class HandOfTime
+  class HandOfTimeProjectile
+  class FinalBossHandOfTimeBurstController
+  class FateSeverSpearEmitterController
+  class NemiFateSever
+  class NemiPearlBeam
+  class PearlBeamHitbox
+  class PearlBeamController
+  class QueenKnightGhost
+  class AquaRay
+  class BedimmedWall
+  class BriefCandleRay
+  class CarmaExcisionTrueHitbox
+  class ElectricLaserRay
+  class FinalBossBedimmedWallProjectile
+  class MasqueIllusionProjectile
+  class StainedSwordProjectile
+}
+
+package "UI" {
+  class CraftUI
+  class HealthUI
+  class InventoryUI
+}
+
+package "Utility / Rendering" {
+  class CameraDebugger
+  class FieldSceneScaleUtility
+  class UrpCameraDataGuard
+}
+
+package "Element" {
+  interface IWaterElement
+  enum ElementType
+}
+
+' 파일명 기준의 큰 구조 관계
+Player --> PlayerAttackSystem
+Player --> Inventory
+Player --> PlayerHealth
+Player --> PlayerStatusController
+
+Inventory --> Item
+Inventory --> WeaponSlot
+Inventory --> PotionData
+
+PotionCraft --> PotionData
+PotionCraft --> Inventory
+PotionProjectileController --> PotionHitResolver
+
+DialogueManager --> DialogueData
+NPC --> DialogueManager
+
+RoomManager --> RoomData
+RoomManager --> RoomSeasonResolver
+RoomSeasonResolver --> SeasonType
+RoomSeasonResolver --> SeasonVisualController
+
+BossManager --> BossCombatBase
+BossBattleTrigger --> BossManager
+BossCombatBase --> BossHealth
+BossCombatBase --> BossHitResolver
+BossCombatBase --> BossProjectilePool
+
+SaveManager --> SaveData
+UIManager --> InventoryUI
+UIManager --> HealthUI
+UIManager --> CraftUI
+
+@enduml
