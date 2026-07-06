@@ -284,7 +284,8 @@ public class EnemyStatusController : MonoBehaviour
     // 넉백 목적지를 출발 지점이 속한 방(그리드 셀)의 플레이 가능 영역 안으로 제한한다.
     // 문 통로는 트리거 콜라이더라 Cast에 걸리지 않으므로, 이 경계 클램프가
     // 문틈으로 방 밖까지 밀려나는 것을 막는다. RoomManager가 없는 씬은 그대로 통과.
-    private static Vector2 ClampToRoomCell(Vector2 origin, Vector2 destination)
+    // BUG-3: EnemyMovement의 걷기 이탈 방지에서도 같은 규칙을 재사용한다.
+    public static Vector2 ClampToRoomCell(Vector2 origin, Vector2 destination)
     {
         RoomManager rm = RoomManager.Instance;
         if (rm == null || rm.gridWidth <= 0f || rm.gridHeight <= 0f) return destination;

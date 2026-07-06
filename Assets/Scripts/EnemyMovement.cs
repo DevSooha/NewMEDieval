@@ -85,6 +85,22 @@ public class EnemyMovement : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
     }
 
+    // BUG-3: 문(트리거)은 몬스터를 물리로 막지 못하므로, 걸어서 방 셀의
+    // 플레이 가능 영역 밖으로 나가면 경계로 되돌린다 (넉백 클램프와 동일 규칙).
+    // RoomManager가 없는 씬에서는 no-op.
+    private void FixedUpdate()
+    {
+        if (rb == null) return;
+
+        Vector2 position = rb.position;
+        Vector2 clamped = EnemyStatusController.ClampToRoomCell(position, position);
+
+        if ((clamped - position).sqrMagnitude > 0.000001f)
+        {
+            rb.MovePosition(clamped);
+        }
+    }
+
     private void CheckForPlayer()
     {
         if (detectionPoint == null) return;
