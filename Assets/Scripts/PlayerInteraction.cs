@@ -43,6 +43,32 @@ public class PlayerInteraction : MonoBehaviour
         playerAttackSystem = GetComponentInParent<PlayerAttackSystem>();
         playerStatusController = GetComponentInParent<PlayerStatusController>();
 
+        CloseAllUiPanelsForSceneStart();
+
+        UIManager.RegisterCraftingUiChecker(IsCraftingUiVisible);
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoadedCloseLeftoverPanels;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoadedCloseLeftoverPanels;
+    }
+
+    // 씬 로드 직후에는 열려 있어야 할 제조/메뉴 패널이 없다.
+    // Start는 DDoL 플레이어에서 최초 1회만 돌기 때문에, 재시작(씬 리로드) 후
+    // 새 MainCanvas가 패널이 켜진 상태(프리팹 오버라이드 등)로 생성되면
+    // 화면을 가린 채 시작된다 — 매 씬 로드마다 닫아 불변식을 복구한다.
+    private void OnSceneLoadedCloseLeftoverPanels(Scene scene, LoadSceneMode mode)
+    {
+        CloseAllUiPanelsForSceneStart();
+    }
+
+    private void CloseAllUiPanelsForSceneStart()
+    {
         EnsureUiReferences();
 
         if (craftingMenu != null)
@@ -67,8 +93,6 @@ public class PlayerInteraction : MonoBehaviour
         {
             inGameMenu.SetActive(false);
         }
-
-        UIManager.RegisterCraftingUiChecker(IsCraftingUiVisible);
     }
 
     private void Update()
