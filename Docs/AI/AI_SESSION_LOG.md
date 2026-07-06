@@ -42,3 +42,10 @@
 - 수정안(결정 카드 #2026-07-06-4): SetBlockades에서 MapNode는 항상 활성 유지 (~5줄, 코드-온리).
 
 **T-106 부분 진행**: dirty 상태 CombatInputHelper.cs 확인 — 주석/가독성 정리(프로퍼티 추출)만 있고 로직 동일. BUG-4와 무관. 오너 소유 미커밋 변경으로 계속 미접촉.
+
+## 2026-07-06 — 세션 계속: BUG-2 수정 커밋 + T-106/107/108 감사 (Fable)
+
+- 오너가 결정 카드 #2026-07-06-4 **승인** → `c878b06` 커밋: SetBlockades에서 MapNode 자식은 항상 활성 유지 (~9줄). 플레이테스트 대기.
+- **T-106 완료 (BUG-4 원인 확정)**: 근접 공격은 넉백 없음. 튕김의 주체는 EnemyCombat.ApplySelfKnockback(접촉 시 2유닛)과 EnemyStatusController.ApplyKnockback(포션) — 둘 다 rb.MovePosition 순간이동, 충돌검사 무. Player 넉백의 rb.Cast 패턴 준용한 클램프 제안 (#2026-07-06-6).
+- **T-107 완료 (BUG-5 코드측)**: BossProjectile.OnTriggerEnter2D의 CompareTag("Player") 게이트 → CombatTargetHitbox 자식이 Untagged라 정밀 히트박스(0.6배) 미적용, 본체 캡슐 전체가 판정 (#2026-07-06-7). 프리팹별 콜라이더 실측은 에디터 필요.
+- **T-108 완료 (BUG-6 후보)**: ① 셀프넉백 핑퐁(BUG-4 동일 코드), ② CheckForPlayer(detectionPoint 기준)와 Chase(transform 기준) 거리 기준 불일치로 상태 떨림 가능, ③ 벽회피 부재. 오너 증상 구체화 대기.

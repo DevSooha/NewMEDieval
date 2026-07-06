@@ -13,9 +13,12 @@
 
 ## 버그 현황 (상세: AI_BUG_REGISTRY.md)
 - **BUG-1: 해결됨 (오너 검증 2026-07-06)** — 코드 안전망 `7322560` + 오너 데이터 보수(allMapRooms, spr_4 문→sum_1).
-- **BUG-2: 근본 원인 확인, 결정 대기** — `BossBattleTrigger.SetBlockades()`가 보스전 시작 시 blockadeParent("MapNodes")의 문 4개를 전부 비활성화, 세울 차단벽은 0개 → 통로 완전 개방. spr_7/aut_3도 동일 배선. 수정안(코드-온리 ~5줄): MapNode는 활성 유지, 차단은 MapNode.Update의 solid 전환에 위임. 결정 카드 #2026-07-06-4.
-- BUG-3: 문이 평상시 isTrigger=true라 몬스터를 물리적으로 못 막음 (차단 로직 부재) — 정책 결정 필요.
-- BUG-4/5/6: 미조사. 단 CombatInputHelper.cs dirty 변경은 주석 정리로 확인(BUG-4 무관).
+- **BUG-2: 수정 완료** `c878b06` (오너 승인) — SetBlockades에서 MapNode 비활성화 제거. 오너 플레이테스트 검증 대기.
+- BUG-3: 문이 평상시 isTrigger=true라 몬스터 차단 장치 부재 — 정책 결정 대기 (T-105).
+- **BUG-4: 원인 확정, 결정 대기** — `EnemyCombat.ApplySelfKnockback`(플레이어 접촉 시 2유닛)과 `EnemyStatusController.ApplyKnockback`(포션)이 `rb.MovePosition` 순간이동, 충돌검사 없음. 근접 공격 자체는 넉백 안 줌. 수정안: rb.Cast 클램프 (결정 카드 #2026-07-06-6).
+- **BUG-5: 코드측 원인 후보 확정** — BossProjectile 태그 게이트 때문에 정밀 히트박스(0.6배, Untagged 자식) 대신 본체 캡슐 전체가 판정. 프리팹 실측은 에디터 필요 (결정 카드 #2026-07-06-7).
+- BUG-6: 후보 3건(셀프넉백 핑퐁 / detectionPoint-transform 기준 불일치 상태 떨림 / 벽회피 부재). 오너의 증상 구체화 대기.
+- CombatInputHelper.cs dirty 변경은 주석 정리로 확인(BUG-4 무관).
 
 ## 기획 대기 (오너 확인 — AI가 건드리지 말 것)
 - 좌표 혼재(동일 좌표 복수 방) = 조건부 스토리 연결 예정, 기획 미완. 임의 정리 금지.
@@ -31,5 +34,6 @@
 - 미커밋 FIeld.unity 변경에 `debugLogs: 0` 포함 → 콘솔 경고가 꺼져 있음 (오너에게 켜달라고 요청할 것).
 
 ## 다음 행동
-1. 오너의 BUG-2 결정(#2026-07-06-4) 확인 → 승인 시 T-111 실행.
-2. T-106(넉백 경로)/T-107(투사체 콜라이더)/T-108(EnemyMovement) read-only 감사 순차 진행.
+1. 오너 BUG-2 플레이테스트 결과 확인.
+2. 오너 결정 대기: #2026-07-06-6(BUG-4 넉백 클램프), #2026-07-06-7(BUG-5 판정 기준), T-105(BUG-3 문 차단 정책), BUG-6 증상 구체화.
+3. 승인된 항목부터 한 커밋 = 한 레이어로 수정.
