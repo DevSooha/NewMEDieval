@@ -294,7 +294,9 @@ public class DragonCombat : BossCombatBase, IBossDamageModifier, IBossPhaseHandl
 
             GameObject wallObj = Instantiate(eternalNightWallPrefab, spawnPos, projectileRotation);
             RegisterBossOffensive(wallObj);
-            wallObj.transform.localScale *= wallScaleMultiplier;
+            // 누적 곱(*=) 대신 프리팹 기준 절대 스케일로 설정 — 인스턴스 재사용(풀링) 시
+            // 배율이 매 발사마다 복리로 불어나는 풋건 제거. 현 동작과 결과 동일.
+            wallObj.transform.localScale = eternalNightWallPrefab.transform.localScale * wallScaleMultiplier;
 
             BossProjectile projectile = wallObj.GetComponent<BossProjectile>();
             if (projectile == null) continue;
