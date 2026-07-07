@@ -77,6 +77,14 @@ public class JulmeoCombat : BossCombatBase
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             playerTF = playerObj?.transform;
+
+            // 플레이어 미탐색(사망 직후 비활성 등) 상태에서 아래 position 접근 시
+            // NRE로 코루틴이 조용히 죽어 발사가 영구 정지한다 — 다음 루프에서 재시도.
+            if (playerTF == null)
+            {
+                yield return new WaitForSeconds(0.5f);
+                continue;
+            }
         }
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");

@@ -22,7 +22,7 @@ public class NemiPearlBeam : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float magicCircleTime = 0.8f;   // 마법진 생성 VFX 시간
     [SerializeField] private float beamFireTime = 0.3f;       // 빔 발사 VFX 시간
-    [SerializeField] private float beamSustainTime = 1.5f;    // 빔 유지 (데미지 활성) 시간
+    [SerializeField] private float beamSustainTime = 0.5f;    // 빔 유지 (데미지 활성) 시간 — 명세 §1.8·씬 배치값과 동일
 
     [Header("Damage")]
     [SerializeField] private int damagePerHit = 1;

@@ -126,6 +126,18 @@ public class PlayerHealth : MonoBehaviour
         NotifyHealthChanged();
     }
 
+    private void OnDisable()
+    {
+        // 비활성화되면 InvulnerableRoutine이 강제 중단되어 isInvulnerable이 true로
+        // 고착된다(이후 TryTakeDamage가 무음 no-op). 코루틴 기반 무적만 함께 정리 —
+        // SetInvulnerable(true) 수동 무적(스텔스 등)은 코루틴이 없으므로 보존된다.
+        if (invulnerableRoutine != null)
+        {
+            invulnerableRoutine = null;
+            isInvulnerable = false;
+        }
+    }
+
     private IEnumerator InvulnerableRoutine(float duration)
     {
         isInvulnerable = true;
