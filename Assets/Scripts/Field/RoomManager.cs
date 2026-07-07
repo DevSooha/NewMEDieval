@@ -444,10 +444,6 @@ public class RoomManager : MonoBehaviour
         isCoolingDown = true;
         SetPlayerInput(false);
 
-        // ????�??�몄????�? 濡쒕�??�뼱 ??�떎�? ?�ы봽??�떆?????�� "?꾩옱 ???λ�??꾩튂"??蹂댁??
-        if (!loadedRooms.ContainsKey(nextRoom.roomID))
-            RefreshTargetRoom(nextRoom);
-
         Vector3 startCameraPos = mainCamera.transform.position;
         Vector3 startPlayerPos = player.position;
 
@@ -642,27 +638,6 @@ public class RoomManager : MonoBehaviour
         allMapRooms.Add(room);
         pending.Enqueue(room);
         addedThisRun.Add($"{room.roomID}({room.roomCoord.x},{room.roomCoord.y})");
-    }
-
-    private void RefreshTargetRoom(RoomData targetRoom)
-    {
-        if (targetRoom == null) return;
-
-        if (loadedRooms.ContainsKey(targetRoom.roomID))
-        {
-            GameObject oldRoom = loadedRooms[targetRoom.roomID];
-            Vector3 roomPos = oldRoom.transform.position;
-
-            Destroy(oldRoom);
-            loadedRooms.Remove(targetRoom.roomID);
-            roomSpawnPoints.Remove(targetRoom.roomID);
-
-            // ???�ы봽??�떆??��???�씪 ?꾩튂�??????+ ?�????꾩튂???�?
-            runtimeRoomPositions[targetRoom.roomID] = roomPos;
-
-            DLog($"RefreshTargetRoom: destroyed & respawn [{targetRoom.roomID}] at preservedPos={roomPos}");
-            SpawnRoom(targetRoom, roomPos);
-        }
     }
 
     private Vector3 GetTargetPosition(Vector2 direction, Vector3 nextRoomCenterPos)
