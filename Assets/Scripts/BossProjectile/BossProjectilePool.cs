@@ -6,6 +6,7 @@ public class BossProjectilePool
     private readonly Queue<BossProjectile> pool = new Queue<BossProjectile>();
     private readonly GameObject prefab;
     private readonly Transform root;
+    private bool prefabLacksProjectile;
 
     public BossProjectilePool(GameObject prefab, int initialSize, Transform root)
     {
@@ -17,15 +18,24 @@ public class BossProjectilePool
         for (int i = 0; i < initialSize; i++)
         {
             BossProjectile projectile = CreateNew();
-            if (projectile != null)
+            if (projectile == null)
             {
-                pool.Enqueue(projectile);
+                // 프리팹 구성 결함(BossProjectile 미부착)은 나머지 시도도 전부 동일하게
+                // 실패하므로 1회 경고 후 중단 — 프리필 크기만큼 경고가 반복되는 스팸 방지 (QS-81 재발 대비).
+                Debug.LogError($"[BossProjectilePool] '{this.prefab.name}' 프리팹에 BossProjectile이 없어 풀을 구성할 수 없습니다.");
+                prefabLacksProjectile = true;
+                return;
             }
+
+            pool.Enqueue(projectile);
         }
     }
 
     public BossProjectile Rent()
     {
+        // 프리팹 결함이 확인된 풀은 매 발사마다 Instantiate/Destroy를 반복하지 않는다.
+        if (prefabLacksProjectile) return null;
+
         while (pool.Count > 0)
         {
             BossProjectile projectile = pool.Dequeue();

@@ -20,6 +20,14 @@ public class JulmeoCombat : BossCombatBase
 
     private BossProjectilePool fireBallPool;
     private Transform fireBallPoolRoot;
+    private bool warnedFireBallPrefabInvalid;
+
+    private void WarnFireBallPrefabInvalidOnce(string reason)
+    {
+        if (warnedFireBallPrefabInvalid) return;
+        warnedFireBallPrefabInvalid = true;
+        Debug.LogError($"[Julmeo] 화염구 발사 불가: {reason}. 발사를 건너뜁니다.");
+    }
 
     // QS-82: Start()는 SetActive(true) 직후 동기 호출되는 StartBattle()보다 늦게 실행돼
     // canMove=false 가드에 걸린다. Awake는 SetActive 시점에 동기 실행되므로 여기서 초기화.
@@ -124,9 +132,24 @@ public class JulmeoCombat : BossCombatBase
                 else
                 {
                     // 풀 구성 실패(프리팹 미배선 등) 시 기존 경로 그대로 유지
+                    if (fireBallPrefab == null)
+                    {
+                        WarnFireBallPrefabInvalidOnce("fireBallPrefab 미배선");
+                        continue;
+                    }
+
                     GameObject projectile = Instantiate(fireBallPrefab, bulletPos, rot);
+                    BossProjectile projectileScript = projectile.GetComponent<BossProjectile>();
+                    if (projectileScript == null)
+                    {
+                        // 이동/소멸 로직 없는 정지 오브젝트가 발사마다 쌓이는 것 방지 (QS-81 완화)
+                        WarnFireBallPrefabInvalidOnce("프리팹에 BossProjectile 없음");
+                        Destroy(projectile);
+                        continue;
+                    }
+
                     RegisterBossOffensive(projectile);
-                    projectile.GetComponent<BossProjectile>()?.Setup(ElementType.Water);
+                    projectileScript.Setup(ElementType.Water);
                 }
                 }
                 yield return new WaitForSeconds(0.1f);
