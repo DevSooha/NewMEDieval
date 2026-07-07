@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum BossState
@@ -44,6 +45,19 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
     public GameObject electricWallPrefab;
     public GameObject electricRayPrefab;
 
+    // QS-12 확장: 패턴별 최대 동시 탄 수 + 탄 수명(3s)과 웨이브 겹침을 고려한 풀 크기
+    private const int FireWallPoolSize = 12;    // 2웨이브 × 5발, 웨이브 간격 0.7s < 수명 3s → 10발 동시 생존
+    private const int AquaRayPoolSize = 8;      // 6발 일제 발사
+    private const int ElectricWallPoolSize = 8; // 5발 일제 발사
+    private const int ElectricRayPoolSize = 8;  // 6발 일제 발사
+
+    private BossProjectilePool fireWallPool;
+    private BossProjectilePool aquaRayPool;
+    private BossProjectilePool electricWallPool;
+    private BossProjectilePool electricRayPool;
+    private Transform projectilePoolRoot;
+    private readonly HashSet<string> warnedInvalidProjectilePrefabs = new HashSet<string>();
+
     private SpriteRenderer spriteRenderer;
     private string lastPlayedStateName;
     private int lastHorizontalFacing = 1;
@@ -63,6 +77,70 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             c.a = 0f;
             spriteRenderer.color = c;
         }
+
+        EnsureProjectilePools();
+    }
+
+    // QS-12: 풀 루트는 보스 자식이 아닌 독립 오브젝트로 둔다 (Julmeo 선례).
+    // ThreeWitch는 정지형이지만, 보스 비활성화 시 자식 풀 오브젝트가
+    // activeInHierarchy=false로 함께 묶여 Rent의 SetActive가 무력화되는 것을 막는다.
+    private void EnsureProjectilePools()
+    {
+        if (projectilePoolRoot != null) return;
+
+        projectilePoolRoot = new GameObject("ThreeWitchProjectilePoolRoot").transform;
+
+        if (fireWallPrefab != null) fireWallPool = new BossProjectilePool(fireWallPrefab, FireWallPoolSize, projectilePoolRoot);
+        if (aquaRayPrefab != null) aquaRayPool = new BossProjectilePool(aquaRayPrefab, AquaRayPoolSize, projectilePoolRoot);
+        if (electricWallPrefab != null) electricWallPool = new BossProjectilePool(electricWallPrefab, ElectricWallPoolSize, projectilePoolRoot);
+        if (electricRayPrefab != null) electricRayPool = new BossProjectilePool(electricRayPrefab, ElectricRayPoolSize, projectilePoolRoot);
+    }
+
+    private void OnDestroy()
+    {
+        if (projectilePoolRoot != null)
+        {
+            Destroy(projectilePoolRoot.gameObject);
+        }
+    }
+
+    private void SpawnPooledProjectile(BossProjectilePool pool, GameObject prefab, string slotName, Vector3 spawnPos, Quaternion rot, ElementType element)
+    {
+        BossProjectile projectile = pool != null ? pool.Rent() : null;
+        if (projectile != null)
+        {
+            // QS-12 조건: Rent 직후 매번 등록 (재사용 인스턴스는 딕셔너리 덮어쓰기)
+            RegisterBossOffensive(projectile.gameObject);
+            projectile.transform.SetPositionAndRotation(spawnPos, rot);
+            projectile.Setup(element);
+            return;
+        }
+
+        // 풀 구성 실패(프리팹 미배선/스크립트 누락) 시 기존 Instantiate 경로 유지 (QS-86 패턴)
+        if (prefab == null)
+        {
+            WarnProjectilePrefabInvalidOnce(slotName, "프리팹 미배선");
+            return;
+        }
+
+        GameObject obj = Instantiate(prefab, spawnPos, rot);
+        BossProjectile script = obj.GetComponent<BossProjectile>();
+        if (script == null)
+        {
+            // 이동/소멸 로직 없는 정지 오브젝트가 발사마다 쌓이는 것 방지 (QS-86)
+            WarnProjectilePrefabInvalidOnce(slotName, "프리팹에 BossProjectile 없음");
+            Destroy(obj);
+            return;
+        }
+
+        RegisterBossOffensive(obj);
+        script.Setup(element);
+    }
+
+    private void WarnProjectilePrefabInvalidOnce(string slotName, string reason)
+    {
+        if (!warnedInvalidProjectilePrefabs.Add(slotName)) return;
+        Debug.LogError($"[ThreeWitch] {slotName} 발사 불가: {reason}. 발사를 건너뜁니다.");
     }
 
     public override void StartBattle()
@@ -195,12 +273,11 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
 
                 Vector3 spawnPos = transform.position + (rot * Vector3.right * 2.5f);
 
+                // muzzle(fireStartEffect)은 BossProjectile 미부착 연출 전용 — 풀링 범위 밖, 현행 유지
                 GameObject muzzle = Instantiate(fireStartEffect, spawnPos, rot);
                 RegisterBossOffensive(muzzle, true);
 
-                GameObject projectile = Instantiate(fireWallPrefab, spawnPos, rot);
-                RegisterBossOffensive(projectile);
-                projectile.GetComponent<BossProjectile>()?.Setup(ElementType.Fire);
+                SpawnPooledProjectile(fireWallPool, fireWallPrefab, nameof(fireWallPrefab), spawnPos, rot, ElementType.Fire);
                 Destroy(muzzle, 1.0f);
             }
             yield return new WaitForSeconds(0.7f);
@@ -222,9 +299,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             Vector3 spawnPos = transform.position + (fireDir * 2.5f);
             Quaternion rot = Quaternion.FromToRotation(Vector3.down, fireDir);
 
-            GameObject rayObj = Instantiate(aquaRayPrefab, spawnPos, rot);
-            RegisterBossOffensive(rayObj);
-            rayObj.GetComponent<BossProjectile>()?.Setup(ElementType.Water);
+            SpawnPooledProjectile(aquaRayPool, aquaRayPrefab, nameof(aquaRayPrefab), spawnPos, rot, ElementType.Water);
         }
         yield return new WaitForSeconds(0.5f);
     }
@@ -244,9 +319,7 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             Quaternion rot = Quaternion.Euler(0, 0, finalAngle);
             Vector3 spawnPos = transform.position + (rot * Vector3.right * 2.5f);
 
-            GameObject wallObj = Instantiate(electricWallPrefab, spawnPos, rot);
-            RegisterBossOffensive(wallObj);
-            wallObj.GetComponent<BossProjectile>()?.Setup(ElementType.Electric);
+            SpawnPooledProjectile(electricWallPool, electricWallPrefab, nameof(electricWallPrefab), spawnPos, rot, ElementType.Electric);
         }
 
         yield return new WaitForSeconds(1.2f);
@@ -261,15 +334,11 @@ public class ThreeWitchCombat : BossCombatBase, IBossPhaseHandler
             Vector3 spawnPos = transform.position + (fireDir * 2.5f);
             Quaternion rot = Quaternion.FromToRotation(Vector3.down, fireDir);
 
-            GameObject rayObj = Instantiate(electricRayPrefab, spawnPos, rot);
-            RegisterBossOffensive(rayObj);
-            BossProjectile electricRay = rayObj.GetComponent<BossProjectile>();
-            if (electricRay == null)
-            {
-                electricRay = rayObj.AddComponent<ElectricLaserRay>();
-            }
-
-            electricRay.Setup(ElementType.Electric);
+            // 구 AddComponent<ElectricLaserRay> 폴백은 제거 — 풀 재사용 인스턴스에 런타임
+            // 컴포넌트를 덧붙이면 프리팹 원본과 상태가 갈라진다. 프리팹 실측(QS-12 확장 감사)상
+            // ElectricLaserPrefab 루트에 ElectricLaserRay가 있어 죽은 경로이며,
+            // 스크립트 누락 결함은 QS-86 경고+스킵 폴백이 담당한다.
+            SpawnPooledProjectile(electricRayPool, electricRayPrefab, nameof(electricRayPrefab), spawnPos, rot, ElementType.Electric);
         }
     }
 
