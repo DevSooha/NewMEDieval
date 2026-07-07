@@ -42,6 +42,8 @@ public class PoisonZone : MonoBehaviour
             BossProjectile projectile = other.GetComponent<BossProjectile>();
             if (projectile != null && projectile.projectileElement == ElementType.Water)
             {
+                if (poisonTilemap == null) return;
+
                 Vector3 contactPoint = other.bounds.center;
                 Vector3Int tilePos = poisonTilemap.WorldToCell(contactPoint);
                 
@@ -76,15 +78,14 @@ public class PoisonZone : MonoBehaviour
 
         timer += Time.deltaTime;
 
-        if (playerInside)
-        {
         if (timer >= damageDelay)
         {
             playerHealth.TakeDamage(damageAmount);
-            playerSprite.color = Color.darkRed;
-            playerSprite.color = Color.magenta;
+            if (playerSprite != null)
+            {
+                playerSprite.color = Color.magenta;
+            }
             timer = 0f;
-        }
         }
     }
 }
