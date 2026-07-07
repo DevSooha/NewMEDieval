@@ -44,35 +44,22 @@ public class PoisonZone : MonoBehaviour
             BossProjectile projectile = other.GetComponent<BossProjectile>();
             if (projectile != null && projectile.projectileElement == ElementType.Water)
             {
-                // v0.4 §7-7: 물 속성 기술 1대에 독지대 전체 파괴 + 닿은 탄막 소멸.
-                // 소멸은 풀 반납 경로(DespawnImmediate) 사용 — 직접 Destroy는 풀링과 충돌.
+                // QS-89: 전체 삭제는 플레이감 부적절(오너 판정) — 접촉 위치의 독 타일 1칸만 제거.
+                // 탄막 위치는 소멸 전에 읽고, 소멸은 풀 반납 경로(DespawnImmediate) 유지.
+                Vector3 contactPoint = other.bounds.center;
                 projectile.DespawnImmediate();
-                DestroySwamp();
+                RemovePoisonTileAt(contactPoint);
             }
         }
     }
 
-    private void DestroySwamp()
+    private void RemovePoisonTileAt(Vector3 contactPoint)
     {
-        // 콜라이더가 함께 꺼지면 OnTriggerExit2D가 보장되지 않으므로
-        // 플레이어 변색/상태를 여기서 직접 복구한다.
-        if (playerSprite != null)
-        {
-            playerSprite.color = originalColor;
-            playerSprite = null;
-        }
-        playerInside = false;
-        playerHealth = null;
-        timer = 0f;
+        if (poisonTilemap == null) return;
 
-        // poisonTilemap이 다른 오브젝트에 배선된 경우도 타일이 남지 않게 정리
-        if (poisonTilemap != null && poisonTilemap.gameObject != gameObject)
-        {
-            poisonTilemap.ClearAllTiles();
-        }
-
-        Debug.Log("독지대 파괴됨 (물 속성 피격)");
-        gameObject.SetActive(false);
+        Vector3Int tilePos = poisonTilemap.WorldToCell(contactPoint);
+        poisonTilemap.SetTile(tilePos, null);
+        Debug.Log($"독지대 타일 제거됨: {tilePos}");
     }
 
     void OnTriggerExit2D(Collider2D other)
