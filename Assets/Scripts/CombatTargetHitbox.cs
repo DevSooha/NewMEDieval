@@ -44,6 +44,36 @@ public class CombatTargetHitbox : MonoBehaviour
         return false;
     }
 
+    // ── BUG-5: 정밀 히트박스 우선 판정 복구 ─────────────────────────────────
+    // CombatHitbox 자식은 Untagged라 CompareTag("Player") 게이트를 통과하지 못해,
+    // 보스 투사체가 항상 본체 캡슐(더 큰 판정)에 맞고 있었다.
+    // 아래 두 헬퍼로 "히트박스가 있으면 히트박스만, 없으면 본체 폴백"을 복구한다.
+
+    /// <summary>플레이어 명중 후보 콜라이더인지 (정밀 히트박스 또는 본체).</summary>
+    public static bool IsPlayerHitCandidate(Collider2D other)
+    {
+        if (other == null) return false;
+
+        CombatTargetHitbox hitbox = other.GetComponent<CombatTargetHitbox>();
+        if (hitbox != null) return hitbox.playerHealth != null;
+
+        return other.CompareTag("Player");
+    }
+
+    /// <summary>
+    /// 본체 콜라이더 명중을 정밀 히트박스에 양보해야 하는지.
+    /// 활성 CombatHitbox 자식이 있으면 true (본체 명중 무시).
+    /// 히트박스가 없거나 비활성이면 false (본체 판정 폴백).
+    /// </summary>
+    public static bool ShouldDeferToPreciseHitbox(Collider2D other)
+    {
+        if (other == null) return false;
+        if (other.GetComponent<CombatTargetHitbox>() != null) return false; // 이미 히트박스
+
+        Transform precise = other.transform.Find(HitboxChildName);
+        return precise != null && precise.gameObject.activeInHierarchy;
+    }
+
     public static bool TryGetEnemyCombat(Collider2D other, out EnemyCombat enemy)
     {
         enemy = null;

@@ -14,8 +14,9 @@ public class EnemyMovement : MonoBehaviour
     public float attackRange = 1f;
     public float detectRange = 5f;
     public LayerMask playerLayer;
-    public float attackCooldown = 2f;
-    public float attackCooldownTimer;
+
+    // BUG-6: 사거리 이탈 임계 배수 (진입 1.0x / 이탈 1.2x)
+    private const float attackRangeExitMultiplier = 1.2f;
 
     void Start()
     {
@@ -82,6 +83,22 @@ public class EnemyMovement : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
     }
 
+    // BUG-3: 문(트리거)은 몬스터를 물리로 막지 못하므로, 걸어서 방 셀의
+    // 플레이 가능 영역 밖으로 나가면 경계로 되돌린다 (넉백 클램프와 동일 규칙).
+    // RoomManager가 없는 씬에서는 no-op.
+    private void FixedUpdate()
+    {
+        if (rb == null) return;
+
+        Vector2 position = rb.position;
+        Vector2 clamped = EnemyStatusController.ClampToRoomCell(position, position);
+
+        if ((clamped - position).sqrMagnitude > 0.000001f)
+        {
+            rb.MovePosition(clamped);
+        }
+    }
+
     private void CheckForPlayer()
     {
         if (detectionPoint == null) return;
@@ -109,7 +126,14 @@ public class EnemyMovement : MonoBehaviour
                 enemyCombat.SetAttackDirection(dirToPlayer);
             }
 
-            if (distance <= attackRange)
+            // BUG-6: 사거리 경계 stop-go 완화 히스테리시스.
+            // 추격 중에는 attackRange(진입 1.0x)에서 멈추고,
+            // 일단 멈춘 뒤에는 1.2x를 벗어나야 다시 추격을 시작한다.
+            float effectiveAttackRange = enemyState == EnemyState.Chasing
+                ? attackRange
+                : attackRange * attackRangeExitMultiplier;
+
+            if (distance <= effectiveAttackRange)
             {
                 bool started = enemyCombat != null && enemyCombat.TryAttack();
                 if (started || (enemyCombat != null && enemyCombat.IsAttacking))
@@ -121,7 +145,7 @@ public class EnemyMovement : MonoBehaviour
                     ChangeState(EnemyState.Idle);
                 }
             }
-            else if (distance <= detectRange && distance > attackRange)
+            else if (distance <= detectRange)
             {
                 ChangeState(EnemyState.Chasing);
             }

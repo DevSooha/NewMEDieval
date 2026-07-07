@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,6 +6,18 @@ using System.Collections.Generic;
 public class RoomManager : MonoBehaviour
 {
     public static RoomManager Instance;
+
+    /// <summary>
+    /// 씬 로드 후 방 프리로드가 완료됐을 때 발화된다.
+    /// SaveManager.OnSceneLoaded에서 구독해 ISaveable 복원 타이밍을 맞춘다.
+    /// </summary>
+    public static event Action OnRoomSystemReady;
+
+    /// <summary>
+    /// QS-80: 플레이어의 현재 방이 확정될 때마다 발화된다 (최초 진입/복원/전환 성공).
+    /// 전환 롤백 시에는 발화되지 않는다. RoomContentRespawner가 재입장 리롤 판정에 사용.
+    /// </summary>
+    public static event Action<string, GameObject> OnPlayerEnteredRoom;
 
     public static Vector3? restartPointOverride = null;
 
@@ -78,6 +91,10 @@ public class RoomManager : MonoBehaviour
         loadedRooms.Clear();
         roomSpawnPoints.Clear();
         runtimeRoomPositions.Clear();
+
+        // BUG-1 안전망: allMapRooms에 누락된 방을 이웃/문 참조 순회로 보강한다.
+        // (누락된 방에서 사망/재시작하면 RefreshRoomState가 방을 하나도 스폰하지 못함)
+        ExpandAllMapRoomsWithReachableRooms();
 
         EnsureMainCamera();
 
@@ -191,6 +208,9 @@ public class RoomManager : MonoBehaviour
 
         // 5. 蹂듦????꾩튂??'??�쟾???꾩튂'�?湲곗�?
         lastSafeEntryPosition = player.position;
+
+        // 방 프리로드 완료 — ISaveable 복원 타이밍 신호
+        OnRoomSystemReady?.Invoke();
     }
 
     private void RefreshRoomState()
@@ -220,11 +240,23 @@ public class RoomManager : MonoBehaviour
 
             UpdateNeighborPreload(matchData);
             SyncCameraToPlayer();
+            NotifyPlayerEnteredRoom(matchData);
         }
         else
         {
+            // BUG-1 진단: 방이 하나도 스폰되지 않는 코어 루프 파손 상태이므로
+            // debugLogs 설정과 무관하게 항상 에러로 남긴다.
+            Debug.LogError($"[RoomManager] RefreshRoomState 실패: playerPos={player.position} gridCoord={gridCoord} 와 일치하는 RoomData가 allMapRooms({allMapRooms.Count}개)에 없습니다. 방이 스폰되지 않습니다.");
             DWarn($"RefreshRoomState: No RoomData matched for playerPos={player.position} gridCoord={gridCoord}. (allMapRooms??roomCoord媛 ??�젣 諛곗??? ?�덉?�移?�븷 ????�쓬)");
         }
+    }
+
+    // QS-80: 현재 방 확정 시점 공통 발화 헬퍼
+    private void NotifyPlayerEnteredRoom(RoomData room)
+    {
+        if (room == null) return;
+        loadedRooms.TryGetValue(room.roomID, out GameObject roomObj);
+        OnPlayerEnteredRoom?.Invoke(room.roomID, roomObj);
     }
 
     public void SetRestartPositionToCurrentDoor()
@@ -261,6 +293,10 @@ public class RoomManager : MonoBehaviour
             SoundManager.instance.PlayBGMForScene(currentRoomData.roomID);
         }
         StartCoroutine(StartSpawnProtection());
+
+        // 새 게임 경로에서도 방 초기화 완료 신호 발화
+        OnRoomSystemReady?.Invoke();
+        NotifyPlayerEnteredRoom(startRoom);
     }
 
     public void RequestMove(Vector2 direction, RoomData nextRoom, float distanceOverride = 0f)
@@ -408,9 +444,6 @@ public class RoomManager : MonoBehaviour
         isCoolingDown = true;
         SetPlayerInput(false);
 
-        // ????�??�몄????�? 濡쒕�??�뼱 ??�떎�? ?�ы봽??�떆?????�� "?꾩옱 ???λ�??꾩튂"??蹂댁??
-        RefreshTargetRoom(nextRoom);
-
         Vector3 startCameraPos = mainCamera.transform.position;
         Vector3 startPlayerPos = player.position;
 
@@ -435,6 +468,7 @@ public class RoomManager : MonoBehaviour
 
         ZeroPlayerVelocity();
 
+        RoomData previousRoom = currentRoomData;
         currentRoomData = nextRoom;
         ApplySeasonVisuals(nextRoom, false);
 
@@ -457,7 +491,36 @@ public class RoomManager : MonoBehaviour
         }
         runtimeRoomPositions[currentRoomData.roomID] = settledRoomPos;
 
-        UpdateNeighborPreload(nextRoom);
+        // 전환 검증: 목적지가 걸을 수 없는 곳(막힌 통로 등)이면
+        // ClampPlayerToWalkablePosition이 플레이어를 이전 방 쪽으로 되돌릴 수 있다.
+        // 그대로 진행하면 카메라/방 상태만 다음 방으로 넘어가 플레이어가 갇히므로,
+        // 플레이어가 새 방 셀 밖에 있으면 전환 전체를 롤백한다.
+        Vector2Int playerCell = CalculateGridCoord(player.position);
+        Vector2Int roomCell = CalculateGridCoord(settledRoomPos);
+
+        // 같은 셀이라도 벽 테두리 바깥(지면 타일 없음)에 떨어지면 갇히므로 지면 판정도 검증
+        bool onWalkableGround = playerComponent == null || playerComponent.IsOnWalkableGround();
+
+        if (playerCell != roomCell || !onWalkableGround)
+        {
+            Debug.LogWarning($"[RoomManager] 전환 롤백: [{nextRoom.roomID}] 진입 실패 — 플레이어 셀 {playerCell} / 방 셀 {roomCell} / 지면 위 {onWalkableGround}. (막힌 통로 또는 벽 바깥 착지 의심)");
+
+            currentRoomData = previousRoom;
+            ApplySeasonVisuals(previousRoom, true);
+            mainCamera.transform.position = startCameraPos;
+            player.position = startPlayerPos;
+            ClampPlayerToWalkablePosition();
+            ZeroPlayerVelocity();
+            lastSafeEntryPosition = player.position;
+            SetPlayerInput(true);
+
+            yield return new WaitForSeconds(0.3f); // 물리/입력 안정화 대기
+            isTransitioning = false;
+            isCoolingDown = false;
+            yield break;
+        }
+
+        StartCoroutine(UpdateNeighborPreloadAsync(nextRoom));
         SetPlayerInput(true);
 
         //play bgm
@@ -468,6 +531,8 @@ public class RoomManager : MonoBehaviour
 
         // ??[???�� ?�붽?] ??��???꾩쟾????�궃 ?? ???꾩튂(??????'??�쟾???꾩튂'�?媛깆??
         lastSafeEntryPosition = player.position;
+
+        NotifyPlayerEnteredRoom(nextRoom); // QS-80: 롤백 검증 통과 후에만 발화
 
         if (loadedRooms.TryGetValue(nextRoom.roomID, out GameObject roomObj))
         {
@@ -500,25 +565,79 @@ public class RoomManager : MonoBehaviour
         return null;
     }
 
-    private void RefreshTargetRoom(RoomData targetRoom)
+    // BUG-1 안전망: allMapRooms에 빠진 방을 도달 가능 그래프 순회로 보강한다.
+    //
+    // 방 연결은 두 채널로 존재한다:
+    //   1) RoomData.north/south/east/west (이웃 프리로드용)
+    //   2) 방 프리팹 내 MapNode.nextRoom (실제 문 통과용 — 예: spr_4 북쪽 문 -> Ending)
+    // 평상시 이동은 이 참조들로 동작해 allMapRooms 누락이 드러나지 않지만,
+    // 사망/재시작 복원(RefreshRoomState -> GetRoomDataByCoord)은 allMapRooms만 검색하므로
+    // 누락된 방(예: aut_3, Ending)에서 재시작하면 방이 하나도 스폰되지 않는다.
+    //
+    // 발견된 방은 목록 "끝"에 추가한다. GetRoomDataByCoord는 첫 매치를 반환하므로
+    // 좌표가 중복된 경우(예: sum_1과 Ending이 같은 (1,4)) 기존 목록의 우선순위가 유지된다.
+    // 자동 추가 경고가 씬 리로드마다 도배되지 않도록, 프로세스 세션 동안 이미
+    // 경고한 방 ID를 기억한다 (경고 자체는 유지하되 방당 1회로 제한).
+    private static readonly HashSet<string> warnedMissingRoomIds = new HashSet<string>();
+
+    private void ExpandAllMapRoomsWithReachableRooms()
     {
-        if (targetRoom == null) return;
+        HashSet<RoomData> known = new HashSet<RoomData>();
+        Queue<RoomData> pending = new Queue<RoomData>();
+        List<string> addedThisRun = new List<string>();
 
-        if (loadedRooms.ContainsKey(targetRoom.roomID))
+        foreach (var room in allMapRooms)
         {
-            GameObject oldRoom = loadedRooms[targetRoom.roomID];
-            Vector3 roomPos = oldRoom.transform.position;
-
-            Destroy(oldRoom);
-            loadedRooms.Remove(targetRoom.roomID);
-            roomSpawnPoints.Remove(targetRoom.roomID);
-
-            // ???�ы봽??�떆??��???�씪 ?꾩튂�??????+ ?�????꾩튂???�?
-            runtimeRoomPositions[targetRoom.roomID] = roomPos;
-
-            DLog($"RefreshTargetRoom: destroyed & respawn [{targetRoom.roomID}] at preservedPos={roomPos}");
-            SpawnRoom(targetRoom, roomPos);
+            if (room != null && known.Add(room)) pending.Enqueue(room);
         }
+
+        if (startRoomData != null && known.Add(startRoomData))
+        {
+            allMapRooms.Add(startRoomData);
+            pending.Enqueue(startRoomData);
+            addedThisRun.Add($"{startRoomData.roomID}(startRoomData)");
+        }
+
+        while (pending.Count > 0)
+        {
+            RoomData current = pending.Dequeue();
+
+            TryAddReachableRoom(current.north, known, pending, addedThisRun);
+            TryAddReachableRoom(current.south, known, pending, addedThisRun);
+            TryAddReachableRoom(current.east, known, pending, addedThisRun);
+            TryAddReachableRoom(current.west, known, pending, addedThisRun);
+
+            if (current.roomPrefab == null) continue;
+
+            MapNode[] doors = current.roomPrefab.GetComponentsInChildren<MapNode>(true);
+            foreach (var door in doors)
+            {
+                if (door != null) TryAddReachableRoom(door.nextRoom, known, pending, addedThisRun);
+            }
+        }
+
+        if (addedThisRun.Count == 0) return;
+
+        // 새로 경고할 방이 있을 때만 요약 1줄 출력 (재시작 반복 시 침묵)
+        List<string> newlyWarned = new List<string>();
+        foreach (string entry in addedThisRun)
+        {
+            if (warnedMissingRoomIds.Add(entry)) newlyWarned.Add(entry);
+        }
+
+        if (newlyWarned.Count > 0)
+        {
+            Debug.LogWarning($"[RoomManager] allMapRooms 누락 방 자동 추가: {string.Join(", ", newlyWarned)} — 이 방에서 재시작 시 맵이 비는 버그(BUG-1)의 원인이므로 씬/프리팹의 allMapRooms 데이터 보수가 필요합니다.");
+        }
+    }
+
+    private void TryAddReachableRoom(RoomData room, HashSet<RoomData> known, Queue<RoomData> pending, List<string> addedThisRun)
+    {
+        if (room == null || !known.Add(room)) return;
+
+        allMapRooms.Add(room);
+        pending.Enqueue(room);
+        addedThisRun.Add($"{room.roomID}({room.roomCoord.x},{room.roomCoord.y})");
     }
 
     private Vector3 GetTargetPosition(Vector2 direction, Vector3 nextRoomCenterPos)
@@ -625,6 +744,90 @@ public class RoomManager : MonoBehaviour
         }
     }
 
+    private IEnumerator UpdateNeighborPreloadAsync(RoomData current)
+    {
+        if (current == null) yield break;
+
+        if (!runtimeRoomPositions.ContainsKey(current.roomID))
+        {
+            Vector3 fallback = CalculateRoomPosition(current);
+            runtimeRoomPositions[current.roomID] = fallback;
+            DWarn($"UpdateNeighborPreload: current [{current.roomID}] runtimePos missing -> fallback to roomCoord pos={fallback}");
+        }
+
+        (RoomData room, Vector2 dir)[] neighbors =
+        {
+            (current.north, Vector2.up),
+            (current.south, Vector2.down),
+            (current.east,  Vector2.right),
+            (current.west,  Vector2.left),
+        };
+
+        // neighborsToKeep 먼저 확정 (far room 처리에 필요)
+        HashSet<string> neighborsToKeep = new HashSet<string> { current.roomID };
+        foreach (var (neighbor, _) in neighbors)
+        {
+            if (neighbor != null) neighborsToKeep.Add(neighbor.roomID);
+        }
+
+        // 멀어진 방 비활성화/제거 (빠른 작업)
+        List<string> roomsToHandle = new List<string>();
+        foreach (var loadedID in loadedRooms.Keys)
+        {
+            if (!neighborsToKeep.Contains(loadedID))
+                roomsToHandle.Add(loadedID);
+        }
+        foreach (var id in roomsToHandle)
+        {
+            if (!loadedRooms.TryGetValue(id, out var obj) || obj == null) continue;
+            if (deactivateFarRoomsInsteadOfDestroy)
+            {
+                obj.SetActive(false);
+                DLog($"Far room handled: Deactivate [{id}] pos={obj.transform.position}");
+            }
+            else
+            {
+                DLog($"Far room handled: Destroy [{id}] pos={obj.transform.position}");
+                Destroy(obj);
+                loadedRooms.Remove(id);
+                roomSpawnPoints.Remove(id);
+            }
+        }
+
+        // 이웃 방 스폰/활성화 — 새 스폰마다 1프레임 양보
+        foreach (var (neighbor, dir) in neighbors)
+        {
+            if (neighbor == null) continue;
+
+            if (!loadedRooms.ContainsKey(neighbor.roomID))
+            {
+                Vector3 intended = GetIntendedRoomPosition(neighbor, current, dir, 0f);
+                DLog($"Preload neighbor: current=[{current.roomID}] -> neighbor=[{neighbor.roomID}] dir={dir} intendedPos={intended} neighborCoord=({neighbor.roomCoord.x},{neighbor.roomCoord.y})");
+                SpawnRoom(neighbor, intended);
+                yield return null; // 다음 프레임으로 분산
+            }
+            else
+            {
+                if (loadedRooms.TryGetValue(neighbor.roomID, out var neighborObj) && neighborObj != null)
+                {
+                    neighborObj.SetActive(true);
+                    if (!runtimeRoomPositions.ContainsKey(neighbor.roomID))
+                        runtimeRoomPositions[neighbor.roomID] = neighborObj.transform.position;
+                }
+            }
+        }
+
+        // keep 목록 방 재활성화
+        foreach (var id in neighborsToKeep)
+        {
+            if (loadedRooms.TryGetValue(id, out var obj) && obj != null && !obj.activeSelf)
+            {
+                obj.SetActive(true);
+                DLog($"Keep room re-activated [{id}]");
+            }
+        }
+    }
+
     private void SpawnRoom(RoomData data, Vector3 position)
     {
         if (data == null)
@@ -657,6 +860,7 @@ public class RoomManager : MonoBehaviour
         roomObj.name = data.roomID;
         loadedRooms.Add(data.roomID, roomObj);
         CacheRoomSpawnPoint(roomObj, data.roomID);
+        RoomContentRespawner.TryAttach(data.roomID, roomObj); // QS-80: allowlist 방만 런타임 주입
 
         // ?�????꾩튂 ?뺤젙 ????
         runtimeRoomPositions[data.roomID] = position;

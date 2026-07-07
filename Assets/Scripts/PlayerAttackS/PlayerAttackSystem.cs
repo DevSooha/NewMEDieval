@@ -68,7 +68,8 @@ public partial class PlayerAttackSystem : MonoBehaviour
 
     void Update()
     {
-        if (interactionSensor != null && interactionSensor.IsCraftingUiOpen)
+        // 대화/선택창 포함 전체 입력 차단 상태에서 충전/전이 입력을 정리한다 (QS-14)
+        if (UIManager.IsInputBlocked)
         {
             CancelTransientInputState();
             return;

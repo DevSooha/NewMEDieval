@@ -101,3 +101,13 @@ Assets/Scripts/Utils/Settings/Build Profiles
 .plastic/plastic.wktree
 .plastic/plastic.changes
 .idea
+
+# Claude Code
+CLAUDE.md
+.claude.local.md
+.claude/
+
+# AI 개인 작업 로그/세션 기록 (로컬 전용, 저장소 비포함)
+# Docs/Team/ 은 팀 공유용으로 추적한다
+Docs/AI/
+

@@ -12,7 +12,6 @@ public class RolietCombat : BossCombatBase
 {
     public Transform playerTF;
     public JulmeoCombat julmeo;
-    public float dashSpeed = 5f;
     [SerializeField] private int dashDamage = 1;
     [SerializeField] private float dashHitRadius = 0.6f;
 

@@ -30,8 +30,6 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
     [SerializeField] private float raySpawnOffsetFromBoss = 2.5f;
 
     [Header("Pattern 3: Masque Illusion Stats")]
-    public float trapSpeed = 4f;
-    public float trapDuration = 4f;
     public float trapSpawnDistance = 3f;
 
     private BossProjectilePool rayPool;
@@ -80,16 +78,15 @@ public class ShaperkeaseCombat : BossCombatBase, IBossDamageModifier
         StartCoroutine(AppearRoutine());
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         StopCombat();
 
         if (bedimmedWallGroup != null)
         {
             bedimmedWallGroup.gameObject.SetActive(false);
         }
-
-        CleanupOffensivesOnDisable();
     }
 
     public float ModifyDamageMultiplier(ElementType attackType, float baseMultiplier)

@@ -51,6 +51,7 @@ public class Player : Singleton<Player>
     private RigidbodyType2D defaultBodyType;
     private Coroutine knockbackRoutine;
     private Coroutine blinkRoutine;
+    private Tilemap cachedGroundTilemap;
 
     protected override void Awake()
     {
@@ -150,7 +151,7 @@ public class Player : Singleton<Player>
 
     void HandleInteractionOnly()
     {
-        if (playerInteraction != null && playerInteraction.IsCraftingUiOpen)
+        if (UIManager.CraftingUiActive)
         {
             moveInput = Vector2.zero;
             ChangeState(PlayerState.Idle);
@@ -176,9 +177,7 @@ public class Player : Singleton<Player>
 
     void HandleMovement()
     {
-        if (UIManager.DialogueActive
-            || UIManager.SelectionActive
-            || (playerInteraction != null && playerInteraction.IsCraftingUiOpen))
+        if (UIManager.IsInputBlocked)
         {
             moveInput = Vector2.zero;
             ChangeState(PlayerState.Idle);
@@ -284,10 +283,7 @@ public class Player : Singleton<Player>
 
     void HandleAttack()
     {
-        if (playerInteraction != null && playerInteraction.IsCraftingUiOpen)
-        {
-            return;
-        }
+        if (UIManager.CraftingUiActive) return;
 
         if (IsInteractOrAttackPressed())
         {
@@ -298,9 +294,12 @@ public class Player : Singleton<Player>
                 return;
             }
 
-            // 1. ??�????좎럩???믪눦?? ??좎럥??
+            // 대화/선택창 중에도 위의 상호작용(대화 진행) 경로는 살리고,
+            // 공격 시작만 차단한다 — timeScale=0에 기대지 않는 로직 보장 (QS-14 회귀 수정)
+            if (UIManager.IsInputBlocked) return;
+
             // Potion usage is handled by PlayerAttackSystem; do not play melee attack motion.
-            if (IsPotionWeaponSelected())
+            if (attackSystem != null && attackSystem.IsCurrentSlotPotion())
             {
                 return;
             }
@@ -312,34 +311,6 @@ public class Player : Singleton<Player>
         }
     }
 
-    private bool IsPotionWeaponSelected()
-    {
-        if (attackSystem == null)
-        {
-            attackSystem = GetComponent<PlayerAttackSystem>();
-        }
-
-        if (attackSystem == null)
-        {
-            return false;
-        }
-
-        if (attackSystem.IsCurrentSlotPotion())
-        {
-            return true;
-        }
-
-        if (attackSystem.slots == null || attackSystem.slots.Count == 0)
-        {
-            return false;
-        }
-
-        WeaponSlot currentSlot = attackSystem.slots[0];
-        return currentSlot != null
-            && currentSlot.type == WeaponType.PotionBomb
-            && currentSlot.equippedPotion != null
-            && currentSlot.equippedPotion.quantity > 0;
-    }
     bool IsInteractOrAttackPressed()
     {
         return CombatInputHelper.IsAttackPressed(statusController);
@@ -371,7 +342,7 @@ public class Player : Singleton<Player>
 
     IEnumerator PerformAttack()
     {
-        if (IsPotionWeaponSelected())
+        if (attackSystem != null && attackSystem.IsCurrentSlotPotion())
         {
             ChangeState(PlayerState.Idle);
             yield break;
@@ -637,6 +608,21 @@ public class Player : Singleton<Player>
         return transform.position;
     }
 
+    // 현재 위치가 실제 걸을 수 있는 지면 타일 위인지 (읽기 전용 판정).
+    // ConstrainToWalkablePosition은 지면 타일맵을 못 찾으면 위치를 그대로 통과시키고,
+    // fallback 탐색이 실패하면 현재 위치를 반환하는 조용한 실패 경로가 있어,
+    // 방 전환 검증(RoomManager)과 QA 감시는 이 판정으로 실패를 감지한다.
+    public bool IsOnWalkableGround()
+    {
+        Tilemap groundTilemap = ResolveGroundTilemap(transform.position);
+        if (groundTilemap == null) return false;
+
+        Vector3Int cell = groundTilemap.WorldToCell(transform.position);
+        if (!groundTilemap.HasTile(cell)) return false;
+
+        return IsWalkablePosition(groundTilemap, transform.position);
+    }
+
     public void SnapToWalkablePosition()
     {
         Vector3 constrainedPosition = ConstrainToWalkablePosition(transform.position);
@@ -651,6 +637,14 @@ public class Player : Singleton<Player>
 
     private Tilemap ResolveGroundTilemap(Vector3 worldPosition)
     {
+        if (cachedGroundTilemap != null && cachedGroundTilemap.gameObject.activeInHierarchy)
+        {
+            Vector3Int cell = cachedGroundTilemap.WorldToCell(worldPosition);
+            if (cachedGroundTilemap.HasTile(cell))
+                return cachedGroundTilemap;
+        }
+
+        cachedGroundTilemap = null;
         Tilemap[] tilemaps = FindObjectsByType<Tilemap>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         Tilemap fallback = null;
 
@@ -665,7 +659,8 @@ public class Player : Singleton<Player>
             Vector3Int cell = tilemap.WorldToCell(worldPosition);
             if (tilemap.HasTile(cell))
             {
-                return tilemap;
+                cachedGroundTilemap = tilemap;
+                return cachedGroundTilemap;
             }
 
             if (fallback == null)
@@ -674,7 +669,8 @@ public class Player : Singleton<Player>
             }
         }
 
-        return fallback;
+        cachedGroundTilemap = fallback;
+        return cachedGroundTilemap;
     }
 
     private static bool IsGroundTilemap(Tilemap tilemap)

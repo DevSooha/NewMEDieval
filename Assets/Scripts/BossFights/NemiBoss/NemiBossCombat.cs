@@ -37,11 +37,6 @@ public class NemiBossCombat : BossCombatBase, IBossPhaseHandler
         if (handOfTime == null) handOfTime = GetComponentInChildren<HandOfTime>();
     }
 
-    private void OnEnable()
-    {
-        RegisterPlayerDeathBaseHandler(HandlePlayerDeath);
-    }
-
     // ===========================
     // StartBattle — BossBattleTrigger에서 호출
     // ===========================
@@ -174,7 +169,7 @@ public class NemiBossCombat : BossCombatBase, IBossPhaseHandler
     // ===========================
     // 플레이어 사망 처리
     // ===========================
-    private void HandlePlayerDeath()
+    protected override void OnPlayerDied()
     {
         isBattleRunning = false;
         StopAllPatterns();
@@ -260,11 +255,10 @@ public class NemiBossCombat : BossCombatBase, IBossPhaseHandler
         CleanupBossOffensives(BossOffensiveCleanupReason.BattleReset);
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        UnregisterPlayerDeathBaseHandler(HandlePlayerDeath);
+        base.OnDisable();
         StopAllPatterns();
-        CleanupOffensivesOnDisable();
     }
 
     // ===========================

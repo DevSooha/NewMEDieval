@@ -43,9 +43,9 @@ Material:
     m_Floats:
     - _DissolveAmount: 0
     - _DissolveEdge: 0
-    - _DistortStrength: 0.119
+    - _DistortStrength: 0.071
     m_Colors:
-    - _Color: {r: 0.07058824, g: 0.5294118, b: 0.4165378, a: 1}
+    - _Color: {r: 0.6699003, g: 0.6899969, b: 0.735849, a: 1}
     - _DissolveEdgeColor: {r: 0.5849056, g: 0.2179601, b: 0.2179601, a: 0}
     - _DistortSpeed: {r: 0.1, g: -0.1, b: 0, a: 0}
   m_BuildTextureStacks: []

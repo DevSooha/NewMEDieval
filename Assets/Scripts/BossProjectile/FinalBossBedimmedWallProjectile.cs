@@ -110,8 +110,11 @@ public class FinalBossBedimmedWallProjectile : BossProjectile
         if (!isLaunched) return;
         if (other.CompareTag("Boss")) return;
 
-        if (other.CompareTag("Player"))
+        if (CombatTargetHitbox.IsPlayerHitCandidate(other))
         {
+            // BUG-5: 정밀 히트박스 우선 — 본체 캡슐 명중은 히트박스에 양보
+            if (CombatTargetHitbox.ShouldDeferToPreciseHitbox(other)) return;
+
             BossHitResolver.TryApplyBossHit(
                 other,
                 damage,

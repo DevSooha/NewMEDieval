@@ -135,8 +135,11 @@ public class StainedSwordProjectile : MonoBehaviour
     {
         if (isFading || !canCollide) return;
 
-        if (other.CompareTag("Player"))
+        if (CombatTargetHitbox.IsPlayerHitCandidate(other))
         {
+            // BUG-5: 정밀 히트박스 우선 — 본체 캡슐 명중은 히트박스에 양보
+            if (CombatTargetHitbox.ShouldDeferToPreciseHitbox(other)) return;
+
             Vector2 fallbackDirection = target != null
                 ? ((Vector2)(target.position - transform.position))
                 : (Vector2)transform.right;

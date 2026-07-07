@@ -100,7 +100,7 @@ public class EnemyStatusController : MonoBehaviour
             direction = Vector2.right;
         }
 
-        ApplyKnockback(distanceUnits * 64f, direction.normalized);
+        ApplyKnockback(distanceUnits * 64f, direction.normalized, durationSeconds);
     }
 
     private void RefreshEffect(StatusEffectType type, float duration, float magnitude = 0f, float interval = 0f)
@@ -220,7 +220,11 @@ public class EnemyStatusController : MonoBehaviour
         ClearEffect(StatusEffectType.PoisonDot);
     }
 
-    private void ApplyKnockback(float distancePixels, Vector2? overrideDirection = null)
+    // durationSeconds > 0이면 그 시간 동안 분할 이동한다.
+    // (ApplyHitKnockback이 duration을 받고도 무시하던 원래 의도를 복구 — 즉발 순간이동 방지)
+    private Coroutine knockbackMoveRoutine;
+
+    private void ApplyKnockback(float distancePixels, Vector2? overrideDirection = null, float durationSeconds = 0f)
     {
         float distanceUnits = distancePixels / 64f;
         if (distanceUnits <= 0f)
@@ -235,14 +239,98 @@ public class EnemyStatusController : MonoBehaviour
             if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
         }
 
-        Vector3 delta = (Vector3)(dir.normalized * distanceUnits);
-        if (rb != null)
+        Vector2 origin = rb != null ? rb.position : (Vector2)transform.position;
+        Vector2 destination = ResolveKnockbackDestination(rb, origin, dir, distanceUnits);
+
+        if (durationSeconds > 0.01f && isActiveAndEnabled)
         {
-            rb.MovePosition(rb.position + (Vector2)delta);
+            if (knockbackMoveRoutine != null) StopCoroutine(knockbackMoveRoutine);
+            knockbackMoveRoutine = StartCoroutine(KnockbackMoveRoutine(origin, destination, durationSeconds));
             return;
         }
 
-        transform.position += delta;
+        if (rb != null)
+        {
+            rb.MovePosition(destination);
+            return;
+        }
+
+        transform.position = destination;
+    }
+
+    private IEnumerator KnockbackMoveRoutine(Vector2 origin, Vector2 destination, float durationSeconds)
+    {
+        if (rb != null) rb.linearVelocity = Vector2.zero;
+
+        float elapsed = 0f;
+        while (elapsed < durationSeconds)
+        {
+            elapsed += Time.fixedDeltaTime;
+            Vector2 next = Vector2.Lerp(origin, destination, Mathf.Clamp01(elapsed / durationSeconds));
+
+            if (rb != null) rb.MovePosition(next);
+            else transform.position = next;
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        knockbackMoveRoutine = null;
+    }
+
+    // ── BUG-4: 넉백 이동 클램프 ──────────────────────────────────────────────
+    // 기존 넉백은 rb.MovePosition으로 목표 지점까지 한 번에 이동해 경로상 충돌을
+    // 해소하지 않았고, 문/벽 근처에서 몬스터가 방 밖으로 빠져나갔다.
+    // Player.KnockBackDistanceRoutine의 rb.Cast 패턴을 준용해, 몸이 실제로
+    // 부딪히는 지점 직전까지만 이동 거리를 줄인다 (방향/거리 체감은 유지).
+    // EnemyCombat.ApplySelfKnockback도 이 헬퍼를 공유한다.
+
+    private const float knockbackSkinWidth = 0.02f;
+    private const float roomEdgeMargin = 0.4f;
+    private static readonly RaycastHit2D[] knockbackCastHits = new RaycastHit2D[8];
+
+    public static Vector2 ResolveKnockbackDestination(Rigidbody2D body, Vector2 origin, Vector2 direction, float distanceUnits)
+    {
+        if (direction.sqrMagnitude < 0.0001f) direction = Vector2.right;
+        Vector2 dir = direction.normalized;
+        float distance = Mathf.Max(0f, distanceUnits);
+
+        if (body != null && distance > 0f)
+        {
+            // 충돌 매트릭스 기준으로 몸이 실제 부딪히는 대상만 검사 (트리거 제외)
+            ContactFilter2D filter = new ContactFilter2D
+            {
+                useLayerMask = true,
+                layerMask = Physics2D.GetLayerCollisionMask(body.gameObject.layer),
+                useTriggers = false,
+            };
+
+            int hitCount = body.Cast(dir, filter, knockbackCastHits, distance);
+            for (int i = 0; i < hitCount; i++)
+            {
+                distance = Mathf.Min(distance, Mathf.Max(0f, knockbackCastHits[i].distance - knockbackSkinWidth));
+            }
+        }
+
+        return ClampToRoomCell(origin, origin + dir * distance);
+    }
+
+    // 넉백 목적지를 출발 지점이 속한 방(그리드 셀)의 플레이 가능 영역 안으로 제한한다.
+    // 문 통로는 트리거 콜라이더라 Cast에 걸리지 않으므로, 이 경계 클램프가
+    // 문틈으로 방 밖까지 밀려나는 것을 막는다. RoomManager가 없는 씬은 그대로 통과.
+    // BUG-3: EnemyMovement의 걷기 이탈 방지에서도 같은 규칙을 재사용한다.
+    public static Vector2 ClampToRoomCell(Vector2 origin, Vector2 destination)
+    {
+        RoomManager rm = RoomManager.Instance;
+        if (rm == null || rm.gridWidth <= 0f || rm.gridHeight <= 0f) return destination;
+
+        float cellCenterX = Mathf.Round(origin.x / rm.gridWidth) * rm.gridWidth;
+        float cellCenterY = Mathf.Round(origin.y / rm.gridHeight) * rm.gridHeight;
+        float halfWidth = Mathf.Max(0f, rm.playableWidth * 0.5f - roomEdgeMargin);
+        float halfHeight = Mathf.Max(0f, rm.playableHeight * 0.5f - roomEdgeMargin);
+
+        destination.x = Mathf.Clamp(destination.x, cellCenterX - halfWidth, cellCenterX + halfWidth);
+        destination.y = Mathf.Clamp(destination.y, cellCenterY - halfHeight, cellCenterY + halfHeight);
+        return destination;
     }
 
     private void SetAnimatorSpeed(float multiplier)

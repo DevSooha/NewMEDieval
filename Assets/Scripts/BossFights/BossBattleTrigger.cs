@@ -74,6 +74,10 @@ public class BossBattleTrigger : MonoBehaviour
         {
             if (BossManager.Instance != null && BossManager.Instance.IsBossActive)
             {
+                // QS-78: assignedBoss(1기)만 보고 종료하면 듀얼 보스방(sum_3)에서
+                // 첫 보스 사망 시 전투가 조기 종료된다. 방에 생존 보스가 남아 있으면 유지.
+                if (BossHealth.HasAliveBossInRoom(transform.root)) return;
+
                 BossManager.Instance.EndBossBattle();
                 return;
             }
@@ -125,9 +129,17 @@ public class BossBattleTrigger : MonoBehaviour
         foreach (Transform child in blockadeParent.transform)
         {
             bool isMapNode = child.GetComponent<MapNode>() != null;
-            // Some rooms wire MapNodes as blockadeParent.
-            // In that setup, "blockades active" means map nodes must be disabled.
-            child.gameObject.SetActive(isMapNode ? !isActive : isActive);
+            if (isMapNode)
+            {
+                // BUG-2: MapNode는 보스전 중에도 활성 상태를 유지해야 한다.
+                // 잠금 중 통로 차단은 MapNode.Update가 콜라이더를 solid(isTrigger=false)로
+                // 전환해 담당하며 "You cannot flee!" 안내도 그 경로에서 나온다.
+                // 여기서 비활성화하면 통로에 콜라이더가 아예 사라져 보스전 중 문이 열린다.
+                child.gameObject.SetActive(true);
+                continue;
+            }
+
+            child.gameObject.SetActive(isActive);
         }
     }
 

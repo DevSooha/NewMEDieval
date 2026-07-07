@@ -15,9 +15,46 @@ public class JulmeoCombat : BossCombatBase
     private bool isSpawnable;
     private bool canMove;
 
-    void Start()
+    // QS-12: 공격당 24발 × 웨이브 겹침(수명 3s vs 공격 주기 ~2.9s) 대비
+    private const int FireBallPoolInitialSize = 48;
+
+    private BossProjectilePool fireBallPool;
+    private Transform fireBallPoolRoot;
+    private bool warnedFireBallPrefabInvalid;
+
+    private void WarnFireBallPrefabInvalidOnce(string reason)
+    {
+        if (warnedFireBallPrefabInvalid) return;
+        warnedFireBallPrefabInvalid = true;
+        Debug.LogError($"[Julmeo] 화염구 발사 불가: {reason}. 발사를 건너뜁니다.");
+    }
+
+    // QS-82: Start()는 SetActive(true) 직후 동기 호출되는 StartBattle()보다 늦게 실행돼
+    // canMove=false 가드에 걸린다. Awake는 SetActive 시점에 동기 실행되므로 여기서 초기화.
+    void Awake()
     {
         canMove = true;
+        EnsureFireBallPool();
+    }
+
+    // QS-12: 풀 루트는 보스 자식이 아닌 독립 오브젝트로 둔다.
+    // Julmeo는 매 루프 순간이동하므로 보스를 루트로 쓰면 비행 중인 탄이
+    // 부모를 따라 끌려가 탄도가 변한다 — 기존 Instantiate(씬 루트)와
+    // 동일한 월드 공간을 유지하기 위한 분리.
+    private void EnsureFireBallPool()
+    {
+        if (fireBallPool != null || fireBallPrefab == null) return;
+
+        fireBallPoolRoot = new GameObject("JulmeoFireBallPoolRoot").transform;
+        fireBallPool = new BossProjectilePool(fireBallPrefab, FireBallPoolInitialSize, fireBallPoolRoot);
+    }
+
+    void OnDestroy()
+    {
+        if (fireBallPoolRoot != null)
+        {
+            Destroy(fireBallPoolRoot.gameObject);
+        }
     }
     public override void StartBattle()
     {
@@ -26,10 +63,10 @@ public class JulmeoCombat : BossCombatBase
         Debug.Log("Julmeo spawned & attacking!");
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         StopAllCoroutines();
-        CleanupOffensivesOnDisable();
     }
 
     IEnumerator BattleRoutine()
@@ -40,6 +77,14 @@ public class JulmeoCombat : BossCombatBase
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             playerTF = playerObj?.transform;
+
+            // 플레이어 미탐색(사망 직후 비활성 등) 상태에서 아래 position 접근 시
+            // NRE로 코루틴이 조용히 죽어 발사가 영구 정지한다 — 다음 루프에서 재시도.
+            if (playerTF == null)
+            {
+                yield return new WaitForSeconds(0.5f);
+                continue;
+            }
         }
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
@@ -83,9 +128,37 @@ public class JulmeoCombat : BossCombatBase
                 Quaternion rot = Quaternion.Euler(0, 0, baseAngle + angle);
                 Vector3 bulletPos = transform.position + (rot * Vector3.right * 0.5f);
 
-                GameObject projectile = Instantiate(fireBallPrefab, bulletPos, rot);
-                RegisterBossOffensive(projectile);
-                projectile.GetComponent<BossProjectile>()?.Setup(ElementType.Water);                
+                EnsureFireBallPool();
+                BossProjectile fireBall = fireBallPool != null ? fireBallPool.Rent() : null;
+                if (fireBall != null)
+                {
+                    // QS-12 조건: Rent 직후 매번 등록 (재사용 인스턴스는 딕셔너리 덮어쓰기)
+                    RegisterBossOffensive(fireBall.gameObject);
+                    fireBall.transform.SetPositionAndRotation(bulletPos, rot);
+                    fireBall.Setup(ElementType.Water);
+                }
+                else
+                {
+                    // 풀 구성 실패(프리팹 미배선 등) 시 기존 경로 그대로 유지
+                    if (fireBallPrefab == null)
+                    {
+                        WarnFireBallPrefabInvalidOnce("fireBallPrefab 미배선");
+                        continue;
+                    }
+
+                    GameObject projectile = Instantiate(fireBallPrefab, bulletPos, rot);
+                    BossProjectile projectileScript = projectile.GetComponent<BossProjectile>();
+                    if (projectileScript == null)
+                    {
+                        // 이동/소멸 로직 없는 정지 오브젝트가 발사마다 쌓이는 것 방지 (QS-81 완화)
+                        WarnFireBallPrefabInvalidOnce("프리팹에 BossProjectile 없음");
+                        Destroy(projectile);
+                        continue;
+                    }
+
+                    RegisterBossOffensive(projectile);
+                    projectileScript.Setup(ElementType.Water);
+                }
                 }
                 yield return new WaitForSeconds(0.1f);
             

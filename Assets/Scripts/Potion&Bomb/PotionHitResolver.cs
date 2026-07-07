@@ -10,7 +10,8 @@ public static class PotionHitResolver
     private const string CampfireTag = "Campfire";
     private const float PlayerHitKnockbackDistance = 0.75f;
     private const float PlayerHitKnockbackDuration = 0.12f;
-    private const float EnemyHitKnockbackDistance = 1f;
+    // 명세 v0.2 §6.7: 일반 적 넉백 64px = 2칸. EnemyCombat.selfKnockbackPixels(64/32=2u)와 동일 기준.
+    private const float EnemyHitKnockbackDistance = 2f;
     private const float BossHitKnockbackDistance = 1f;
     private const int PotionPlayerDamage = 1;
 
